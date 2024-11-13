@@ -15,8 +15,8 @@ from nilearn.image import index_img, reorder_img, smooth_img
 from nilearn import masking
 from scipy.stats import zscore
 
-from app.routes import utils
-from app.routes.common import cache
+from findviz.routes import utils
+from findviz.routes.common import cache
 
 nifti_bp = Blueprint('nifti', __name__)  # Create a blueprint
 

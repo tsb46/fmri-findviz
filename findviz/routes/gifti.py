@@ -6,8 +6,8 @@ import numpy as np
 from flask import Blueprint, request, jsonify
 from nibabel.gifti import GiftiDataArray
 
-from app.routes import utils
-from app.routes.common import cache
+from findviz.routes import utils
+from findviz.routes.common import cache
 
 gifti_bp = Blueprint('gifti', __name__)  # Create a blueprint
 

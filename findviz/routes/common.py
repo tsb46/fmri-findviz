@@ -12,7 +12,7 @@ import plotly.colors as pc
 from flask import Blueprint, render_template, request, jsonify
 from nilearn.glm.first_level import compute_regressor
 
-from app.routes import utils
+from findviz.routes import utils
 
 common_bp = Blueprint('common', __name__)  # Create a blueprint
 
