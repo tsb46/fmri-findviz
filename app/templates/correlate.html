@@ -1,0 +1,96 @@
+<!-- index.html -->
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>fMRI Web Application (TESTING HTML)</title>
+    <!-- Load CSS stylesheets first -->
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css">
+    <!-- Bootstrap Slider CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-slider/11.0.2/css/bootstrap-slider.min.css">
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="static/css/styles.css">
+
+    <!-- Load JavaScript libraries -->
+    <!-- JQuery -->
+    <script src="https://code.jquery.com/jquery-3.5.1.min.js"></script>
+    <!-- Popper JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/popper.min.js"></script>
+    <!-- Bootstrap JS -->
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <!-- Plotly JS -->
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <!-- Bootstrap-slider JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-slider/11.0.2/bootstrap-slider.min.js"></script>
+    <!-- HTML2Canvas -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+</head>
+<body>
+  <!-- Parent Visualization Container -->
+  <div id="parent-container" class="container-fluid mt-5" style="display: none;">
+    <!-- Spinner overlay for preprocessing wait -->
+    <div class='spinner-overlay' id="preproc-spinner-overlay"></div>
+    <div id="parent-container-row" class='row justify-content-md-center'>
+      <!-- User Options Container -->
+      <div class="col-3 pl-3 pr-2" id="user_options_container">
+        <!-- Visualization Options -->
+        <div id='visualizationOptions'></div>
+      </div>
+      <!-- Visualization Container -->
+      <div class='col-9' id="visualization_container">
+        <!-- fmri visualization card -->
+        <div id='fmriVisualizationCard'></div>
+      </div>
+    </div>
+    <div class='row justify-content-md-center mt-2'>
+      <!-- Container for time courses -->
+      <div id='timeCourse'></div>
+    </div>
+  </div>
+  <footer class="text-center mt-4">
+      <p>&copy; 2024 Dynamic fMRI Viewer</p>
+  </footer>
+
+  <!-- Correlation javascript -->
+  <script type="module">
+    // Import classes from modules
+    import Correlate from '/static/js/correlation.js';
+    import { loadComponent, initBootstrapComponents } from '/static/js/utils.js';
+    // Load all correlation page components
+    async function loadPageComponents() {
+      const components = [
+        loadComponent("visualizationOptions", "visualizationOptions.html"),
+        loadComponent("fmriVisualizationCard", "fmriVisualizationCard.html"),
+      ];
+      // wait for all component promises to resolve
+      await Promise.all(components);
+    }
+
+    // Toggle parent visualization container to display
+    const visualizationContainer = document.getElementById('parent-container');
+    visualizationContainer.style.display = 'block'
+    // Load HTML components and initialize 'Correlate' class
+    document.addEventListener("DOMContentLoaded", async () => {
+      // Load HTML components
+      await loadPageComponents();
+      // initialize correlation after page load
+      const plotData = {{ data|tojson }}
+      // Run Main
+      let correlate = new Correlate(plotData);
+      // initialize plots
+      correlate.init();
+
+      // initialize bootstrap components
+      initBootstrapComponents()
+    });
+
+  </script>
+
+</body>
+</html>

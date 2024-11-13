@@ -1,0 +1,85 @@
+<!-- FMRI Visualization Card -->
+<div class='card h-100'>
+  <div class="card-header pt-1 pb-0">
+    <div class='row'>
+      <div class='col-3'>
+        <div class='row'>
+          <div class='col-10'>
+            <h5 class="card-title" id='fmri-visualization-title'></h5>
+          </div>
+          <div class='col-2 pl-1 pr-1 pb-1 pt-0'>
+            <div class="alert alert-info small p-2 m-0 text-center toggle-immediate" role="alert" id='preprocess-alert' data-toggle="tooltip" data-placement="top" title="Viewing preprocessed data" style="display: none;">
+              <i class="fa-solid fa-p"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class='col'>
+        <!-- Toggle crosshair for Nifti -->
+        <button class="btn btn-outline-secondary btn-sm toggle-wait" id='toggle-crosshair' data-toggle="tooltip" data-placement="top" title="Toggle crosshair">
+          <i class="fa-solid fa-plus"></i>
+        </button>
+        <!-- Toggle plotly hover text -->
+        <button class="btn btn-outline-secondary btn-sm toggle-wait" id='toggle-hover' data-toggle="tooltip" data-placement="top" title="Toggle hover text">
+          <i class="fa-solid fa-message"></i>
+        </button>
+        <!-- Toggle direction labels for Nifti -->
+        <button class="btn btn-outline-secondary btn-sm toggle-wait" id='toggle-direction' data-toggle="tooltip" data-placement="top" title="Toggle direction labels">
+          <i class="fa-solid fa-text-slash"></i>
+        </button>
+        <!-- Take screenshot of visualization container -->
+        <button class="btn btn-outline-secondary btn-sm toggle-wait" id='select-screenshot' data-toggle="tooltip" data-placement="top" title="Take screenshot">
+          <i class="fa-solid fa-image"></i>
+        </button>
+        <!-- Play movie -->
+        <button class="btn btn-outline-secondary btn-sm toggle-wait" id='play-movie' data-toggle="tooltip" data-placement="top" title="Cycle through timepoints">
+          <i class="fa-solid fa-play"></i>
+        </button>
+      </div>
+      <div class='col-3'>
+        <div class="custom-control custom-switch">
+          <input type="checkbox" class="custom-control-input" id="enable-time-course">
+          <label class="custom-control-label" for="enable-time-course">Enable Time Course</label>
+          <span class="fa-solid fa-circle-info toggle-immediate" data-toggle="tooltip" data-placement="top" title="Plot time course of selected voxel/vertex" aria-hidden="true"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="card-body">
+    <div class='row'>
+      <div id="surface_container" class="mt-2 p-0" style="display: none; width: 100%; height: 100%;">
+        <!-- JavaScript will dynamically create and insert left and right hemisphere visualizations here -->
+      </div>
+        <!-- Orthogonal Slices Container: X, Y, Z slices arranged horizontally -->
+      <div id="slices_container" class="d-flex mt-2 p-0" style="display: none;">
+      </div>
+    </div>
+  </div>
+  <div class='card-footer'>
+    <div class='row' id='slider-container'>
+      <div class='col'>
+        <div class='row'>
+          <div class='col-sm-4'>
+            <!-- Container for time slider -->
+            <label for="time_slider" id='time-slider-title' style="font-weight: bolder;"></label>
+          </div>
+          <div class='col-sm-3 offset-sm-5'>
+            <div class='row'>
+              <div class='col-sm-5 p-1 text-center'>
+                <div class='small'>World Coord:</div>
+              </div>
+              <div class='col-sm-7 pl-0 d-flex'>
+                <div class="shadow-sm bg-light rounded small p-1 mr-1 w-25 d-inline" id='x-world'></div>
+                <div class="shadow-sm bg-light rounded small p-1 mr-1 w-25 d-inline" id='y-world'></div>
+                <div class="shadow-sm bg-light rounded small p-1 w-25 d-inline" id='z-world'></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class='row justify-content-center pt-0'>
+          <input id="time_slider" type="text" class="slider"/>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

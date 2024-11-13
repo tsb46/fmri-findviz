@@ -1,0 +1,107 @@
+<!-- Preprocessing Options (for fMRI data) -->
+<div class ='row mt-1'>
+  <div class='col-12 pr-0'>
+    <div class ='card'>
+      <div class ='card-header pt-1 pb-1'>
+        <h5 class="card-title">FMRI Preprocessing</h5>
+      </div>
+      <div class="card-body pt-1 pb-1">
+        <form>
+          <!-- Normalization -->
+          <div class='row mb-1'>
+            <div class='col-12'>
+              <div class='row pl-2'>
+                <div class="custom-control custom-switch">
+                  <input type="checkbox" class="custom-control-input" id="enable-normalization">
+                  <label class="custom-control-label" for="enable-normalization"><strong>Normalization</strong></label>
+                  <span class="fa-solid fa-circle-info ml-1 toggle-immediate" data-toggle="tooltip" data-placement="top" title="Normalization is performed separately on each voxel/vertex time course" aria-hidden="true"></span>
+                </div>
+              </div>
+              <div class='row pl-2 mb-1' id='normalizationOptions'>
+                <div class="form-check form-check-inline">
+                  <input class="form-check-input norm-option" type="radio" name="norm-options" id="select-mean-center" value="mean-center" disabled>
+                  <label class="form-check-label" for="select-mean-center">mean-center</label>
+                </div>
+                <div class="form-check form-check-inline">
+                  <input class="form-check-input norm-option" type="radio" name="norm-options" id="select-z-score" value="z-score" disabled>
+                  <label class="form-check-label" for="select-z-score">z-score</label>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- Filtering -->
+          <div class='row mt-1 mb-1'>
+            <div class='col-12'>
+              <div class='row pl-2'>
+                <div class="custom-control custom-switch">
+                  <input type="checkbox" class="custom-control-input" id="enable-filtering">
+                  <label class="custom-control-label" for="enable-filtering"><strong>Filter</strong></label>
+                  <span class="fa-solid fa-circle-info ml-1 toggle-immediate" data-toggle="tooltip" data-placement="top" title="(Brain mask must be supplied for nifti input) Temporal filtering is performed separately on each voxel/vertex time course with a Butterworth 5th-order filter. Low-cut and high-cut are provided in Hertz (Hz). Providing only low-cut performs high-pass filtering. Providing only high-cut performs low-pass filtering. Providing both performs bandpass filtering." aria-hidden="true"></span>
+                </div>
+              </div>
+              <!-- Filter options layout -->
+              <div class='row pl-2 justify-content-start' id='filter-options'>
+                <div class="col-md-3 pl-0 pr-2">
+                  <div class="form-group mb-1">
+                    <label for="filter-tr" class='mb-0'><small>TR:</small></label>
+                    <span class="fa-solid fa-circle-info ml-1 toggle-immediate" data-toggle="tooltip" data-placement="top" title="The repitition time of the functional MRI time courses" aria-hidden="true"></span>
+                    <input type="number" class="form-control form-control-sm filter-option" id="filter-tr" step="0.01" disabled>
+                  </div>
+                </div>
+                <div class="col-md-4 pl-0 pr-2">
+                  <div class="form-group filter-options mb-1">
+                    <label for="filter-low-cut" class='mb-0'><small>Low-Cut:</small></label>
+                    <div class="d-flex align-items-center">
+                      <input type="number" class="form-control form-control-sm filter-option mr-1" id="filter-low-cut" step="0.01" disabled>
+                      <span><small>Hz</small></span>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-md-4 pl-0 pr-2">
+                  <div class="form-group filter-options mb-1">
+                    <label for="filter-high-cut" class='mb-0'><small>High-Cut:</small></label>
+                    <div class="d-flex align-items-center">
+                      <input type="number" class="form-control form-control-sm filter-option mr-1" id="filter-high-cut" step="0.01" disabled>
+                      <span><small>Hz</small></span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- Spatial Smoothing -->
+          <div class='row mb-1'>
+            <div class='col-12'>
+              <div class='row pl-2'>
+                <div class="custom-control custom-switch">
+                  <input type="checkbox" class="custom-control-input" id="enable-smoothing">
+                  <label class="custom-control-label" for="enable-smoothing"><strong>Spatial Smoothing</strong></label>
+                  <span class="fa-solid fa-circle-info ml-1 toggle-immediate" data-toggle="tooltip" data-placement="top" title=" (Not supported for surface .gii input) Perform 3D gaussian isometric spatial smoothing of the fMRI volumes. The extent of smoothing is controlled by the size of the FWHM kernel in mm." aria-hidden="true"></span>
+                </div>
+              </div>
+              <div class='row pl-2 justify-content-start'>
+                <div class='col-12 pl-0'>
+                  <label for="smoothing-fwhm" class='mb-0'><small>FWHM:</small></label>
+                  <div class="d-flex align-items-center">
+                    <input type="number" class="form-control form-control-sm w-25 mr-1" id="smoothing-fwhm" step="0.1" min="0" max="12" disabled>
+                    <span><small>mm</small></span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class='row mt-3 mb-1'>
+            <!-- Error Message Placeholder -->
+            <div id="error-message-preprocess" class="alert alert-danger" role='alert' style="display: none;"></div>
+            <div class='col-md-5'>
+              <button type="button" class="btn btn-primary btn-sm btn-block" id='submit-preprocess' type='submit'>Preprocess</button>
+            </div>
+            <div class='col-md-5'>
+              <button type="button" class="btn btn-secondary btn-sm btn-block" id='reset-preprocess-button'>Reset</button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>

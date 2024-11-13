@@ -1,0 +1,50 @@
+<!-- Visualization Options (for fMRI data) -->
+<div class="row">
+  <div class = 'col-12 pr-0'>
+    <div class="card" id="slider-card">
+      <div class="card-header pt-1 pb-0">
+          <h5 class="card-title">FMRI Color Options</h5>
+      </div>
+      <div class="card-body pt-1 pb-1">
+        <form>
+        <!-- Custom Colormap Dropdown -->
+          <div class='row pl-2 pt-0 mb-1'>
+            <div class="form-group mb-0" id="form-colormap">
+            <!-- Dropdown content goes here -->
+            </div>
+          </div>
+          <!-- Placeholder for Global Min and Max Sliders -->
+          <div class='row mb-1'>
+            <div class='col-12'>
+              <div class="form-group" id="form-color-range">
+                <div class='row pl-2'>
+                  <label for="colorRangeSlider" class='mb-1'><strong>Color Range:</strong></label>
+                </div>
+                <div class='row pl-2'>
+                  <input id="colorRangeSlider" type="text" class="slider" data-slider-responsive="true" />
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class = 'row mb-1'>
+            <div class='col-12'>
+              <!-- Placeholder for Threshold Sliders -->
+              <div class="form-group" id="form-threshold">
+                <div class='row pl-2'>
+                  <label for="thresholdSlider" class='mb-1'><strong>Color Threshold:</strong></label>
+                </div>
+                <div class='row pl-2'>
+                  <input id="thresholdSlider" type="text" class="slider" data-slider-responsive="true" />
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- Reset slider button -->
+          <div class='row pl-2 pr-2 mb-0'>
+            <button type="button" class="btn btn-secondary btn-sm btn-block mt-2" id="reset-slider-button">Reset Sliders</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>

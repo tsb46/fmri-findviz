@@ -1,0 +1,164 @@
+/* styles.css */
+
+/* Import a sleek, modern font */
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
+
+/*File Upload Modal*/
+#uploadModalDialog {
+    max-width: 50%
+}
+
+/*Spinner Overlay*/
+.spinner-overlay {
+  position: fixed;
+  display: none;
+  width: 100%;
+  height: 100%;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0,0,0,0.5);
+  z-index: 10;
+}
+
+.spinner-viz {
+  position: fixed;
+  text-align: center;
+  z-index: 20;
+  display: none;
+  width: 64px;
+  height: 64px;
+}
+
+/*Surface Viewer*/
+#surface_container {
+    padding: 0;
+    margin: 0;
+    width: 100%;
+    height: 100%;
+}
+
+#left_brain_visualization_container, #right_brain_visualization_container {
+    padding: 0;
+    margin: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100%;  /* Ensure the containers take full height */
+}
+
+
+/*Nifti slices viewer*/
+/* Slices container */
+#slices_container {
+    display: flex;
+    width: 100%;
+    height: 100%;
+    align-items: center; /* Vertically center the slices and colorbar */
+    justify-content: space-between; /* Distribute space between slices */
+    margin: 0;
+    padding: 0;
+    gap: 0; /* Ensure there's no gap between flex items */
+    overflow: hidden;
+    box-sizing: border-box; /* Ensure padding and borders are included in the total width/height */
+}
+
+/* Individual slice containers */
+.plot-slice-container {
+    height: 100%; /* Full height */
+    display: flex; /* Flexbox for centering content */
+    justify-content: center; /* Center content horizontally */
+    align-items: center; /* Center content vertically */
+    margin: 0; /* Remove any margin */
+    padding: 0; /* Remove any padding */
+    box-sizing: border-box; /* Include padding and border in the element's total width and height */
+    overflow: hidden;
+}
+/*Give x_slice_container (saggital view) a little more room*/
+#x_slice_container {
+    width: 38%;
+    height: 100%;
+}
+
+#y_slice_container,
+#z_slice_container {
+    width: 31%;
+    height: 100%;
+}
+
+/*Time course plots*/
+.time-course-plot {
+    display: flex;
+    width: 100%;
+    align-items: center; /* Vertically center the slices and colorbar */
+    justify-content: space-between; /* Distribute space between slices */
+    overflow: hidden;
+    box-sizing: border-box; /* Include padding and border in the element's total width and height */
+}
+
+/*User Visualization Options*/
+
+/*Brain color map dropdown menu*/
+.custom-dropdown {
+    position: relative;
+    width: 100%;
+}
+
+.custom-dropdown .dropdown-toggle {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    cursor: pointer;
+    background-color: white;
+}
+
+.custom-dropdown .dropdown-menu {
+    display: none;
+    max-height: 250px;  /* Adjust based on how many options should be visible */
+    overflow-y: auto;   /* Vertical scroll when content exceeds height */
+    position: absolute;
+    padding: 5px;
+    width: 100%;
+    min-width: 250px;  /* Ensures dropdown is not narrower than 250px */
+    background-color: white;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    margin-top: 5px;
+    z-index: 1000;
+}
+
+.custom-dropdown .dropdown-menu.show {
+    display: block;
+}
+
+.custom-dropdown .dropdown-menu li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 5px;
+    cursor: pointer;
+}
+
+.custom-dropdown .dropdown-menu li span:first-child {
+    flex: 1;
+    min-width: 70px; /* Ensures that the text label takes up a minimum amount of space */
+}
+
+.custom-dropdown .dropdown-menu li .colormap-swatch {
+    flex: 0 0 100px; /* Ensures a fixed width for color swatches */
+    height: 20px;
+    margin-left: 10px;
+    background-size: contain;
+}
+
+.custom-dropdown .dropdown-menu li:hover {
+    background-color: #f0f0f0;
+}
+
+/*Visualization Sliders*/
+.slider {
+    width: 95% !important;
+}
+
