@@ -162,3 +162,12 @@
     width: 95% !important;
 }
 
+/*Width of Montage Popover (this will affect all popovers)*/
+.popover {
+    min-width: 400px !important;
+}
+#sliceSliders{
+    padding-left: 15px;
+    padding-right: 15px;
+}
+

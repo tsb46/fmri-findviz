@@ -12,8 +12,12 @@ class MainViewer{
         plotData,
         plotType
       ) {
-        // Set text in visualization card
-        document.getElementById('fmri-visualization-title').textContent = 'FMRI Visualization'
+        if (plotType == 'nifti') {
+            // Set text in visualization card
+            document.getElementById('fmri-visualization-title').textContent = 'FMRI Ortho View'
+        } else if (plotType == 'gifti') {
+            document.getElementById('fmri-visualization-title').textContent = 'FMRI Surface View'
+        }
         document.getElementById('time-slider-title').textContent = 'Time Point:'
 
         // set attributes based on nifti or gifti file input
@@ -61,12 +65,21 @@ class MainViewer{
         this.preprocState = false;
 
         // Initialize TimeSlider class
-        this.timeSlider = new TimeSlider(plotData.timepoints);
+        this.timeSlider = new TimeSlider(
+            plotData.timepoints,
+            'Time Point: '
+        );
 
         // Initialize VisualizationOptions class
+        // pass slice length if nifti
+        if (plotType == 'nifti') {
+            this.sliceLen = plotData.slice_len
+        } else {
+            this.sliceLen = null
+        }
         this.visualizationOptions = new VisualizationOptions(
             this.globalMin, this.globalMax, this.plotType,
-            this.attachVizOptionListeners
+            this.sliceLen, this.attachVizOptionListeners
         );
 
         // Initialize PreprocessingOptions class (pass mask, if nifti)
@@ -125,7 +138,7 @@ class MainViewer{
             // Register click handlers
             this.registerClickHandlers();
             // Listen for correlation submit event
-            $('#correlationForm').on('correlationSubmit', (event, data) => {
+            $(document).on('correlationSubmit', (event, data) => {
                 this.initiateCorrelation(event, data)
             });
         }).catch(error => {
@@ -155,11 +168,11 @@ class MainViewer{
             this.colorBar.plotColorbar(this.colormap)
 
         };
-        document.querySelector('.custom-dropdown .dropdown-menu').addEventListener(
+        document.addEventListener(
             'colormapChange',  this.colormapChangeListener
         );
         // Listen for color range slider change
-        $('#colorRangeSlider').on('colorSliderChange', (event) => {
+        $(document).on('colorSliderChange', (event) => {
             const colorRange = event.detail.newValue
             this.colorMin = colorRange[0]
             this.colorMax = colorRange[1]
@@ -182,7 +195,7 @@ class MainViewer{
             );
         });
         // Listen for threshold slider change
-        $('#thresholdSlider').on('thresholdSliderChange', (event) => {
+        $(document).on('thresholdSliderChange', (event) => {
             const thresholdRange = event.detail.newValue;
             this.thresholdMin = thresholdRange[0];
             this.thresholdMax = thresholdRange[1];
@@ -200,7 +213,7 @@ class MainViewer{
         });
 
         // Listen for hover toggle click
-        $('#toggle-hover').on('toggleHoverChange', (event) => {
+        $(document).on('toggleHoverChange', (event) => {
             // if checked
             this.hoverTextOn = !this.hoverTextOn
             // plot with or without hover text
@@ -219,7 +232,7 @@ class MainViewer{
         // attach nifti specific visualization options
         if (this.plotType == 'nifti') {
             // Listen for crosshair toggle click
-            $('#toggle-crosshair').on('toggleCrosshairChange', (event) => {
+            $(document).on('toggleCrosshairChange', (event) => {
                 // if checked
                 this.viewer.crosshairOn = !this.viewer.crosshairOn
                 // plot with or without crosshair
@@ -236,7 +249,7 @@ class MainViewer{
             });
 
             // Listen for hover toggle click
-            $('#toggle-direction').on('toggleDirectionMarkerChange', (event) => {
+            $(document).on('toggleDirectionMarkerChange', (event) => {
                 // if checked
                 this.viewer.directionMarkerOn = !this.viewer.directionMarkerOn
                 // plot with or without direction marker labels
@@ -257,7 +270,7 @@ class MainViewer{
     // Listeners to pass to PreprocessingOptions class
     attachPreprocListeners = () => {
         // Listen for preprocessing submission
-        $('#submit-preprocess').on('preprocessSubmit', (event, data) => {
+        $(document).on('preprocessSubmit', (event, data) => {
             // Set preprocess state to true
             this.preprocState = true
             // Start spinner to indicate loading of files
@@ -316,7 +329,7 @@ class MainViewer{
         });
 
         // Listen for preprocessing reset
-        $('#reset-preprocess-button').on('preprocessReset', () => {
+        $(document).on('preprocessReset', () => {
             // set preprocess state to false
             this.preprocState = false;
             // fetch original data
@@ -357,7 +370,7 @@ class MainViewer{
 
     // Update plot for changes in time point from the time slider
     listenForTimeSliderChange() {
-        $('#time_slider').on('timeSliderChange', (event) => {
+        $(document).on('timeSliderChange', (event) => {
             // Access the timeIndex from event.detail and update viewer
             this.timePoint = event.detail.timeIndex;
             // update brain plot and time course plot
@@ -469,6 +482,7 @@ class MainViewer{
             formData.append('file_key', this.viewer.fileKey);
             formData.append('mask_key', this.viewer.maskKey);
             formData.append('anat_key', this.viewer.anatKey);
+            formData.append('slice_len', this.sliceLen);
             fetchURL = '/compute_corr_nii'
         } else if (this.plotType == 'gifti') {
             formData.append('left_key', this.viewer.leftKey);
@@ -501,6 +515,8 @@ class MainViewer{
             // end spinner to indicate loading of files
             spinnerOverlayDiv.style.display = 'none'
             spinnerDiv.style.display = 'none'
+            // close modal
+            $('#correlationModal').modal('hide');
         }).catch(error => {
             console.error('Error during correlation analysis:', error);
         });

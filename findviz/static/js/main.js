@@ -44,10 +44,10 @@ function main() {
 document.addEventListener("DOMContentLoaded", async () => {
     // Load HTML components
     await loadPageComponents();
-    // Run Main
-    main();
     // initialize bootstrap components
     initBootstrapComponents()
+    // Run Main
+    main();
 
 });
 

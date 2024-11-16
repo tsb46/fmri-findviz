@@ -121,6 +121,10 @@ class TimeCourse {
         this.plotState = false;
         // initialize task design plot state
         this.taskPlotState = true;
+        // Initialize annotation state
+        this.annotateState = false;
+        // Annotation markers
+        this.annotationMarkers = [];
         // initialize task plot type - hrf vs block
         this.taskPlotType = 'hrf';
         // initialize time point marker as true
@@ -427,7 +431,10 @@ class TimeCourse {
             let newOption = $('<option>', { value: label, text: label });
             this.timeCoursePrepMenu.append(newOption);
         });
-        this.timeCoursePrepMenu.selectpicker("refresh");
+        // hack to remove duplicates due to bug
+        //https://github.com/snapappointments/bootstrap-select/issues/2738
+        this.timeCoursePrepMenu.selectpicker('destroy');
+        this.timeCoursePrepMenu.selectpicker();
     }
 
     // initialize proxy handles to catch updates timecourses
@@ -535,7 +542,7 @@ class TimeCourse {
             dataOut['ts'] = this.taskRegressors[tsValue][plotType];
         }
         // trigger 'correlation' submission event
-        $('#correlationForm').trigger('correlationSubmit', dataOut);
+        $(document).trigger('correlationSubmit', dataOut);
     }
 
     // refresh time course option card

@@ -57,12 +57,22 @@ class Correlate {
         this.preprocState = false;
 
         // Initialize TimeSlider class
-        this.timeSlider = new TimeSlider(plotData.timepoints);
+        this.timeSlider = new TimeSlider(
+            plotData.timepoints,
+            'Lag: '
+        );
 
+        // Initialize VisualizationOptions class
+        // pass slice length if nifti
+        if (this.plotType == 'nifti') {
+            this.sliceLen = plotData.slice_len[0]
+        } else {
+            this.sliceLen = null
+        }
         // Initialize VisualizationOptions class
         this.visualizationOptions = new VisualizationOptions(
             this.globalMin, this.globalMax, this.plotType,
-            this.attachVizOptionListeners
+            this.sliceLen, this.attachVizOptionListeners
         );
 
         // Initialize colorbar class
@@ -123,11 +133,11 @@ class Correlate {
             this.colorBar.plotColorbar(this.colormap)
 
         };
-        document.querySelector('.custom-dropdown .dropdown-menu').addEventListener(
-                'colormapChange',  this.colormapChangeListener
-      );
-      // Listen for color range slider change
-        $('#colorRangeSlider').on('colorSliderChange', (event) => {
+        document.addEventListener(
+            'colormapChange',  this.colormapChangeListener
+        );
+        // Listen for color range slider change
+        $(document).on('colorSliderChange', (event) => {
             const colorRange = event.detail.newValue
             this.colorMin = colorRange[0]
             this.colorMax = colorRange[1]
@@ -150,7 +160,7 @@ class Correlate {
             );
         });
         // Listen for threshold slider change
-        $('#thresholdSlider').on('thresholdSliderChange', (event) => {
+        $(document).on('thresholdSliderChange', (event) => {
             const thresholdRange = event.detail.newValue;
             this.thresholdMin = thresholdRange[0];
             this.thresholdMax = thresholdRange[1];
@@ -168,7 +178,7 @@ class Correlate {
         });
 
         // Listen for hover toggle click
-        $('#toggle-hover').on('toggleHoverChange', (event) => {
+        $(document).on('toggleHoverChange', (event) => {
             // if checked
             this.hoverTextOn = !this.hoverTextOn
             // plot with or without hover text
@@ -187,7 +197,7 @@ class Correlate {
         // attach nifti specific visualization options
         if (this.plotType == 'nifti') {
             // Listen for crosshair toggle click
-            $('#toggle-crosshair').on('toggleCrosshairChange', (event) => {
+            $(document).on('toggleCrosshairChange', (event) => {
                 // if checked
                 this.viewer.crosshairOn = !this.viewer.crosshairOn
                 // plot with or without crosshair
@@ -204,7 +214,7 @@ class Correlate {
             });
 
             // Listen for hover toggle click
-            $('#toggle-direction').on('toggleDirectionMarkerChange', (event) => {
+            $(document).on('toggleDirectionMarkerChange', (event) => {
                 // if checked
                 this.viewer.directionMarkerOn = !this.viewer.directionMarkerOn
                 // plot with or without direction marker labels
@@ -224,7 +234,7 @@ class Correlate {
 
     // Update plot for changes in time point from the time slider
     listenForTimeSliderChange() {
-        $('#time_slider').on('timeSliderChange', (event) => {
+        $(document).on('timeSliderChange', (event) => {
             // Access the timeIndex from event.detail and update viewer
             this.timePoint = event.detail.timeIndex;
             // update brain plot and time course plot

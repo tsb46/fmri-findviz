@@ -1,5 +1,5 @@
 <!-- FMRI Visualization Card -->
-<div class='card h-100'>
+<div class='card'>
   <div class="card-header pt-1 pb-0">
     <div class='row'>
       <div class='col-3'>
@@ -14,7 +14,11 @@
           </div>
         </div>
       </div>
-      <div class='col'>
+      <div class='col mb-1'>
+        <!-- Toggle slice montage or othoview -->
+        <button class="btn btn-outline-secondary btn-sm toggle-wait" id='toggle-view' data-toggle="tooltip" data-placement="top" title="Toggle between ortho and slice montage views.">
+          <i class="fa-solid fa-brain"></i>
+        </button>
         <!-- Toggle crosshair for Nifti -->
         <button class="btn btn-outline-secondary btn-sm toggle-wait" id='toggle-crosshair' data-toggle="tooltip" data-placement="top" title="Toggle crosshair">
           <i class="fa-solid fa-plus"></i>
@@ -35,6 +39,40 @@
         <button class="btn btn-outline-secondary btn-sm toggle-wait" id='play-movie' data-toggle="tooltip" data-placement="top" title="Cycle through timepoints">
           <i class="fa-solid fa-play"></i>
         </button>
+      </div>
+      <div class='col-3'>
+        <button id="montage-popover" title="Slice Montage Options" type="button" class="btn btn-outline-secondary btn-sm" data-container="body" data-toggle="popover" data-placement="top"
+        data-content= "
+          <div class='row'>
+            <div class='col'>
+              <div id='sliceSliders'>
+                <div class='row'>
+                    <span>Select Slice Direction</span>
+                    <select id ='montage-slice-select' class='custom-select'>
+                      <option value='x' selected>X (Saggital)</option>
+                      <option value='y'>Y (Coronal) </option>
+                      <option value='z'>Z (Axial)</option>
+                    </select>
+                </div>
+                <div class='row mt-2'>
+                  <label for='slice1Slider' class='mb-1'>Slice 1</label>
+                  <input id='slice1Slider' type='text' class='slider' data-slider-responsive='true' />
+                </div>
+                <div class='row'>
+                  <label for='slice2Slider' class='mb-1'>Slice 2</label>
+                  <input id='slice2Slider' type='text' class='slider' data-slider-responsive='true' />
+                </div>
+                <div class='row'>
+                  <label for='slice3Slider' class='mb-1'>Slice 3</label>
+                  <input id='slice3Slider' type='text' class='slider' data-slider-responsive='true' />
+                </div>
+              </div>
+            </div>
+          </div>
+        ">
+          Montage
+        </button>
+
       </div>
       <div class='col-3'>
         <div class="custom-control custom-switch">

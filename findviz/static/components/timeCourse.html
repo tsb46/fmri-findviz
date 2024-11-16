@@ -171,12 +171,12 @@
       </div>
       <div class = 'col-9'>
         <div class='card w-100 h-100'>
-          <div class='card-header pt-1 pb-0'>
+          <div class='card-header pt-1 pb-0 pr-1'>
             <div class='row'>
-              <div class='col-4'>
+              <div class='col-2 pr-1 pl-1'>
                 <div class='row'>
-                  <div class='col-10'>
-                    <h5 class="card-title">Time Series Visualization</h5>
+                  <div class='col-9 pr-1'>
+                    <h5 class="card-title">Time Course</h5>
                   </div>
                   <div class='col-2 pl-1 pr-1 pb-1 pt-0'>
                     <div class="alert alert-info small p-2 m-0 text-center toggle-immediate" role="alert" id='ts-preprocess-alert' data-toggle="tooltip" data-placement="top" title="Viewing preprocessed data" style="display: none;">
@@ -185,7 +185,7 @@
                   </div>
                 </div>
               </div>
-              <div class='col'>
+              <div class='col-3 pr-1 pl-1'>
                 <!-- Toggle time point line -->
                 <button class="btn btn-outline-secondary btn-sm toggle-wait" id='toggle-time-marker' data-toggle="tooltip" data-placement="top" title="Toggle time point marker">
                   <i class="fa-solid fa-location-pin"></i>
@@ -207,9 +207,25 @@
                   <i class="fa-solid fa-arrow-down"></i>
                 </button>
               </div>
-              <div class='col-3'>
+              <div class='col-4 pr-1 pl-1'>
+                <div class='row align-items-center'>
+                  <div class="custom-control custom-switch mr-1">
+                    <input type="checkbox" class="custom-control-input" id="enable-annotate">
+                    <label class="custom-control-label" for="enable-annotate">Annotate</label>
+                  </div>
+                  <!-- Undo annotate -->
+                  <button class="btn btn-outline-secondary btn-sm toggle-wait" id='undo-annotate' data-toggle="tooltip" data-placement="top" title="Undo annotation" disabled>
+                    <i class="fa-solid fa-rotate-left"></i>
+                  </button>
+                  <!-- Remove all annotations -->
+                  <button class="btn btn-outline-secondary btn-sm toggle-wait" id='remove-annotate' data-toggle="tooltip" data-placement="top" title="Remove all annotations" disabled>
+                    <i class="fa-solid fa-xmark"></i>
+                  </button>
+                </div>
+              </div>
+              <div class='col-3 pr-1 pl-1'>
                 <!-- Correlation Modal Button -->
-                <button type="button" class="btn btn-outline-primary btn-sm w-50" data-toggle="modal" id='runCorrelation' data-target="#correlationModal">
+                <button type="button" class="btn btn-outline-primary btn-sm w-75" data-toggle="modal" id='runCorrelation' data-target="#correlationModal">
                   Correlate
               </button>
               </div>
@@ -241,23 +257,31 @@
                     <div class='col ml-3 mr-3'>
                       <div class='row'>
                         <div class='col'>
-                          <span>Select Time Course</span>
+                          <h5>Select Time Course</h5>
                           <select class="custom-select" id="ts-correlate-select">
                           </select>
                         </div>
                       </div>
                       <div class='row mt-3'>
-                        <div class='col-6'>
-                          <label for="correlateNegativeLag">Negative Lag</label>
-                          <span class="fa-solid fa-circle-info ml-1 toggle-immediate" data-toggle="tooltip" data-placement="top" title="Negative lags must be less than or equal to zero. (Default is zero, i.e. no lags)" aria-hidden="true"></span>
-                          <!-- min is a placeholder and will be set by javascript -->
-                          <input type="number" class="form-control" id="correlateNegativeLag" min="-100" max="0" step="1" value="0">
-                        </div>
-                        <div class='col-6'>
-                          <label for="correlatePositiveLag">Positive Lag</label>
-                          <span class="fa-solid fa-circle-info ml-1 toggle-immediate" data-toggle="tooltip" data-placement="top" title="Positive lags must be greater than or equal to zero. (Default is zero, i.e. no lags)" aria-hidden="true"></span>
-                          <!-- max is a placeholder and will be set by javascript -->
-                          <input type="number" class="form-control" id="correlatePositiveLag" min="0" max="100" step="1" value="0">
+                        <div class='col ml-3 mr-3'>
+                          <div class='row'>
+                            <h5>Cross-Correlation Parameters</h5>
+                            <span class="fa-solid fa-circle-info ml-1 toggle-immediate" data-toggle="tooltip" data-placement="top" title="Perform cross-correlation with negative or positive lags of the selected time course. Correlation estimates form all lags within the interval [negative lag, positive lag] will be computed. Default is [0,0] (i.e. no lags)." aria-hidden="true"></span>
+                          </div>
+                          <div class='row'>
+                            <div class='col-6'>
+                              <label for="correlateNegativeLag">Negative Lag</label>
+                              <span class="fa-solid fa-circle-info ml-1 toggle-immediate" data-toggle="tooltip" data-placement="top" title="Negative lags must be less than or equal to zero. (Default is zero, i.e. no lags)" aria-hidden="true"></span>
+                              <!-- min is a placeholder and will be set by javascript -->
+                              <input type="number" class="form-control" id="correlateNegativeLag" min="-100" max="0" step="1" value="0">
+                            </div>
+                            <div class='col-6'>
+                              <label for="correlatePositiveLag">Positive Lag</label>
+                              <span class="fa-solid fa-circle-info ml-1 toggle-immediate" data-toggle="tooltip" data-placement="top" title="Positive lags must be greater than or equal to zero. (Default is zero, i.e. no lags)" aria-hidden="true"></span>
+                              <!-- max is a placeholder and will be set by javascript -->
+                              <input type="number" class="form-control" id="correlatePositiveLag" min="0" max="100" step="1" value="0">
+                            </div>
+                          </div>
                         </div>
                       </div>
                     </div>

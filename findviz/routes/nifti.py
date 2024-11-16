@@ -387,11 +387,16 @@ def compute_corr_nii():
     # load time course array
     ts = request.form.get('ts')
     ts = json.loads(ts)
+    # convert to array with one column
+    ts = np.array(ts)[:,np.newaxis]
     # load parameters
     ts_label = request.form.get('label')
     file_key = request.form.get('file_key')
     mask_key = request.form.get('mask_key')
     anat_key = request.form.get('anat_key')
+    slice_len = request.form.get('slice_len')
+    nlag = utils.convert_value(request.form.get('negative_lag'))
+    plag = utils.convert_value(request.form.get('positive_lag'))
     use_preprocess = utils.convert_value(
         request.form.get('use_preprocess')
     )
@@ -415,12 +420,17 @@ def compute_corr_nii():
     ts = zscore(ts)
     nifti_2d = zscore(nifti_2d, axis=0)
 
+    # get array of lags
+    lags = np.arange(nlag, plag+1)
+
+    # get lag matrix
+    lagmat = utils.lag_mat(ts, lags)
     # compute correlation map
     correlation_map = (
-        np.dot(nifti_2d.T, ts) / len(ts)
+        np.dot(nifti_2d.T, lagmat) / len(ts)
     )
     nifti_img_corr = masking.unmask(
-        correlation_map[np.newaxis, :],
+        correlation_map.T,
         mask_img
     )
     # save correlation map data in cache
@@ -431,9 +441,10 @@ def compute_corr_nii():
     cache['corr_map']['file_key'] = 'corr'
     cache['corr_map']['mask_key'] = mask_key
     cache['corr_map']['anat_key'] = anat_key
+    cache['corr_map']['slice_len'] = slice_len
     cache['corr_map']['global_min'] = np.nanmin(correlation_map)
     cache['corr_map']['global_max'] = np.nanmax(correlation_map)
-    cache['corr_map']['timepoints'] = [0]
+    cache['corr_map']['timepoints'] = lags.tolist()
     cache['corr_map']['slice_len'] =  {
         'x': nifti_img_corr.shape[0],
         'y': nifti_img_corr.shape[1],

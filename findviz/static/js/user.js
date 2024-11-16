@@ -9,10 +9,11 @@ export class VisualizationOptions {
         colorMin,
         colorMax,
         plotType,
+        sliceLen,
         onReadyListeners,
         colorMap='viridis',
         sliderSteps=100,
-        allowedPrecision=6
+        allowedPrecision=6,
     ) {
         // Keep original color min and max variables for reset
         this.colorMinOrig = colorMin;
@@ -22,8 +23,10 @@ export class VisualizationOptions {
         // state variables for color min and max selections
         this.colorMin = colorMin;
         this.colorMax = colorMax;
+        // set slice lengths for montage
+        this.sliceLen = sliceLen;
         // Set number of steps in color and threshold sliders
-        this.sliderSteps = sliderSteps;
+        this.colorSliderSteps = sliderSteps;
         // Calculate the range and precision of the data
         this.dataRange = this.colorMax - this.colorMin;
         // Set allowed precision - precision above this number is ignored
@@ -31,6 +34,23 @@ export class VisualizationOptions {
         // Initialize thresholds (set to [0,0] for no threshold by default)
         this.thresholdMin = 0;
         this.thresholdMax = 0;
+        // Initialize montage slice selection as sagittal (x) direction
+        this.montageSliceSelection = 'x'
+        // Montage slice indices
+        this.montageSliceIndices = {}
+        const sliceDirections = ['x', 'y', 'z']
+        const sliceSliders = ['slice1Slider', 'slice2Slider', 'slice3Slider'];
+        const sliceIndexInit = [0.33, 0.5, 0.66];
+        sliceDirections.forEach((direction, index) => {
+            this.montageSliceIndices[direction] = {}
+            sliceSliders.forEach((sliceDiv, index) => {
+                const sliceNum = Math.floor(
+                    this.sliceLen[direction] * sliceIndexInit[index]
+                );
+                this.montageSliceIndices[direction][sliceDiv] = sliceNum
+            })
+        });
+
         // Fetch precision from the Python backend and intialize sliders
         this.fetchPrecision(this.dataRange).then(precision => {
             // Don't allow precision above allowedPrecision
@@ -40,7 +60,7 @@ export class VisualizationOptions {
             else {
                 this.precision = precision;
             }
-            this.initializeSliders();    // Initialize sliders after precision is set
+            this.initializeColorSliders();    // Initialize sliders after precision is set
         });
         // Callback function supplied from visualization to attach listeners
         // First check callback function is function
@@ -68,15 +88,18 @@ export class VisualizationOptions {
         // get play-movie button
         this.playMovieButton = $("#play-movie");
         // Fetch colormap data from the server
-        this.fetchColormapData();
+        this.initOptions();
     }
 
-    fetchColormapData() {
+    // initialize components in visualization options card
+    initOptions() {
+        // fetch color map data
         fetch('/get_colormaps')
             .then(response => response.json())
             .then(data => {
                 this.colormapData = data;
-                this.createVizOptions(); // Create the options card after fetching the data
+                // Create the options card after fetching the colormap data
+                this.createVizOptions();
             })
             .catch(error => console.error('Error fetching colormap data:', error));
     }
@@ -110,11 +133,21 @@ export class VisualizationOptions {
         // Attach event listeners
         this.attachEventListeners();
 
+        // Initialize montage popover, if nifti
+        if (this.plotType == 'nifti') {
+            this.initializeMontageOptions();
+        } else {
+            // remove popover for gifti
+            $("#montage-popover").popover('destroy');
+            // disable button
+            $("#montage-popover").prop('disabled', true);
+        }
+
         // execute event listeners callback function
         this.onReadyListeners()
     }
 
-    initializeSliders() {
+    initializeColorSliders() {
         // extend out color slider to a quarter of range on both of sides
         const extendRange = (this.colorMax - this.colorMin)/4
         // Initialize color range slider dynamically
@@ -137,6 +170,67 @@ export class VisualizationOptions {
             tooltip: 'show',
             // formatter: formatter_slider
         });
+    }
+
+    // set montage box popup options
+    initializeMontageOptions(popoverShown=false) {
+        // if montage is not shown, attach listener for popover show
+        if (!popoverShown) {
+            // Event listener for when the popover is shown
+            $('#montage-popover').on('shown.bs.popover', () => {
+                // set selection in drop down menu
+                $('#montage-slice-select').val(this.montageSliceSelection);
+                // loop through slider divs and set sliders
+                for (const sliceDiv in this.montageSliceIndices[this.montageSliceSelection]) {
+                    $(`#${sliceDiv}`).slider({
+                        min: 0,
+                        max: this.sliceLen[this.montageSliceSelection],
+                        step: 1,
+                        value: this.montageSliceIndices[this.montageSliceSelection][sliceDiv],
+                        tooltip: 'show',
+                    });
+                };
+                // attach montage listeners
+                this.attachMontageListeners();
+            });
+        // if already shown, revise sliders
+        } else {
+            for (const sliceDiv in this.montageSliceIndices[this.montageSliceSelection]) {
+                // re-initialize slider
+                $(`#${sliceDiv}`).slider({
+                    min: 0,
+                    max: this.sliceLen[this.montageSliceSelection],
+                    step: 1,
+                    value: this.montageSliceIndices[this.montageSliceSelection][sliceDiv],
+                    tooltip: 'show',
+                });
+                // refresh slider
+                $(`#${sliceDiv}`).slider('refresh');
+
+            };
+        }
+    }
+
+    // attach montage dropdown and slider listeners
+    attachMontageListeners() {
+        // attach dropdown slice selection listener
+        $('#montage-slice-select').change((event) => {
+            this.montageSliceSelection = event.target.value;
+            this.initializeMontageOptions(true);
+        });
+
+        // Listen for slider changes and update slice index
+        for (const sliceDiv in this.montageSliceIndices[this.montageSliceSelection]) {
+            $(`#${sliceDiv}`).on('change', (event) => {
+                this.montageSliceIndices[this.montageSliceSelection][sliceDiv] = event.value.newValue;
+                // Trigger a custom event using jQuery
+                const customEventSlider = $.Event(
+                    `#${sliceDiv}Change`, { detail: event.value.newValue }
+                );
+                // Dispatch the custom event
+                $(document).trigger(customEventSlider);
+            });
+        }
     }
 
     attachEventListeners() {
@@ -217,7 +311,7 @@ export class VisualizationOptions {
                     'colormapChange', { detail: { selectedValue } }
                 );
                 // Dispatch custom event
-                dropdownMenu.dispatchEvent(customEventColormap);
+                document.dispatchEvent(customEventColormap);
             }
         });
     }
@@ -230,8 +324,8 @@ export class VisualizationOptions {
         const customEventColor = $.Event(
             'colorSliderChange', { detail: colorValues }
         );
-        // Dispatch the custom event through the jQuery object
-        this.colorSlider.trigger(customEventColor);
+        // Dispatch the custom event
+        $(document).trigger(customEventColor);
     }
 
     // Initiate threshold slider event
@@ -242,32 +336,32 @@ export class VisualizationOptions {
         const customEventThreshold = $.Event(
             'thresholdSliderChange', { detail: thresholdValues }
         );
-        // Dispatch the custom event through the jQuery object
-        this.thresholdSlider.trigger(customEventThreshold);
+        // Dispatch the custom event
+        $(document).trigger(customEventThreshold);
     }
 
     // Trigger custom crosshair click event
     handleCrosshairToggle() {
         // Trigger a custom event using jQuery
         const customEventCrosshair = $.Event('toggleCrosshairChange');
-        // Dispatch the custom event through the jQuery object
-        this.crosshairToggle.trigger(customEventCrosshair);
+        // Dispatch the custom event
+        $(document).trigger(customEventCrosshair);
     }
 
     // Trigger custom hover click event
     handleHoverToggle() {
         // Trigger a custom event using jQuery
         const customEventHover = $.Event('toggleHoverChange');
-        // Dispatch the custom event through the jQuery object
-        this.hoverToggle.trigger(customEventHover);
+        // Dispatch the custom event
+        $(document).trigger(customEventHover);
     }
 
     // Trigger custom hover click event
     handleDirectionMarkerToggle() {
         // Trigger a custom event using jQuery
         const customDirectionHover = $.Event('toggleDirectionMarkerChange');
-        // Dispatch the custom event through the jQuery object
-        this.directionMarkerToggle.trigger(customDirectionHover);
+        // Dispatch the custom event
+        $(document).trigger(customDirectionHover);
     }
 
     // Take screenshot of brain image
@@ -384,7 +478,7 @@ export class VisualizationOptions {
                     { detail: { timeIndex } }
                 );
                 // Dispatch the custom event through the jQuery object
-                this.sliderElement.trigger(customEvent);
+                $(document).trigger(customEvent);
             } else {
                 this.stopMovie();  // Stop the movie when the slider reaches the max value
             }
@@ -422,7 +516,7 @@ export class VisualizationOptions {
                 this.precision = precision
             }
             // Initialize sliders after precision is set
-            this.initializeSliders();
+            this.initializeColorSliders();
             // Reset sliders
             this.handleResetSliders()
         });
@@ -449,7 +543,7 @@ export class VisualizationOptions {
     // Helper function to get an appropriate step size
     getStepSize() {
         // Get step size that gives you about N (= slider_steps) steps
-        return +(this.dataRange/this.sliderSteps).toFixed(this.precision)
+        return +(this.dataRange/this.colorSliderSteps).toFixed(this.precision)
     }
 }
 
@@ -621,7 +715,7 @@ export class PreprocessingOptions {
             highCut,
             smoothFWHM
         }
-        this.preprocessSubmit.trigger(
+        $(document).trigger(
             customPreprocessEvent, {detail: preprocessData}
         );
 
@@ -653,7 +747,7 @@ export class PreprocessingOptions {
 
         // initiate preprocess reset event
         const customPreprocessResetEvent = $.Event('preprocessReset');
-        this.resetPreprocessButton.trigger(customPreprocessResetEvent);
+        $(document).trigger(customPreprocessResetEvent);
 
         // Turn off preprocess alert
         document.getElementById('preprocess-alert').style.display = 'none'

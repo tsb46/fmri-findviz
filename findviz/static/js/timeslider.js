@@ -1,6 +1,7 @@
 class TimeSlider {
-    constructor(timePoints) {
+    constructor(timePoints, displayText) {
         this.timePoints = timePoints;
+        this.displayText = displayText;
         this.sliderElement = $('#time_slider');
 
         // Initialize time slider
@@ -10,8 +11,15 @@ class TimeSlider {
         this.sliderElement.on('change', this.handleSlide.bind(this));
     }
 
+    // Initialize bootstrap-slider with options
     initializeTimeSlider(timePoints) {
-        // Initialize bootstrap-slider with options
+        // Get display text for formatter
+        const displayText = this.displayText;
+        // get time point to display text converter
+        const timeToDisplay = {}
+        this.timePoints.forEach((item, index) => {
+          timeToDisplay[index] = item
+        });
         this.sliderElement.slider({
             min: 0,
             max: timePoints.length - 1,
@@ -20,7 +28,7 @@ class TimeSlider {
             tooltip: 'show',  // Show tooltip with the current value
             focus: true,
             formatter: function(value) {
-                return 'Time Point: ' + value;
+                return displayText + timeToDisplay[value];
             }
         });
     }
@@ -31,8 +39,8 @@ class TimeSlider {
         // Trigger a custom event using jQuery
         const customEvent = $.Event('timeSliderChange', { detail: { timeIndex } });
 
-        // Dispatch the custom event through the jQuery object
-        this.sliderElement.trigger(customEvent);
+        // Dispatch the custom event
+        $(document).trigger(customEvent);
     }
 }
 

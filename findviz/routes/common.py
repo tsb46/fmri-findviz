@@ -205,7 +205,6 @@ def preprocess_ts():
                 norm_method = 'mean_center'
             elif params['z_score']:
                 norm_method = 'z_score'
-
             ts = utils.normalize(
                 ts, norm_method, axis=0
             )

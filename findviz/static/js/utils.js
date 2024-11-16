@@ -18,6 +18,13 @@ function initBootstrapComponents() {
 
     // Enable dismissal of alerts
     $('.alert').alert()
+
+    // Enable HTML content in the lightbox viewer
+    $("#montage-popover").popover({
+        html: true,
+        sanitize: false,
+    });
+
 }
 
 // Load HTML component
