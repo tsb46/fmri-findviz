@@ -119,20 +119,22 @@ def upload_files_nii():
 
 
 # Route to get all three slices (X, Y, Z) at a specific time point
-@nifti_bp.route('/get_slices', methods=['GET'])
+@nifti_bp.route('/get_slices', methods=['POST'])
 def get_slices():
-    file_key = request.args.get('file_key')
-    anat_key = request.args.get('anat_key')
-    mask_key = request.args.get('mask_key')
-    x_slice = request.args.get('x_slice')
-    y_slice = request.args.get('y_slice')
-    z_slice = request.args.get('z_slice')
-    time_point = int(request.args.get('time_point', 0))
+    file_key = request.form.get('file_key')
+    anat_key = request.form.get('anat_key')
+    mask_key = request.form.get('mask_key')
+    view_state = request.form.get('view_state')
+    montage_slice_dir = request.form.get('montage_slice_dir')
+    x_slice = request.form.get('x_slice')
+    y_slice = request.form.get('y_slice')
+    z_slice = request.form.get('z_slice')
+    time_point = int(request.form.get('time_point', 0))
     use_preprocess = utils.convert_value(
-        request.args.get('use_preprocess')
+        request.form.get('use_preprocess')
     )
     update_voxel_coord = utils.convert_value(
-        request.args.get('update_voxel_coord')
+        request.form.get('update_voxel_coord')
     )
 
     # Get nifti img
@@ -152,80 +154,51 @@ def get_slices():
     # Select time point
     nifti_img_t = index_img(nifti_img, time_point)
 
-    # Generate Plotly data for slices
-    if x_slice:
-        x_slice_int = int(x_slice)
-        x_slice_data = get_plotly_slice_data(
-            nifti_img_t, x_slice_int, axis='x'
-        )
-        # If anatomical file is provided get anatomical slices
-        if anat_img:
-            x_slice_data_anat = get_plotly_slice_data(
-                anat_img, x_slice_int, axis='x'
-            )
-        # if mask file is provided, get mask slices
-        if mask_img:
-            x_slice_data_mask = get_plotly_slice_data(
-                mask_img, x_slice_int, axis='x'
-            )
-        # Prepare voxel coordinates for each slice, if update true
-        if update_voxel_coord:
-            x_voxel_coords = [
-                [(x_slice_int, j, i) for j in range(x_slice_data.shape[1])]
-                for i in range(x_slice_data.shape[0])
-            ]
-
-    if y_slice:
-        y_slice_int = int(y_slice)
-        y_slice_data = get_plotly_slice_data(
-            nifti_img_t, y_slice_int, axis='y'
+    slice_out = {
+        'func': {},
+        'anat': {},
+        'mask': {},
+        'coords': {}
+    }
+    # Loop through axes and update
+    for axis, slice_i in zip(['x', 'y', 'z'], [x_slice, y_slice, z_slice]):
+        # set axis to all same direction, if montage
+        if view_state == 'montage':
+            nifti_axis = montage_slice_dir
+        else:
+            nifti_axis = axis
+        slice_int = int(slice_i)
+        slice_out['func'][axis] = get_plotly_slice_data(
+            nifti_img_t, slice_int, axis=nifti_axis
         )
         if anat_img:
-            y_slice_data_anat = get_plotly_slice_data(
-                anat_img, y_slice_int, axis='y'
+            slice_out['anat'][axis] = get_plotly_slice_data(
+                anat_img, slice_int, axis=nifti_axis
             )
         if mask_img:
-            y_slice_data_mask = get_plotly_slice_data(
-                mask_img, y_slice_int, axis='y'
+            slice_out['mask'][axis] = get_plotly_slice_data(
+                mask_img, slice_int, axis=nifti_axis
             )
         if update_voxel_coord:
-            y_voxel_coords = [
-                [(j, y_slice_int, i) for j in range(y_slice_data.shape[1])]
-                for i in range(y_slice_data.shape[0])
-            ]
-
-    if z_slice:
-        z_slice_int = int(z_slice)
-        z_slice_data = get_plotly_slice_data(
-            nifti_img_t, z_slice_int, axis='z'
-        )
-        if anat_img:
-            z_slice_data_anat = get_plotly_slice_data(
-                anat_img, z_slice_int, axis='z'
-            )
-        if mask_img:
-            z_slice_data_mask = get_plotly_slice_data(
-                mask_img, z_slice_int, axis='z'
-            )
-        if update_voxel_coord:
-            z_voxel_coords = [
-                [(j, i, z_slice_int) for j in range(z_slice_data.shape[1])]
-                for i in range(z_slice_data.shape[0])
+            slice_out['coords'][axis] = [
+                [(slice_int, j, i)
+                for j in range(slice_out['func'][axis].shape[1])]
+                for i in range(slice_out['func'][axis].shape[0])
             ]
 
     return jsonify({
-        'x_slice': sanitize_data(x_slice_data),
-        'y_slice': sanitize_data(y_slice_data),
-        'z_slice': sanitize_data(z_slice_data),
-        'x_slice_anat': sanitize_data(x_slice_data_anat) if anat_img else None,
-        'y_slice_anat': sanitize_data(y_slice_data_anat) if anat_img else None,
-        'z_slice_anat': sanitize_data(z_slice_data_anat) if anat_img else None,
-        'x_slice_mask': sanitize_data(x_slice_data_mask) if mask_img else None,
-        'y_slice_mask': sanitize_data(y_slice_data_mask) if mask_img else None,
-        'z_slice_mask': sanitize_data(z_slice_data_mask) if mask_img else None,
-        'x_voxel_coords': x_voxel_coords if update_voxel_coord else None,
-        'y_voxel_coords': y_voxel_coords if update_voxel_coord else None,
-        'z_voxel_coords': z_voxel_coords if update_voxel_coord else None
+        'x_slice': sanitize_data(slice_out['func']['x']),
+        'y_slice': sanitize_data(slice_out['func']['y']),
+        'z_slice': sanitize_data(slice_out['func']['z']),
+        'x_slice_anat': sanitize_data(slice_out['anat']['x']) if anat_img else None,
+        'y_slice_anat': sanitize_data(slice_out['anat']['y']) if anat_img else None,
+        'z_slice_anat': sanitize_data(slice_out['anat']['z']) if anat_img else None,
+        'x_slice_mask': sanitize_data(slice_out['mask']['x']) if mask_img else None,
+        'y_slice_mask': sanitize_data(slice_out['mask']['y']) if mask_img else None,
+        'z_slice_mask': sanitize_data(slice_out['mask']['z']) if mask_img else None,
+        'x_voxel_coords': slice_out['coords']['x'] if update_voxel_coord else None,
+        'y_voxel_coords': slice_out['coords']['y'] if update_voxel_coord else None,
+        'z_voxel_coords': slice_out['coords']['z'] if update_voxel_coord else None
     })
 
 

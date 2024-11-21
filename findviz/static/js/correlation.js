@@ -80,6 +80,9 @@ class Correlate {
             this.colorbarDiv, this.globalMin, this.globalMax, 'Correlation'
         );
 
+        // disable 'enable time course' switch
+        $('#enable-time-course').prop('disabled', true);
+
     }
 
     // initialize initial plot
@@ -196,6 +199,76 @@ class Correlate {
 
         // attach nifti specific visualization options
         if (this.plotType == 'nifti') {
+            // Listen for view toggle click
+            $(document).on('toggleViewChange', (event) => {
+                // Change view state (ortho <-> montage)
+                this.viewer.changeViewState(
+                    true,
+                    event.detail.sliceDirection,
+                    event.detail.sliceIndices,
+                )
+                // plot with new view
+                this.viewer.plot(
+                    this.timePoint,
+                    this.colormap,
+                    this.colorMin,
+                    this.colorMax,
+                    this.thresholdMin,
+                    this.thresholdMax,
+                    this.hoverTextOn,
+                    this.preprocState
+                );
+            });
+
+            // Listen for change to montage direction
+            $(document).on('montageSliceDirectionChange', (event) => {
+                // Change view state (ortho <-> montage)
+                this.viewer.changeViewState(
+                    false,
+                    event.detail.sliceDirection,
+                    event.detail.sliceIndices,
+                )
+                if (this.viewer.viewerState == 'montage') {
+                    // plot with new view
+                    this.viewer.plot(
+                        this.timePoint,
+                        this.colormap,
+                        this.colorMin,
+                        this.colorMax,
+                        this.thresholdMin,
+                        this.thresholdMax,
+                        this.hoverTextOn,
+                        this.preprocState
+                    );
+                };
+            });
+
+            // Listen for change to slice indices for montage for each slice
+            const sliceSliders = ['slice1Slider', 'slice2Slider', 'slice3Slider'];
+            sliceSliders.forEach((sliceDiv, index) => {
+                $(document).on(`${sliceDiv}Change`, (event) => {
+                    // Change view state (ortho <-> montage)
+                    this.viewer.changeViewState(
+                        false,
+                        event.detail.sliceDirection,
+                        event.detail.sliceIndices
+                    );
+                    if (this.viewer.viewerState == 'montage') {
+                        // plot with new view
+                        this.viewer.plot(
+                            this.timePoint,
+                            this.colormap,
+                            this.colorMin,
+                            this.colorMax,
+                            this.thresholdMin,
+                            this.thresholdMax,
+                            this.hoverTextOn,
+                            this.preprocState
+                        );
+                    };
+                });
+            });
+
             // Listen for crosshair toggle click
             $(document).on('toggleCrosshairChange', (event) => {
                 // if checked

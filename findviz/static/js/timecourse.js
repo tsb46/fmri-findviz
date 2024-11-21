@@ -115,9 +115,9 @@ class TimeCourse {
         // initialize time point state variable
         this.timePoint = 0;
         // Set states of preprocessing switches
-        this.normSwitchEnabled = false
-        this.filterSwitchEnabled = false
-        // set plot state
+        this.normSwitchEnabled = false;
+        this.filterSwitchEnabled = false;
+        // set plot state - whether a plotly plot is in the container
         this.plotState = false;
         // initialize task design plot state
         this.taskPlotState = true;
@@ -255,6 +255,7 @@ class TimeCourse {
                 // plot with rescaled task regressors
                 this.plotTimeCourses(this.timePoint);
             });
+
         } else {
             // if no task design file input, disable menu icons
             $('#toggle-convolution').addClass('disabled');
@@ -418,6 +419,19 @@ class TimeCourse {
                 input => this.filterSwitchEnabled ? input.disabled = false : input.disabled = true
             );
         });
+
+        // Enable annotation enable switch
+        $('#enable-annotate').on('click', () => {
+            this.annotateState = this.annotateState ? false : true
+            // if annotation enabled, enable annotation buttons
+            if (this.annotateState){
+                $('#undo-annotate').prop('disabled', false);
+                $('#remove-annotate').prop('disabled', false);
+            } else {
+                $('#undo-annotate').prop('disabled', true);
+                $('#remove-annotate').prop('disabled', true);
+            }
+        });
     }
 
     // initialize time course preprocessing selection menu event
@@ -480,6 +494,17 @@ class TimeCourse {
 
         // Overwrite timeCourses with recursive proxies
         this.timeCourses = createProxy(this.timeCourses);
+    }
+
+    // Initialize annotation listener
+    initAnnotationListener() {
+        document.getElementById(this.plotId).on('plotly_click', (eventData) => {
+            if (this.annotateState) {
+                const x = Math.round(eventData.points[0].x);
+                this.annotationMarkers.push(x);
+                this.plotTimeCourses(this.timePoint);
+            };
+        });
     }
 
     // update correlation select menu
@@ -691,7 +716,7 @@ class TimeCourse {
             plotData.push(tsTrace)
         }
         // create vertical line object to keep up with time point
-        let timePointShape = null
+        let timePointShape = []
         if (this.timePointMarker) {
             timePointShape = [
                 {
@@ -708,6 +733,24 @@ class TimeCourse {
                     },
                 }
             ]
+        }
+        // create vertical line annotation markers
+        for (const marker of this.annotationMarkers) {
+            timePointShape.push(
+                {
+                    type: 'line',
+                    x0: marker,
+                    y0: 0,
+                    x1: marker,
+                    y1: 1,
+                    yref: 'paper',
+                    opacity: 0.5,
+                    line: {
+                        color: 'rgb(255, 0, 0)',
+                        width: 1
+                    },
+                }
+            )
         }
         // Create layout
         // initialize layout if first plot
@@ -765,7 +808,10 @@ class TimeCourse {
             document.getElementById(this.plotId).on(
                 'plotly_legenddoubleclick', this.hideAllTraces.bind(this)
             )
-
+            // initialize annotation listener
+            this.initAnnotationListener();
+            // initialize resize (plot doesn't fill container on first plot)
+            this.onWindowResize();
             this.plotState = true
         }
     }

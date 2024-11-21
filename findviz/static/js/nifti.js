@@ -10,22 +10,52 @@ class NiftiViewer {
         this.fileKey = fileKey;
         this.anatKey = anatKey;
         this.maskKey = maskKey;
-        // Calculate middle indices for each axis
-        this.currentXSliceIndex = Math.floor(sliceLen.x / 2);
-        this.currentYSliceIndex = Math.floor(sliceLen.y / 2);
-        this.currentZSliceIndex = Math.floor(sliceLen.z / 2);
-        // Store slice midpoints for displaying direction labels
-        this.xSliceMid = this.currentXSliceIndex;
-        this.ySliceMid = this.currentYSliceIndex;
-        this.zSliceMid = this.currentZSliceIndex;
+        // Calculate middle indices for ortho view
+        this.orthoSliceIndex = {
+            x: Math.floor(sliceLen.x / 2),
+            y: Math.floor(sliceLen.y / 2),
+            z: Math.floor(sliceLen.z / 2)
+        }
+        this.sliceLen = sliceLen;
+        // initialize montage slice indices at zero
+        this.montageSliceIndex = {
+            // First level is slice direction (e.g. 'x' is sagittal)
+            x: {
+                // Second level is slice coordinates
+                slice1: {x: 0, y: 0, z: 0},
+                slice2: {x: 0, y: 0, z: 0},
+                slice3: {x: 0, y: 0, z: 0}
+            },
+            y: {
+                slice1: {x: 0, y: 0, z: 0},
+                slice2: {x: 0, y: 0, z: 0},
+                slice3: {x: 0, y: 0, z: 0}
+            },
+            z: {
+                slice1: {x: 0, y: 0, z: 0},
+                slice2: {x: 0, y: 0, z: 0},
+                slice3: {x: 0, y: 0, z: 0}
+            },
+
+        }
+        // Store slice midpoints for displaying direction labels in Ortho view
+        this.orthoSliceMid = {
+            x: this.orthoSliceIndex['x'],
+            y: this.orthoSliceIndex['y'],
+            z: this.orthoSliceIndex['z'],
+        }
         // Initialize voxel coordinate labels for hover to null
         this.voxelText = {
-            X: null,
-            Y: null,
-            Z: null
+            x: null,
+            y: null,
+            z: null
         }
-        // Set time point as zero for initial plot
-        this.timePoint = 0;
+        // Initialize viewer state (ortho, montage)
+        this.viewerState = 'ortho'
+        // Initialize montage direction
+        this.montageSliceDirection = 'z' // sagittal
+        // Initialize active montage slice ('slice1', 'slice2', 'slice3')
+        this.montageActiveSlice = 'slice1'
         // Initialize crosshair state
         this.crosshairOn = true;
         // Initiliaze direction markers state as false
@@ -54,6 +84,25 @@ class NiftiViewer {
         }
     }
 
+    // Change view state from Ortho to Montage, and vice versa
+    changeViewState(changeView, sliceDirection=null, sliceUpdate=null) {
+        if (changeView) {
+            this.viewerState = this.viewerState == 'ortho' ? 'montage' : 'ortho'
+        }
+        // update montage slice indices if montage state
+        if (this.viewerState == 'montage') {
+            if (sliceDirection) {
+                this.montageSliceDirection = sliceDirection;
+            }
+            if (sliceUpdate) {
+                const sliceIndex = this.montageSliceIndex[this.montageSliceDirection]
+                sliceIndex['slice1'][this.montageSliceDirection] = sliceUpdate['slice1Slider'];
+                sliceIndex['slice2'][this.montageSliceDirection] = sliceUpdate['slice2Slider'];
+                sliceIndex['slice3'][this.montageSliceDirection] = sliceUpdate['slice3Slider'];
+            }
+        }
+    }
+
     plot(
         timePoint,
         colorMap,
@@ -66,57 +115,74 @@ class NiftiViewer {
         updateCoord=false,
         updateLayoutOnly=false,
     ) {
-        return fetch(`/get_slices?file_key=${this.fileKey}&anat_key=${this.anatKey}&mask_key=${this.maskKey}&x_slice=${this.currentXSliceIndex}&y_slice=${this.currentYSliceIndex}&z_slice=${this.currentZSliceIndex}&time_point=${timePoint}&use_preprocess=${preprocState}&update_voxel_coord=${updateCoord}`)
-            .then(response => response.json())
-            .then(data => {
-                // get lengths of X, Y, and Z slices
-                const lenSlices = {
-                    lenX: data.x_slice.length,
-                    lenY: data.y_slice.length,
-                    lenZ: data.z_slice.length
-                }
-                // update voxel coordinates, if update
-                if (updateCoord) {
-                    // convert voxel coordinates to text
-                    this.voxelText['X'] = data.x_voxel_coords.map(row =>
-                        row.map(
-                            c => `Voxel: (${c[0]}, ${c[1]}, ${c[2]})`
-                        )
-                    );
-                    this.voxelText['Y'] = data.y_voxel_coords.map(row =>
-                        row.map(
-                            c => `Voxel: (${c[0]}, ${c[1]}, ${c[2]})`
-                        )
-                    );
-                    this.voxelText['Z'] = data.z_voxel_coords.map(row =>
-                        row.map(
-                            c => `Voxel: (${c[0]}, ${c[1]}, ${c[2]})`
-                        )
-                    );
-                }
-                // mask and threshold slices
-                data = this.prepareSlices(data, thresholdMin, thresholdMax)
-                // Plot the initial slices with Plotly.newPlot
-                this.plotSlice(
-                    'x_slice_container', data.x_slice, data.x_slice_anat, 'X',
-                    lenSlices, colorMap, colorMin, colorMax, hoverTextOn,
-                    updateLayoutOnly
+        // pass data in form
+        let formData = new FormData();
+        formData.append('file_key', this.fileKey);
+        formData.append('anat_key', this.anatKey);
+        formData.append('mask_key', this.maskKey);
+        formData.append('view_state', this.viewerState);
+        formData.append('montage_slice_dir', this.montageSliceDirection);
+        if (this.viewerState == 'ortho') {
+            formData.append('x_slice', this.orthoSliceIndex['x']);
+            formData.append('y_slice', this.orthoSliceIndex['y']);
+            formData.append('z_slice', this.orthoSliceIndex['z']);
+        } else if (this.viewerState = 'montage') {
+            formData.append(
+                'x_slice', this.montageSliceIndex[this.montageSliceDirection]['slice1'][this.montageSliceDirection]);
+            formData.append(
+                'y_slice', this.montageSliceIndex[this.montageSliceDirection]['slice2'][this.montageSliceDirection]);
+            formData.append(
+                'z_slice', this.montageSliceIndex[this.montageSliceDirection]['slice3'][this.montageSliceDirection]);
+        }
+        formData.append('time_point', timePoint);
+        formData.append('use_preprocess', preprocState);
+        formData.append('update_voxel_coord', updateCoord);
+        return fetch('/get_slices', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            // update voxel coordinates, if update
+            if (updateCoord) {
+                // convert voxel coordinates to text
+                this.voxelText['x'] = data.x_voxel_coords.map(row =>
+                    row.map(
+                        c => `Voxel: (${c[0]}, ${c[1]}, ${c[2]})`
+                    )
                 );
-                this.plotSlice(
-                    'y_slice_container', data.y_slice, data.y_slice_anat, 'Y',
-                     lenSlices, colorMap, colorMin, colorMax, hoverTextOn,
-                     updateLayoutOnly
+                this.voxelText['y'] = data.y_voxel_coords.map(row =>
+                    row.map(
+                        c => `Voxel: (${c[0]}, ${c[1]}, ${c[2]})`
+                    )
                 );
-                this.plotSlice(
-                    'z_slice_container', data.z_slice, data.z_slice_anat, 'Z',
-                     lenSlices, colorMap, colorMin, colorMax, hoverTextOn,
-                     updateLayoutOnly
+                this.voxelText['z'] = data.z_voxel_coords.map(row =>
+                    row.map(
+                        c => `Voxel: (${c[0]}, ${c[1]}, ${c[2]})`
+                    )
                 );
-            })
-            .catch(error => {
-                console.error('Error fetching slices:', error);
-                alert('Error fetching slices');
-            });
+            }
+            // mask and threshold slices
+            data = this.prepareSlices(data, thresholdMin, thresholdMax)
+
+            // plot three slices individually
+            this.plotSlice(
+                'x_slice_container', data.x_slice, data.x_slice_anat, 'x',
+                colorMap, colorMin, colorMax, hoverTextOn, updateLayoutOnly
+            );
+            this.plotSlice(
+                'y_slice_container', data.y_slice, data.y_slice_anat, 'y',
+                 colorMap, colorMin, colorMax, hoverTextOn, updateLayoutOnly
+            );
+            this.plotSlice(
+                'z_slice_container', data.z_slice, data.z_slice_anat, 'z',
+                 colorMap, colorMin, colorMax, hoverTextOn, updateLayoutOnly
+            );
+        })
+        .catch(error => {
+            console.error('Error fetching slices:', error);
+            alert('Error fetching slices');
+        });
     }
 
     plotSlice(
@@ -124,7 +190,6 @@ class NiftiViewer {
         sliceData,
         sliceDataAnat,
         axisLabel,
-        lenSlices,
         colorMap,
         colorMin,
         colorMax,
@@ -134,7 +199,7 @@ class NiftiViewer {
         // Determine whether to plot crosshairs
         let crosshairLines
         if (this.crosshairOn) {
-            crosshairLines = this.getCrosshairShapes(axisLabel, lenSlices);
+            crosshairLines = this.getCrosshairShapes(axisLabel);
         } else {
             crosshairLines = null
         }
@@ -142,7 +207,7 @@ class NiftiViewer {
         let directionMark
         // Get direction marker labels, if true
         if (this.directionMarkerOn) {
-            directionMark = this.createDirectionMarkers(axisLabel, lenSlices);
+            directionMark = this.createDirectionMarkers(axisLabel);
         }
 
         const data = [{
@@ -160,7 +225,6 @@ class NiftiViewer {
         }];
 
         const layout = {
-            title: `${axisLabel} Slice`,
             shapes: crosshairLines,
             autosize: true,  // Enable autosizing
             responsive: true, // Make the plot responsive
@@ -213,52 +277,6 @@ class NiftiViewer {
 
     }
 
-    getCrosshairShapes(axis, lenSlices) {
-        const crosshairColor = 'red';
-        const crosshairWidth = 1;
-        let xIndex, yIndex, lenX, lenY;
-
-        // Determine which slice indices to use based on the axis
-        switch (axis) {
-            case 'X':
-                xIndex = this.currentYSliceIndex;
-                yIndex = this.currentZSliceIndex;
-                lenX = lenSlices['lenZ'] - 1;
-                lenY = lenSlices['lenX'] - 1;
-                break;
-            case 'Y':
-                xIndex = this.currentXSliceIndex;
-                yIndex = this.currentZSliceIndex;
-                lenX = lenSlices['lenY'] - 1;
-                lenY = lenSlices['lenY'] - 1;
-                break;
-            case 'Z':
-                xIndex = this.currentXSliceIndex;
-                yIndex = this.currentYSliceIndex;
-                lenX = lenSlices['lenX'] - 1;
-                lenY = lenSlices['lenZ'] - 1;
-                break;
-        }
-        return [
-            {
-                type: 'line',
-                x0: 0,
-                y0: yIndex,
-                x1: lenX,
-                y1: yIndex,
-                line: { color: crosshairColor, width: crosshairWidth }
-            },
-            {
-                type: 'line',
-                x0: xIndex,
-                y0: 0,
-                x1: xIndex,
-                y1: lenY,
-                line: { color: crosshairColor, width: crosshairWidth }
-            }
-        ];
-    }
-
     clickHandler = (containerId, updateX, updateY, updateZ, clickCallBack) => {
         // Function to handle click events
         document.getElementById(containerId).on('plotly_click', (eventData) => {
@@ -266,12 +284,18 @@ class NiftiViewer {
             const y = Math.round(eventData.points[0].y);
 
             // Update slice indices based on the click data
-            this.updateSliceIndices(
-                updateZ ? x : updateY ? x : this.currentXSliceIndex,
-                updateZ ? y : updateX ? x : this.currentYSliceIndex,
-                updateX ? y : updateY ? y : this.currentZSliceIndex
-            );
+            this.updateSliceIndices(x, y, updateX, updateY, updateZ);
 
+            // if montage, set active montage slice
+            if (this.viewerState == 'montage'){
+                if (updateX) {
+                    this.montageActiveSlice = 'slice1'
+                } else if (updateY) {
+                    this.montageActiveSlice = 'slice2'
+                } else if (updateZ) {
+                    this.montageActiveSlice = 'slice3'
+                }
+            }
             // execute calback function provided to plotlyClickHandler
             if (clickCallBack) {
                 clickCallBack();
@@ -291,12 +315,18 @@ class NiftiViewer {
     }
 
     fetchTimeCourse(preprocState) {
+        let sliceIndex
+        if (this.viewerState == 'montage') {
+            sliceIndex = this.montageSliceIndex[this.montageSliceDirection][this.montageActiveSlice];
+        } else if (this.viewerState == 'ortho') {
+            sliceIndex = this.orthoSliceIndex;
+        }
         // Fetch the time course data for the selected voxel
-        return fetch(`/get_time_course_nii?file_key=${this.fileKey}&x=${this.currentXSliceIndex}&y=${this.currentYSliceIndex}&z=${this.currentZSliceIndex}&use_preprocess=${preprocState}`)
+        return fetch(`/get_time_course_nii?file_key=${this.fileKey}&x=${sliceIndex['x']}&y=${sliceIndex['y']}&z=${sliceIndex['z']}&use_preprocess=${preprocState}`)
             .then(response => response.json())
             .then(data => {
                 // create coordinate labels title
-                const coordLabels = `Voxel: (x=${this.currentXSliceIndex}, y=${this.currentYSliceIndex}, z=${this.currentZSliceIndex})`
+                const coordLabels = `Voxel: (x=${this.orthoSliceIndex['x']}, y=${this.orthoSliceIndex['y']}, z=${this.orthoSliceIndex['z']})`
                 return {
                     label: coordLabels,
                     timeCourse: data.time_course
@@ -336,7 +366,7 @@ class NiftiViewer {
     }
 
     fetchWorldCoords() {
-        fetch(`/get_world_coords?file_key=${this.fileKey}&x=${this.currentXSliceIndex}&y=${this.currentYSliceIndex}&z=${this.currentZSliceIndex}`)
+        fetch(`/get_world_coords?file_key=${this.fileKey}&x=${this.orthoSliceIndex['x']}&y=${this.orthoSliceIndex['y']}&z=${this.orthoSliceIndex['z']}`)
             .then(response => response.json())
             .then(data => {
                 // display World coordinates
@@ -353,10 +383,31 @@ class NiftiViewer {
     }
 
     // Update slice indices
-    updateSliceIndices(xIndex, yIndex, zIndex) {
-        this.currentXSliceIndex = xIndex;
-        this.currentYSliceIndex = yIndex;
-        this.currentZSliceIndex = zIndex;
+    updateSliceIndices(x, y, updateX, updateY, updateZ) {
+        // coordinate locations for orthogonal view
+        let xIndex, yIndex, zIndex
+        if (this.viewerState == 'ortho') {
+            xIndex = updateZ ? x : updateY ? x : this.orthoSliceIndex['x'];
+            yIndex = updateZ ? y : updateX ? x : this.orthoSliceIndex['y'];
+            zIndex = updateX ? y : updateY ? y : this.orthoSliceIndex['z'];
+            // update ortho slice indices
+            this.orthoSliceIndex['x'] = xIndex;
+            this.orthoSliceIndex['y'] = yIndex;
+            this.orthoSliceIndex['z'] = zIndex;
+        } else if (this.viewerState == 'montage') {
+            for (const montageSlice of ['slice1', 'slice2', 'slice3']) {
+                if (this.montageSliceDirection == 'x') {
+                    this.montageSliceIndex[this.montageSliceDirection][montageSlice]['y'] = x
+                    this.montageSliceIndex[this.montageSliceDirection][montageSlice]['z'] = y
+                } else if (this.montageSliceDirection == 'y') {
+                    this.montageSliceIndex[this.montageSliceDirection][montageSlice]['x'] = x
+                    this.montageSliceIndex[this.montageSliceDirection][montageSlice]['z'] = y
+                } else if (this.montageSliceDirection == 'z') {
+                    this.montageSliceIndex[this.montageSliceDirection][montageSlice]['x'] = x
+                    this.montageSliceIndex[this.montageSliceDirection][montageSlice]['y'] = y
+                }
+            }
+        }
     }
 
     // resize plotly plots to window resizing
@@ -391,68 +442,156 @@ class NiftiViewer {
         return data
     }
 
+    // set location and length of crosshairs
+    getCrosshairShapes(axis) {
+        const crosshairColor = 'red';
+        const crosshairWidth = 1;
+        let xIndex, yIndex, lenX, lenY;
+        // crosshair location behavior differs based on viewer state (ortho vs. montage)
+        let axisCrossHair
+        let sliceIndices
+        if (this.viewerState == 'ortho') {
+            // For ortho view, crosshair location differs across all slices
+            axisCrossHair = axis;
+            sliceIndices = this.orthoSliceIndex;
+            if (axis == 'x') {
+                lenX = this.sliceLen['y'] - 1;
+                lenY = this.sliceLen['z'] - 1;
+            } else if (axis == 'y') {
+                lenX = this.sliceLen['x'] - 1;
+                lenY = this.sliceLen['z'] - 1;
+            } else if (axis == 'z') {
+                lenX = this.sliceLen['x'] - 1;
+                lenY = this.sliceLen['y'] - 1;
+            }
+        } else if (this.viewerState == 'montage') {
+            // For montage view, crosshair location is the same across all slices
+            axisCrossHair = this.montageSliceDirection;
+            let slice
+            // convert axis label to slice number
+            if (axis == 'x') {
+                slice = 'slice1';
+            } else if (axis == 'y') {
+                slice = 'slice2'
+            } else if (axis == 'z') {
+                slice = 'slice3'
+            }
+            // set crosshair length for montage view
+            if (this.montageSliceDirection == 'x') {
+                lenX = this.sliceLen['y'] - 1;
+                lenY = this.sliceLen['z'] - 1;
+            } else if (this.montageSliceDirection == 'y') {
+                lenX = this.sliceLen['x'] - 1;
+                lenY = this.sliceLen['z'] - 1;
+            } else if (this.montageSliceDirection == 'z') {
+                lenX = this.sliceLen['x'] - 1;
+                lenY = this.sliceLen['y'] - 1;
+            }
+            sliceIndices = this.montageSliceIndex[this.montageSliceDirection][slice]
+        }
+        // Determine which slice indices to use based on the axis
+        switch (axisCrossHair) {
+            case 'x':
+                xIndex = sliceIndices['y'];
+                yIndex = sliceIndices['z'];
+                break;
+            case 'y':
+                xIndex = sliceIndices['x'];
+                yIndex = sliceIndices['z'];
+                break;
+            case 'z':
+                xIndex = sliceIndices['x'];
+                yIndex = sliceIndices['y'];
+                break;
+        }
+
+        return [
+            {
+                type: 'line',
+                x0: 0,
+                y0: yIndex,
+                x1: lenX,
+                y1: yIndex,
+                line: { color: crosshairColor, width: crosshairWidth }
+            },
+            {
+                type: 'line',
+                x0: xIndex,
+                y0: 0,
+                x1: xIndex,
+                y1: lenY,
+                line: { color: crosshairColor, width: crosshairWidth }
+            }
+        ];
+    }
+
     // Create direction marker labels
-    createDirectionMarkers(axisLabel, lenSlices) {
+    createDirectionMarkers(axisLabel) {
         // Create direction marker annotations
-        let annotation
-        if (axisLabel == 'X') {
+        let annotation, sliceDir
+        if (this.viewerState == 'montage') {
+            sliceDir = this.montageSliceDirection
+        } else {
+            sliceDir = axisLabel
+        }
+        if (sliceDir == 'x') {
             annotation = [
             {
                 x: 1,
-                y: this.zSliceMid,
+                y: this.orthoSliceMid['z'],
                 xref: 'x',
                 yref: 'y',
                 text: 'P',
                 showarrow: false
             },
             {
-                x: lenSlices['lenZ'] - 2,
-                y: this.zSliceMid,
+                x: this.sliceLen['y'] - 2,
+                y: this.orthoSliceMid['z'],
                 xref: 'x',
                 yref: 'y',
                 text: 'A',
                 showarrow: false
             }
           ]
-        } else if (axisLabel == 'Y') {
+        } else if (sliceDir == 'y') {
             annotation = [
             {
                 x: 1,
-                y: this.zSliceMid,
+                y: this.orthoSliceMid['z'],
                 xref: 'x',
                 yref: 'y',
                 text: 'L',
                 showarrow: false
             },
             {
-                x: lenSlices['lenY'] - 2,
-                y: this.zSliceMid,
+                x: this.sliceLen['x'] - 2,
+                y: this.orthoSliceMid['z'],
                 xref: 'x',
                 yref: 'y',
                 text: 'R',
                 showarrow: false
             }
           ]
-        } else if (axisLabel == 'Z') {
+        } else if (sliceDir == 'z') {
             annotation = [
             {
                 x: 1,
-                y: this.ySliceMid,
+                y: this.orthoSliceMid['y'],
                 xref: 'x',
                 yref: 'y',
                 text: 'L',
                 showarrow: false
             },
             {
-                x: lenSlices['lenX'] - 2,
-                y: this.ySliceMid,
+                x: this.sliceLen['x'] - 2,
+                y: this.orthoSliceMid['y'],
                 xref: 'x',
                 yref: 'y',
                 text: 'R',
                 showarrow: false
             },
             {
-                x: this.xSliceMid,
+                x: this.orthoSliceMid['x'],
                 y: 1,
                 xref: 'x',
                 yref: 'y',
@@ -460,8 +599,8 @@ class NiftiViewer {
                 showarrow: false
             },
             {
-                x: this.xSliceMid,
-                y: lenSlices['lenZ']-2,
+                x: this.orthoSliceMid['z'],
+                y: this.sliceLen['y']-2,
                 xref: 'x',
                 yref: 'y',
                 text: 'A',

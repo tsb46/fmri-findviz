@@ -35,7 +35,7 @@ export class VisualizationOptions {
         this.thresholdMin = 0;
         this.thresholdMax = 0;
         // Initialize montage slice selection as sagittal (x) direction
-        this.montageSliceSelection = 'x'
+        this.montageSliceSelection = 'z'
         // Montage slice indices
         this.montageSliceIndices = {}
         const sliceDirections = ['x', 'y', 'z']
@@ -77,6 +77,8 @@ export class VisualizationOptions {
         this.thresholdSlider = $('#thresholdSlider');
         // get reset slider button
         this.resetSliderButton = $('#reset-slider-button');
+        // get ortho to montage viewer
+        this.viewToggle = $('#toggle-view');
         // get crosshair toggle
         this.crosshairToggle = $('#toggle-crosshair');
         // get hover toggle
@@ -184,7 +186,7 @@ export class VisualizationOptions {
                 for (const sliceDiv in this.montageSliceIndices[this.montageSliceSelection]) {
                     $(`#${sliceDiv}`).slider({
                         min: 0,
-                        max: this.sliceLen[this.montageSliceSelection],
+                        max: this.sliceLen[this.montageSliceSelection] - 1,
                         step: 1,
                         value: this.montageSliceIndices[this.montageSliceSelection][sliceDiv],
                         tooltip: 'show',
@@ -199,7 +201,7 @@ export class VisualizationOptions {
                 // re-initialize slider
                 $(`#${sliceDiv}`).slider({
                     min: 0,
-                    max: this.sliceLen[this.montageSliceSelection],
+                    max: this.sliceLen[this.montageSliceSelection]-1,
                     step: 1,
                     value: this.montageSliceIndices[this.montageSliceSelection][sliceDiv],
                     tooltip: 'show',
@@ -217,15 +219,31 @@ export class VisualizationOptions {
         $('#montage-slice-select').change((event) => {
             this.montageSliceSelection = event.target.value;
             this.initializeMontageOptions(true);
+            // trigger a custom event
+            const customEventMontageDirection = $.Event(
+                'montageSliceDirectionChange', {
+                    detail: {
+                        sliceDirection: this.montageSliceSelection,
+                        sliceIndices: this.montageSliceIndices[this.montageSliceSelection]
+                    }
+                }
+            );
+            // Dispatch the custom event
+            $(document).trigger(customEventMontageDirection);
         });
 
         // Listen for slider changes and update slice index
         for (const sliceDiv in this.montageSliceIndices[this.montageSliceSelection]) {
             $(`#${sliceDiv}`).on('change', (event) => {
                 this.montageSliceIndices[this.montageSliceSelection][sliceDiv] = event.value.newValue;
-                // Trigger a custom event using jQuery
+                // Trigger a custom event
                 const customEventSlider = $.Event(
-                    `#${sliceDiv}Change`, { detail: event.value.newValue }
+                    `${sliceDiv}Change`, {
+                        detail: {
+                            sliceDirection: this.montageSliceSelection,
+                            sliceIndices: this.montageSliceIndices[this.montageSliceSelection]
+                        }
+                    }
                 );
                 // Dispatch the custom event
                 $(document).trigger(customEventSlider);
@@ -245,6 +263,16 @@ export class VisualizationOptions {
 
         // Reset slider button listener
         this.resetSliderButton.on('click', this.handleResetSliders.bind(this));
+
+        // Ortho to Montage view listener
+        if (this.plotType == 'nifti') {
+            this.viewToggle.on(
+                'click', this.handleViewToggle.bind(this)
+            );
+        } else {
+            // disable crosshairs button for gifti
+            this.viewToggle.addClass('disabled');
+        }
 
         // Toggle crosshairs listener (only applicable for Nifti)
         if (this.plotType == 'nifti') {
@@ -338,6 +366,21 @@ export class VisualizationOptions {
         );
         // Dispatch the custom event
         $(document).trigger(customEventThreshold);
+    }
+
+    // Trigger custom toggle ortho to montage viewer event
+    handleViewToggle() {
+        // Trigger a custom event using jQuery
+        const customEventView = $.Event(
+            'toggleViewChange', {
+                detail: {
+                    sliceIndices: this.montageSliceIndices[this.montageSliceSelection],
+                    sliceDirection: this.montageSliceSelection
+                }
+            }
+        );
+        // Dispatch the custom event
+        $(document).trigger(customEventView);
     }
 
     // Trigger custom crosshair click event
