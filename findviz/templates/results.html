@@ -5,7 +5,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>fMRI Web Application (TESTING HTML)</title>
+    <title>FIND Viewer</title>
     <!-- Load CSS stylesheets first -->
     <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
     <!-- FontAwesome Icons -->
@@ -14,7 +14,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-slider/11.0.2/css/bootstrap-slider.min.css">
 
     <!-- Custom CSS -->
-    <link rel="stylesheet" href="static/css/styles.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
 
     <!-- Load JavaScript libraries -->
     <!-- JQuery -->
@@ -40,12 +40,12 @@
       <!-- User Options Container -->
       <div class="col-3 pl-3 pr-2" id="user_options_container">
         <!-- Visualization Options -->
-        <div id='visualizationOptions'></div>
+        {% include 'components/visualizationOptions.html' %}
       </div>
       <!-- Visualization Container -->
       <div class='col-9' id="visualization_container">
         <!-- fmri visualization card -->
-        <div id='fmriVisualizationCard'></div>
+        {% include 'components/fmriVisualizationCard.html' %}
       </div>
     </div>
     <div class='row justify-content-md-center mt-2'>
@@ -60,31 +60,35 @@
   <!-- Correlation javascript -->
   <script type="module">
     // Import classes from modules
-    import Correlate from '/static/js/correlation.js';
-    import { loadComponent, initBootstrapComponents } from '/static/js/utils.js';
-    // Load all correlation page components
-    async function loadPageComponents() {
-      const components = [
-        loadComponent("visualizationOptions", "visualizationOptions.html"),
-        loadComponent("fmriVisualizationCard", "fmriVisualizationCard.html"),
-      ];
-      // wait for all component promises to resolve
-      await Promise.all(components);
-    }
+    import Result from '/static/js/result.js';
+    import { initBootstrapComponents } from '/static/js/utils.js';
 
     // Toggle parent visualization container to display
     const visualizationContainer = document.getElementById('parent-container');
     visualizationContainer.style.display = 'block'
     // Load HTML components and initialize 'Correlate' class
     document.addEventListener("DOMContentLoaded", async () => {
-      // Load HTML components
-      await loadPageComponents();
-      // initialize correlation after page load
+      // initialize results after page load
       const plotData = {{ data|tojson }}
+      let plotTitle
+      {% if analysis == "correlate" %}
+        plotTitle = {
+          'title': 'Correlation Map',
+          'timeSliderTitle': 'Lag:'
+        }
+      {% elif analysis == "average" %}
+        plotTitle = {
+          'title': 'Average Map',
+          'timeSliderTitle': 'Time Point:'
+        }
+      {% endif %}
       // Run Main
-      let correlate = new Correlate(plotData);
+      let result = new Result(
+        plotData,
+        plotTitle
+      );
       // initialize plots
-      correlate.init();
+      result.init();
 
       // initialize bootstrap components
       initBootstrapComponents()

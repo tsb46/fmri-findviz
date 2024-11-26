@@ -19,24 +19,20 @@ function initBootstrapComponents() {
     // Enable dismissal of alerts
     $('.alert').alert()
 
-    // Enable HTML content in the lightbox viewer
+    // Enable HTML content in the montage button
     $("#montage-popover").popover({
+        html: true,
+        sanitize: false,
+    });
+
+    // Enable HTML content in the find peaks button
+    $("#peak-finder-popover").popover({
         html: true,
         sanitize: false,
     });
 
 }
 
-// Load HTML component
-async function loadComponent(elementId, componentPath) {
-    const response = await fetch(`static/components/${componentPath}`);
-    if (response.ok) {
-        const content = await response.text();
-        document.getElementById(elementId).innerHTML = content;
-    } else {
-        console.error(`Failed to load component: ${componentPath}`)
-    }
-}
 
 // Ensure filer inputs are correct
 function validateFilterInputs(TR, lowCut, highCut, errorDiv) {
@@ -102,7 +98,6 @@ function preprocessingInputError(errorDiv, errorMessage) {
 }
 
 export {
-    loadComponent,
     initBootstrapComponents,
     validateFilterInputs,
     preprocessingInputError

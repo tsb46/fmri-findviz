@@ -5,13 +5,14 @@ import { VisualizationOptions } from './user.js';
 import NiftiViewer from './nifti.js';
 import GiftiViewer from './gifti.js';
 
-class Correlate {
+class Result {
     constructor(
-      plotData
+      plotData,
+      plotTitle
     ) {
         // Set text in visualization card
-        document.getElementById('fmri-visualization-title').textContent = 'Correlation Map'
-        document.getElementById('time-slider-title').textContent = 'Lag:'
+        document.getElementById('fmri-visualization-title').textContent = plotTitle['title'];
+        document.getElementById('time-slider-title').textContent = plotTitle['timeSliderTitle'];
         // set attributes based on nifti or gifti file input
         if (plotData.plot_type == 'nifti') {
             // initialize nifti viewer
@@ -19,7 +20,7 @@ class Correlate {
                 plotData.file_key,
                 plotData.anat_key,
                 plotData.mask_key,
-                plotData.slice_len[0]
+                plotData.slice_len
             );
             // set colorbar div
             this.colorbarDiv = 'colorbar_container_nii'
@@ -59,13 +60,13 @@ class Correlate {
         // Initialize TimeSlider class
         this.timeSlider = new TimeSlider(
             plotData.timepoints,
-            'Lag: '
+            `${plotTitle['timeSliderTitle']} `
         );
 
         // Initialize VisualizationOptions class
         // pass slice length if nifti
         if (this.plotType == 'nifti') {
-            this.sliceLen = plotData.slice_len[0]
+            this.sliceLen = plotData.slice_len
         } else {
             this.sliceLen = null
         }
@@ -351,6 +352,6 @@ class Correlate {
     }
 }
 
-export default Correlate;
+export default Result;
 
 

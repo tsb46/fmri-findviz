@@ -1,11 +1,17 @@
 <div class="container mt-5">
     <div class="row justify-content-center">
-        <h1>FIND Viewer</h1>
-    </div>
-    <div class="row justify-content-center">
-        <button type="button" class="btn btn-primary btn-lg mt-4" data-toggle="modal" id='uploadFile' data-target="#uploadModal">
+        <!-- <h1>FIND Viewer</h1> -->
+        <div class="jumbotron">
+          <div class='row justify-content-center'>
+            <img src="{{ url_for('static', filename='images/FIND.png') }}", alt="FIND Logo" />
+            <h1 class="display-4">FIND Viewer</h1>
+          </div>
+          <p class="lead">FMRI Interactive Navigation and Discovery Viewer</p>
+          <hr class="my-4">
+          <button type="button" class="btn btn-primary btn-lg mt-4" data-toggle="modal" id='uploadFile' data-target="#uploadModal">
             Upload Files
-        </button>
+          </button>
+        </div>
     </div>
     <!-- Modal File Upload-->
     <div class="modal fade" id="uploadModal" tabindex="-1" aria-labelledby="uploadModalLabel" aria-hidden="true">

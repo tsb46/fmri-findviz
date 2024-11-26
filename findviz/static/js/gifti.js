@@ -211,7 +211,7 @@ class GiftiViewer {
             showscale: false,
             text: intensityValues,
             hoverinfo: hoverTextOn ? 'x+y+z' : 'none',
-            hovertemplate: hoverTextOn ? 'Intensity: %{text}<br>x: %{x}<br>y: %{y}<br>z: %{z}': null
+            hovertemplate: hoverTextOn ? 'Intensity: %{text:.3f}<br>x: %{x}<br>y: %{y}<br>z: %{z} <extra></extra>': null
         };
 
         let layout = {

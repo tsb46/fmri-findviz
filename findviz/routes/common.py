@@ -2,6 +2,7 @@
 
 import csv
 import decimal
+import json
 import os
 
 from io import TextIOWrapper
@@ -11,6 +12,7 @@ import plotly.colors as pc
 
 from flask import Blueprint, render_template, request, jsonify
 from nilearn.glm.first_level import compute_regressor
+from scipy.signal import find_peaks
 
 from findviz.routes import utils
 
@@ -25,9 +27,14 @@ def index():
     return render_template('index.html')
 
 
-@common_bp.route('/correlation')
-def correlation():
-    return render_template('correlate.html', data=cache['corr_map'])
+@common_bp.route('/results_view/<analysis>')
+# display results view for a specific analysis route
+def results_view(analysis):
+    if analysis == 'average':
+        data = cache['avg_map']
+    elif analysis == 'correlate':
+        data = cache['corr_map']
+    return render_template('results.html', data=data, analysis=analysis)
 
 
 # Route to load time series
@@ -212,6 +219,37 @@ def preprocess_ts():
         ts_out[ts_label] = np.squeeze(ts).tolist()
 
     return jsonify(ts_out)
+
+
+# Route to preprocess time courses
+@common_bp.route('/find_peaks_ts', methods=['POST'])
+def find_peaks_ts():
+    # load time course array
+    ts = request.form.get('ts')
+    ts = json.loads(ts)
+    # get parameters from response, convert numerics
+    peak_params = {
+        'peak_height': request.form.get('peak_height'),
+        'peak_threshold': request.form.get('peak_threshold'),
+        'peak_distance': request.form.get('peak_distance'),
+        'peak_prominence': request.form.get('peak_prominence'),
+        'peak_width': request.form.get('peak_width')
+    }
+    peak_params = utils.convert_params(peak_params)
+
+    # find peaks with scipy
+    peaks, _ = find_peaks(
+        ts,
+        height = peak_params['peak_height'],
+        threshold = peak_params['peak_threshold'],
+        distance = peak_params['peak_distance'],
+        prominence = peak_params['peak_prominence'],
+        width = peak_params['peak_width']
+    )
+    return jsonify({
+        'peaks': peaks.tolist()
+    })
+
 
 
 def get_task_regressors(task_events, frame_times):

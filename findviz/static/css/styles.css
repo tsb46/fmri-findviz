@@ -3,6 +3,25 @@
 /* Import a sleek, modern font */
 @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
 
+/*Jumbotron Styling*/
+.jumbotron {
+  background-color: #f8f9fa; /* Light gray background */
+  text-align: center;
+  padding: 4rem 2rem;
+}
+.jumbotron img {
+  max-width: 60px; /* Adjust the size of the image */
+  margin-bottom: 1.5rem;
+}
+.jumbotron h1 {
+  font-size: 2.5rem;
+  font-weight: bold;
+}
+.jumbotron p {
+  font-size: 1.2rem;
+  color: #6c757d;
+}
+
 /*File Upload Modal*/
 #uploadModalDialog {
     max-width: 50%

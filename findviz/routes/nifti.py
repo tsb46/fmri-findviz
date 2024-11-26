@@ -15,6 +15,7 @@ from nilearn.image import index_img, reorder_img, smooth_img
 from nilearn import masking
 from scipy.stats import zscore
 
+from findviz import analysis
 from findviz.routes import utils
 from findviz.routes.common import cache
 
@@ -354,6 +355,67 @@ def get_world_coords():
         {'x': x_world, 'y': y_world, 'z': z_world}
     )
 
+
+# route to compute window average of nii data
+@nifti_bp.route('/compute_avg_nii', methods=['POST'])
+def compute_avg_nii():
+    # load markers
+    markers = request.form.get('markers')
+    markers = json.loads(markers)
+    # load parameters
+    file_key = request.form.get('file_key')
+    mask_key = request.form.get('mask_key')
+    anat_key = request.form.get('anat_key')
+    slice_len = request.form.get('slice_len')
+    l_edge = utils.convert_value(request.form.get('left_edge'))
+    r_edge = utils.convert_value(request.form.get('right_edge'))
+    use_preprocess = utils.convert_value(
+        request.form.get('use_preprocess')
+    )
+    # Get nifti img
+    if use_preprocess:
+        nifti_img = cache.get('preprocessed')
+    else:
+        nifti_img = cache.get(file_key)
+    if not nifti_img:
+        return jsonify({'error': 'Nifti file not found'}), 404
+
+    # get mask file
+    mask_img = cache.get(mask_key)
+    if not mask_img:
+        return jsonify({'error': 'Mask file not found'}), 404
+
+    # get 2d array within mask
+    nifti_2d = masking.apply_mask(nifti_img, mask_img)
+
+    # calculate window average
+    w_avg = analysis.window_average(nifti_2d, markers, l_edge, r_edge)
+
+    # convert 2d array back to nifti
+    nifti_img_avg = masking.unmask(
+        w_avg,
+        mask_img
+    )
+    # save correlation map data in cache
+    cache['avg'] = nifti_img_avg
+    cache['avg_map'] = {}
+    cache['avg_map']['plot_type'] = 'nifti'
+    # ensure front-end knows where average maps are stored
+    cache['avg_map']['file_key'] = 'avg'
+    cache['avg_map']['mask_key'] = mask_key
+    cache['avg_map']['anat_key'] = anat_key
+    cache['avg_map']['slice_len'] = slice_len
+    cache['avg_map']['global_min'] = np.nanmin(w_avg)
+    cache['avg_map']['global_max'] = np.nanmax(w_avg)
+    cache['avg_map']['timepoints'] = np.arange(l_edge, r_edge+1).tolist()
+    cache['avg_map']['slice_len'] =  {
+        'x': nifti_img_avg.shape[0],
+        'y': nifti_img_avg.shape[1],
+        'z': nifti_img_avg.shape[2]
+    }
+
+    return jsonify(success=True)
+
 # route to compute cross-correlation of time course with nii data
 @nifti_bp.route('/compute_corr_nii', methods=['POST'])
 def compute_corr_nii():
@@ -389,23 +451,18 @@ def compute_corr_nii():
     # get 2d array within mask
     nifti_2d = masking.apply_mask(nifti_img, mask_img)
 
-    # standardize nifti and time course data
-    ts = zscore(ts)
-    nifti_2d = zscore(nifti_2d, axis=0)
-
     # get array of lags
     lags = np.arange(nlag, plag+1)
 
-    # get lag matrix
-    lagmat = utils.lag_mat(ts, lags)
-    # compute correlation map
-    correlation_map = (
-        np.dot(nifti_2d.T, lagmat) / len(ts)
-    )
+    # compute correlation
+    correlation_map = analysis.correlation(nifti_2d, ts, lags)
+
+    # convert 2d array back to nifti
     nifti_img_corr = masking.unmask(
-        correlation_map.T,
+        correlation_map,
         mask_img
     )
+
     # save correlation map data in cache
     cache['corr'] = nifti_img_corr
     cache['corr_map'] = {}
@@ -422,7 +479,7 @@ def compute_corr_nii():
         'x': nifti_img_corr.shape[0],
         'y': nifti_img_corr.shape[1],
         'z': nifti_img_corr.shape[2]
-    },
+    }
 
     return jsonify(success=True)
 

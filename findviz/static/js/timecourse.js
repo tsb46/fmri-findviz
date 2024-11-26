@@ -141,6 +141,10 @@ class TimeCourse {
         $('#correlationForm').on(
             'submit', this.handleCorrelationSubmit.bind(this)
         );
+        // Initialize average analysis submission event
+        $('#averageForm').on(
+            'submit', this.handleAverageSubmit.bind(this)
+        );
         // Add event listener for window resize
         window.addEventListener('resize', () => this.onWindowResize());
     }
@@ -174,8 +178,10 @@ class TimeCourse {
         this.initializeSwitches();
         // Initialize preprocessing time course selection menu
         this.initializeTimeCoursePrepSelect();
-        // Initialize selection menu
-        this.updateCorrelateMenu();
+        // Initialize selection menu in analysis modals
+        this.updateAnalysisMenu();
+        // Initialize peak finder popup code
+        this.initializePeakFinderPopup();
         // Get preprocessing button
         this.preprocessSubmit = $('#ts-submit-preprocess');
         // Initialize preprocessing submit listener
@@ -205,10 +211,26 @@ class TimeCourse {
             this.plotTimeCourses(this.timePoint);
         });
 
-        // set max and min of lag input in correlation modal
+        // set max and min of lag input in analysis modal
         const timeLengthMid = Math.floor(this.timeLength / 2);
         document.getElementById('correlateNegativeLag').min = -timeLengthMid;
         document.getElementById('correlatePositiveLag').max = timeLengthMid;
+        document.getElementById('averageLeftEdge').min = -timeLengthMid;
+        document.getElementById('averageRightEdge').max = timeLengthMid;
+
+        // set up listener on average modal show to ensure annotations are present
+        $( "#averageModal" ).on('show.bs.modal', () => {
+            // raise alert if no annotation markers present
+            if (this.annotationMarkers.length < 1) {
+                document.getElementById('no-annotation-message-average').style.display = 'block';
+                // disable submit button
+                $('#runAverage').prop('disabled', true);
+
+            } else {
+                document.getElementById('no-annotation-message-average').style.display = 'none';
+                $('#runAverage').prop('disabled', false);
+            }
+        });
 
         // if task regressors are passed, set up listeners
         if (this.taskDesignInput) {
@@ -217,7 +239,7 @@ class TimeCourse {
                 // toggle b/w 'block' and 'hrf' task regressors
                 this.taskPlotType = this.taskPlotType == 'hrf' ? 'block' : 'hrf'
                 // update correlation selection menu
-                this.updateCorrelateMenu();
+                this.updateAnalysisMenu();
                 // plot with or without grid
                 this.plotTimeCourses(this.timePoint);
             });
@@ -427,9 +449,11 @@ class TimeCourse {
             if (this.annotateState){
                 $('#undo-annotate').prop('disabled', false);
                 $('#remove-annotate').prop('disabled', false);
+                $('#peak-finder-popover').prop('disabled', false);
             } else {
                 $('#undo-annotate').prop('disabled', true);
                 $('#remove-annotate').prop('disabled', true);
+                $('#peak-finder-popover').prop('disabled', true);
             }
         });
     }
@@ -460,12 +484,12 @@ class TimeCourse {
 
                 // catch when fmri time course is added
                 if (isNewKey) {
-                    this.updateCorrelateMenu();
+                    this.updateAnalysisMenu();
                 }
                 // If preprocessing is performed on timeCourses, update the selection
                 // to reflect the timecourse is preprocessed
                 else if (property === 'preprocessed') {
-                    this.updateCorrelateMenu();
+                    this.updateAnalysisMenu();
                 }
 
                 return true;
@@ -475,7 +499,7 @@ class TimeCourse {
                 if (property in target) {
                     delete target[property];
                     // Update the menu when a key is deleted
-                    this.updateCorrelateMenu();
+                    this.updateAnalysisMenu();
                 }
                 return true;
             }
@@ -497,23 +521,38 @@ class TimeCourse {
     }
 
     // Initialize annotation listener
-    initAnnotationListener() {
+    initializeAnnotationListener() {
+        // annotation mark
         document.getElementById(this.plotId).on('plotly_click', (eventData) => {
             if (this.annotateState) {
                 const x = Math.round(eventData.points[0].x);
-                this.annotationMarkers.push(x);
+                // only add if not already present
+                if (!this.annotationMarkers.includes(x)) {
+                    this.annotationMarkers.push(x);
+                }
                 this.plotTimeCourses(this.timePoint);
             };
         });
+        // undo most recent annotation
+        $('#undo-annotate').on('click', () => {
+            this.annotationMarkers.pop();
+            this.plotTimeCourses(this.timePoint);
+        })
+
+        // remove all annotations
+        $('#remove-annotate').on('click', () => {
+            this.annotationMarkers = [];
+            this.plotTimeCourses(this.timePoint);
+        })
     }
 
     // update correlation select menu
-    updateCorrelateMenu() {
+    updateAnalysisMenu() {
         // Get the select menu
-        const selectMenu = document.getElementById('ts-correlate-select')
+        const correlateSelectMenu = document.getElementById('ts-correlate-select')
 
         // Clear existing options
-        selectMenu.innerHTML = '';
+        correlateSelectMenu.innerHTML = '';
 
         // Populate select menu with time courses
         for (let ts in this.timeCourses) {
@@ -528,7 +567,7 @@ class TimeCourse {
             }
             // set type as task
             option.dataset.type = 'ts';
-            selectMenu.appendChild(option);
+            correlateSelectMenu.appendChild(option);
         }
 
         // Populate select menu with task regressors
@@ -539,36 +578,43 @@ class TimeCourse {
             // set type as task
             option.dataset.type = 'task';
             option.dataset.plotType = this.taskPlotType;
-            selectMenu.appendChild(option);
+            correlateSelectMenu.appendChild(option);
         }
     }
 
-    // gather data from correlation analysis form upon submit
-    handleCorrelationSubmit() {
-        event.preventDefault(); // Prevent form submission and page reload
-        // get time course selection value
-        const tsSelect = $('#ts-correlate-select :selected');
-        const tsValue = tsSelect.val()
-        const tsLabel = tsSelect.text();
-        const tsType = tsSelect[0].dataset.type;
-        // initialize data out object
-        const dataOut = {};
-        dataOut['label'] = tsValue;
-        // get time course or task regressor
-        if (tsType == 'ts') {
-            const timeCourse = this.timeCourses[tsValue];
-            if (tsSelect[0].dataset.preprocessed === 'true') {
-                dataOut['ts'] = timeCourse['ts_prep'];
-            } else {
-                dataOut['ts'] = timeCourse['ts'];
-            }
-        } else if (tsType == 'task') {
-            const plotType = tsSelect[0].dataset.plotType;
-            dataOut['ts'] = this.taskRegressors[tsValue][plotType];
-        }
-        // trigger 'correlation' submission event
-        $(document).trigger('correlationSubmit', dataOut);
+    initializePeakFinderPopup() {
+        // initialize tooltips on popup show
+        $('#peak-finder-popover').on('shown.bs.popover', () => {
+            const popoverContent = $('.popover');
+            popoverContent.find('.toggle-immediate').tooltip({
+                html: true, // Enable HTML content in the tooltip
+                trigger : 'hover'
+            });
+            // get select menu from correlation modal and replicate in popup
+            const correlateSelectMenu = document.getElementById('ts-correlate-select');
+            const peakFinderSelectDiv = document.getElementById('ts-peak-select-container');
+
+            const clonedMenu = correlateSelectMenu.cloneNode(true);
+            clonedMenu.id = "ts-peak-select";
+
+            // Append the cloned dropdown to the target element
+            peakFinderSelectDiv.appendChild(clonedMenu);
+
+            // Hide popover when clicking outside
+            $(document).on('click', function (e) {
+                // Check if the click is outside the popover and the button
+                if (!$(e.target).closest('.popover, #peak-finder-popover').length) {
+                  $('#peak-finder-popover').popover('hide');
+                }
+            });
+
+            // initialize peak finder submit
+            $('#peakFinderForm').on(
+                'submit', this.handlePeakFinderSubmit.bind(this)
+            );
+        })
     }
+
 
     // refresh time course option card
     refreshTimeCourseOptions(tsSelect=null, tsIndx=null) {
@@ -809,7 +855,7 @@ class TimeCourse {
                 'plotly_legenddoubleclick', this.hideAllTraces.bind(this)
             )
             // initialize annotation listener
-            this.initAnnotationListener();
+            this.initializeAnnotationListener();
             // initialize resize (plot doesn't fill container on first plot)
             this.onWindowResize();
             this.plotState = true
@@ -1056,6 +1102,82 @@ class TimeCourse {
         document.getElementById('ts-preprocess-alert').style.display = 'none';
     }
 
+    // trigger 'averege' analysis event
+    handleAverageSubmit() {
+        event.preventDefault(); // Prevent form submission and page reload
+        // trigger 'analysis' submission event
+        // remove any duplicates from tagging
+        const dataOut = {markers: [...new Set(this.annotationMarkers)]}
+        $(document).trigger('averageSubmit', dataOut);
+    }
+
+    // gather data from correlation analysis form upon submit
+    handleCorrelationSubmit() {
+        event.preventDefault(); // Prevent form submission and page reload
+        // get time course selection value
+        const tsSelect = $('#ts-correlate-select :selected');
+        const [label, ts] = this.selectTimeCourseMenu(tsSelect);
+        // initialize data out object
+        const dataOut = {};
+        dataOut['label'] = label;
+        dataOut['ts'] = ts;
+
+        // trigger 'correlation' submission event
+        $(document).trigger('correlationSubmit', dataOut);
+    }
+
+    handlePeakFinderSubmit() {
+        // prevent reload
+        event.preventDefault();
+        // get peak finder parameters
+        let formData = new FormData();
+        formData.append('peak_height', document.getElementById('peak-height').value);
+        formData.append('peak_threshold', document.getElementById('peak-threshold').value);
+        formData.append('peak_distance', document.getElementById('peak-distance').value);
+        formData.append('peak_prominence', document.getElementById('peak-prominence').value);
+        formData.append('peak_width', document.getElementById('peak-width').value);
+        // get time course selection value
+        const tsSelect = $('#ts-peak-select :selected');
+        const [label, ts] = this.selectTimeCourseMenu(tsSelect);
+        formData.append('ts',  JSON.stringify(ts));
+
+        // pass parameters and ts to flask peak finder route
+        fetch('/find_peaks_ts', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            this.annotationMarkers.push(...data.peaks);
+            // replot with new annotation markers
+            this.plotTimeCourses(this.timePoint);
+        })
+        .catch(error => {
+            console.error('Error during peak finding analysis:', error);
+        });
+    }
+
+    selectTimeCourseMenu(tsSelect) {
+        const tsValue = tsSelect.val()
+        const tsLabel = tsSelect.text();
+        const tsType = tsSelect[0].dataset.type;
+        // initialize data out object
+        const label = tsValue;
+        // get time course or task regressor
+        let ts
+        if (tsType == 'ts') {
+            const timeCourse = this.timeCourses[tsValue];
+            if (tsSelect[0].dataset.preprocessed === 'true') {
+                ts = timeCourse['ts_prep'];
+            } else {
+                ts = timeCourse['ts'];
+            }
+        } else if (tsType == 'task') {
+            const plotType = tsSelect[0].dataset.plotType;
+            ts = this.taskRegressors[tsValue][plotType];
+        }
+        return [label, ts]
+    }
 
     // Resize time course plots with window changes
     onWindowResize() {

@@ -6,37 +6,6 @@ from nilearn import signal
 from scipy.stats import zscore
 
 
-def lag_mat(x, lags):
-    """
-    Create array of time-lagged copies of the time course. Modified
-    for negative lags from:
-    https://github.com/ulf1/lagmat
-    """
-    n_rows, n_cols = x.shape
-    n_lags = len(lags)
-    # return if no lags
-    if n_lags < 1:
-        return x
-    # allocate memory
-    x_lag = np.zeros(
-        shape=(n_rows, n_cols * n_lags),
-        order='F', dtype=x.dtype
-    )
-    # Copy lagged columns of X into X_lag
-    for i, l in enumerate(lags):
-        # target columns of X_lag
-        j = i * n_cols
-        k = j + n_cols  # (i+1) * ncols
-        # number rows of X
-        nl = n_rows - abs(l)
-        # Copy
-        if l >= 0:
-            x_lag[l:, j:k] = x[:nl, :]
-        else:
-            x_lag[:l, j:k] = x[-nl:, :]
-    return x_lag
-
-
 # Convert values from json
 def convert_value(value):
     # Check for booleans
@@ -113,8 +82,8 @@ def get_minmax(data, file_type):
         data_min = np.nanmin(data)
         data_max = np.nanmax(data)
     elif file_type == 'gifti':
-        data_min = np.min([np.min(d.data) for d in data.darrays])
-        data_max = np.max([np.max(d.data) for d in data.darrays])
+        data_min = np.nanmin([np.min(d.data) for d in data.darrays])
+        data_max = np.nanmax([np.max(d.data) for d in data.darrays])
 
     return data_min, data_max
 

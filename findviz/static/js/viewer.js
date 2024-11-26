@@ -5,7 +5,6 @@ import TimeSlider from './timeslider.js';
 import { VisualizationOptions, PreprocessingOptions } from './user.js';
 import NiftiViewer from './nifti.js';
 import GiftiViewer from './gifti.js';
-import Correlate from './correlation.js'
 
 class MainViewer{
     constructor(
@@ -19,7 +18,6 @@ class MainViewer{
             document.getElementById('fmri-visualization-title').textContent = 'FMRI Surface View'
         }
         document.getElementById('time-slider-title').textContent = 'Time Point:'
-
         // set attributes based on nifti or gifti file input
         if (plotType == 'nifti') {
             // initialize nifti viewer
@@ -140,6 +138,10 @@ class MainViewer{
             // Listen for correlation submit event
             $(document).on('correlationSubmit', (event, data) => {
                 this.initiateCorrelation(event, data)
+            });
+            // Listen for window average submit event
+            $(document).on('averageSubmit', (event, data) => {
+                this.initiateAverage(event, data)
             });
         }).catch(error => {
             console.error('Error during initialization:', error);
@@ -495,6 +497,108 @@ class MainViewer{
     }
 
     // package up input to pass to cross-correlation routes
+    initiateAverage(event, data) {
+        // define error display function
+        function raiseError(errorDiv, errorMessage) {
+            errorDiv.textContent = errorMessage;
+            errorDiv.style.display = 'block';
+            // Clear error message after 5 seconds
+            setTimeout(function() {
+                errorDiv.style.display = 'none';
+            }, 5000);
+        }
+        // get error placeholder
+        const errorDiv = document.getElementById(
+            'error-message-average'
+        );
+        let errorMessage
+        // raise error if mask is not provided for nifti file
+        if (!this.viewer.maskKey && this.plotType == 'nifti') {
+            errorMessage = 'a brain mask must be supplied (in file upload) to perform windowed average analysis';
+            raiseError(errorDiv, errorMessage);
+            return
+        }
+        // get lag inputs
+        const leftEdge = document.getElementById('averageLeftEdge').value;
+        const rightEdge = document.getElementById('averageRightEdge').value;
+        // get half of time length for checking lag bounds
+        const timeLengthMid = Math.floor(this.timeCourse.timeLength / 2);
+        // check lags do not exceed zero
+        if (leftEdge > 0) {
+            errorMessage = 'left edge must be less than or equal to zero';
+            raiseError(errorDiv, errorMessage);
+        }
+        if (rightEdge < 0) {
+            errorMessage = 'right edge must be greater than or equal to zero';
+            raiseError(errorDiv, errorMessage);
+        }
+        // check lags do not exceed half of time legnth
+        if (leftEdge < -timeLengthMid) {
+            errorMessage = `left edge must not be less than ${timeLengthMid} (half the length of time course) `;
+            raiseError(errorDiv, errorMessage);
+        }
+        if (rightEdge > timeLengthMid) {
+            errorMessage = `right edge must not be greater than ${timeLengthMid} (half the length of time course) `;
+            raiseError(errorDiv, errorMessage);
+        }
+        // initialize form data to pass in POST route
+        let formData = new FormData();
+        // Add parameters and input to formData
+        formData.append('markers', JSON.stringify(data['markers']))
+        formData.append('left_edge', leftEdge);
+        formData.append('right_edge', rightEdge);
+        formData.append('use_preprocess', this.preprocState);
+        let fetchURL
+        if (this.plotType == 'nifti') {
+            formData.append('file_key', this.viewer.fileKey);
+            formData.append('mask_key', this.viewer.maskKey);
+            formData.append('anat_key', this.viewer.anatKey);
+            formData.append('slice_len', this.sliceLen);
+            fetchURL = '/compute_avg_nii'
+        } else if (this.plotType == 'gifti') {
+            formData.append('left_key', this.viewer.leftKey);
+            formData.append('right_key', this.viewer.rightKey);
+            formData.append('vertices_left', JSON.stringify(this.viewer.verticesLeft));
+            formData.append('vertices_right', JSON.stringify(this.viewer.verticesRight));
+            formData.append('faces_left', JSON.stringify(this.viewer.facesLeft));
+            formData.append('faces_right', JSON.stringify(this.viewer.facesRight));
+            fetchURL = '/compute_avg_gii'
+        }
+        // initiate spinner
+        let spinnerOverlayDiv = document.getElementById(
+              'average-spinner-overlay'
+            )
+        spinnerOverlayDiv.style.display = 'block'
+        let spinnerDiv = document.getElementById('average-spinner')
+        spinnerDiv.style.display = 'block'
+
+        fetch(fetchURL, {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Error in response from server during window average analysis')
+            }
+            // open average results window
+            window.open('/results_view/average', '_blank');
+            // turn off spinner
+            let spinnerOverlayDiv = document.getElementById(
+                'average-spinner-overlay'
+            )
+            let spinnerDiv = document.getElementById('average-spinner')
+            // end spinner to indicate loading of files
+            spinnerOverlayDiv.style.display = 'none'
+            spinnerDiv.style.display = 'none'
+            // close modal
+            $('#averageModal').modal('hide');
+        }).catch(error => {
+            console.error('Error during window average analysis:', error);
+        });
+    }
+
+
+    // package up input to pass to cross-correlation routes
     initiateCorrelation(event, data) {
         // define error display function
         function raiseError(errorDiv, errorMessage) {
@@ -557,6 +661,10 @@ class MainViewer{
         } else if (this.plotType == 'gifti') {
             formData.append('left_key', this.viewer.leftKey);
             formData.append('right_key', this.viewer.rightKey);
+            formData.append('vertices_left', JSON.stringify(this.viewer.verticesLeft));
+            formData.append('vertices_right', JSON.stringify(this.viewer.verticesRight));
+            formData.append('faces_left', JSON.stringify(this.viewer.facesLeft));
+            formData.append('faces_right', JSON.stringify(this.viewer.facesRight));
             fetchURL = '/compute_corr_gii'
         }
         // initiate spinner
@@ -575,8 +683,8 @@ class MainViewer{
             if (!response.ok) {
                 throw new Error('Error in response from server during correlation analysis')
             }
-            // open correlation window
-            window.open('/correlation', '_blank');
+            // open correlation results window
+            window.open('/results_view/correlate', '_blank');
             // turn off spinner
             let spinnerOverlayDiv = document.getElementById(
                 'correlate-spinner-overlay'

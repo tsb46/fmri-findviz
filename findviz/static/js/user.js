@@ -38,18 +38,20 @@ export class VisualizationOptions {
         this.montageSliceSelection = 'z'
         // Montage slice indices
         this.montageSliceIndices = {}
-        const sliceDirections = ['x', 'y', 'z']
-        const sliceSliders = ['slice1Slider', 'slice2Slider', 'slice3Slider'];
-        const sliceIndexInit = [0.33, 0.5, 0.66];
-        sliceDirections.forEach((direction, index) => {
-            this.montageSliceIndices[direction] = {}
-            sliceSliders.forEach((sliceDiv, index) => {
-                const sliceNum = Math.floor(
-                    this.sliceLen[direction] * sliceIndexInit[index]
-                );
-                this.montageSliceIndices[direction][sliceDiv] = sliceNum
-            })
-        });
+        if (this.plotType == 'nifti') {
+            const sliceDirections = ['x', 'y', 'z']
+            const sliceSliders = ['slice1Slider', 'slice2Slider', 'slice3Slider'];
+            const sliceIndexInit = [0.33, 0.5, 0.66];
+            sliceDirections.forEach((direction, index) => {
+                this.montageSliceIndices[direction] = {}
+                sliceSliders.forEach((sliceDiv, index) => {
+                    const sliceNum = Math.floor(
+                        this.sliceLen[direction] * sliceIndexInit[index]
+                    );
+                    this.montageSliceIndices[direction][sliceDiv] = sliceNum
+                })
+            });
+        };
 
         // Fetch precision from the Python backend and intialize sliders
         this.fetchPrecision(this.dataRange).then(precision => {
@@ -103,7 +105,7 @@ export class VisualizationOptions {
                 // Create the options card after fetching the colormap data
                 this.createVizOptions();
             })
-            .catch(error => console.error('Error fetching colormap data:', error));
+            .catch(error => console.error('Error fetching initializing visualization options:', error));
     }
 
     createVizOptions() {
@@ -140,7 +142,7 @@ export class VisualizationOptions {
             this.initializeMontageOptions();
         } else {
             // remove popover for gifti
-            $("#montage-popover").popover('destroy');
+            $("#montage-popover").popover('disable');
             // disable button
             $("#montage-popover").prop('disabled', true);
         }

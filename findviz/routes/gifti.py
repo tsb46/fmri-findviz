@@ -1,4 +1,5 @@
 """Routes for Gifti file handling and utilities"""
+import json
 
 import nibabel as nib
 import numpy as np
@@ -6,6 +7,7 @@ import numpy as np
 from flask import Blueprint, request, jsonify
 from nibabel.gifti import GiftiDataArray
 
+from findviz import analysis
 from findviz.routes import utils
 from findviz.routes.common import cache
 
@@ -134,10 +136,8 @@ def upload_files_gii():
         'right_key': right_key,
         'vertices_left': vertices_left.tolist() if vertices_left is not None else None,
         'faces_left': faces_left.tolist() if faces_left is not None else None,
-        'intensity_left': func_data_left.tolist() if func_data_left is not None else None,
         'vertices_right': vertices_right.tolist() if vertices_right is not None else None,
         'faces_right': faces_right.tolist() if faces_right is not None else None,
-        'intensity_right': func_data_right.tolist() if func_data_right is not None else None,
         'timepoints': timepoints,
         'global_min': global_min.item(),
         'global_max': global_max.item()
@@ -199,7 +199,7 @@ def get_time_course_gii():
     use_preprocess = utils.convert_value(
         request.args.get('use_preprocess')
     )
-    # Get nifti img
+    # Get gifti img
     if use_preprocess:
         if hemi == 'left':
             gifti_img = cache.get('preprocessed_left')
@@ -350,6 +350,214 @@ def preprocess_gii():
         'global_min': global_min.item(),
         'global_max': global_max.item()
     })
+
+
+# route to compute window average of gii data
+@gifti_bp.route('/compute_avg_gii', methods=['POST'])
+def compute_avg_gii():
+    # load markers
+    markers = request.form.get('markers')
+    markers = json.loads(markers)
+    # load parameters
+    left_key = utils.convert_value(
+        request.form.get('left_key')
+    )
+    right_key = utils.convert_value(
+        request.form.get('right_key')
+    )
+    l_edge = utils.convert_value(request.form.get('left_edge'))
+    r_edge = utils.convert_value(request.form.get('right_edge'))
+    use_preprocess = utils.convert_value(
+        request.form.get('use_preprocess')
+    )
+    # Load mesh and face data
+    faces_left = json.loads(request.form.get('faces_left'))
+    faces_right = json.loads(request.form.get('faces_right'))
+    vertices_left = json.loads(request.form.get('vertices_left'))
+    vertices_right = json.loads(request.form.get('vertices_right'))
+
+    # left hemisphere
+    if left_key:
+        if use_preprocess:
+            left_img = cache.get('preprocessed_left')
+        else:
+            left_img = cache.get(left_key)
+
+        # convert to array
+        left_img_array = gii_to_array(left_img)
+
+        # calculate window average
+        left_w_avg = analysis.window_average(
+            left_img_array, markers, l_edge, r_edge
+        )
+
+        # convert to gifti
+        left_avg_img = array_to_gii(left_w_avg)
+
+        # get new min and max
+        global_min_left, global_max_left = utils.get_minmax(
+            left_avg_img, 'gifti'
+        )
+    else:
+        # set new min and max as nan
+        global_min_left, global_max_left = np.nan, np.nan
+
+    # right hemisphere
+    if right_key:
+        if use_preprocess:
+            right_img = cache.get('preprocessed_right')
+        else:
+            right_img = cache.get(right_key)
+
+        # convert to array
+        right_img_array = gii_to_array(right_img)
+
+        # calculate window average
+        right_w_avg = analysis.window_average(
+            right_img_array, markers, l_edge, r_edge
+        )
+
+        # convert to gifti
+        right_avg_img = array_to_gii(right_w_avg)
+
+        # get new min and max
+        global_min_right, global_max_right = utils.get_minmax(
+            right_avg_img, 'gifti'
+        )
+    else:
+        # set new min and max as nan
+        global_min_right, global_max_right = np.nan, np.nan
+
+    # get min and max across left and/or right hemi of new data
+    global_min = np.nanmin(
+        [global_min_left, global_min_right]
+    )
+    global_max = np.nanmax(
+        [global_max_left, global_max_right]
+    )
+
+    # save average map data in cache
+    cache['avg_l'] = left_avg_img if left_key else None
+    cache['avg_r'] = right_avg_img if right_key else None
+    cache['avg_map'] = {}
+    cache['avg_map']['plot_type'] = 'gifti'
+    # ensure front-end knows where average maps are stored
+    cache['avg_map']['left_key'] = 'avg_l' if left_key else None
+    cache['avg_map']['right_key'] = 'avg_r' if right_key else None
+    cache['avg_map']['global_min'] = global_min
+    cache['avg_map']['global_max'] = global_max
+    cache['avg_map']['timepoints'] = np.arange(l_edge, r_edge+1).tolist()
+    cache['avg_map']['vertices_left'] = vertices_left if left_key else None
+    cache['avg_map']['vertices_right'] = vertices_right if right_key else None
+    cache['avg_map']['faces_left'] = faces_left if left_key else None
+    cache['avg_map']['faces_right'] = faces_right if right_key else None
+
+    return jsonify(success=True)
+
+
+# route to compute cross-correlation of time course with gii data
+@gifti_bp.route('/compute_corr_gii', methods=['POST'])
+def compute_corr_nii():
+    # load time course array
+    ts = request.form.get('ts')
+    ts = json.loads(ts)
+    # convert to array with one column
+    ts = np.array(ts)[:,np.newaxis]
+    # load parameters
+    ts_label = request.form.get('label')
+    left_key = utils.convert_value(
+        request.form.get('left_key')
+    )
+    right_key = utils.convert_value(
+        request.form.get('right_key')
+    )
+    nlag = utils.convert_value(request.form.get('negative_lag'))
+    plag = utils.convert_value(request.form.get('positive_lag'))
+    use_preprocess = utils.convert_value(
+        request.form.get('use_preprocess')
+    )
+    # Load mesh and face data
+    faces_left = json.loads(request.form.get('faces_left'))
+    faces_right = json.loads(request.form.get('faces_right'))
+    vertices_left = json.loads(request.form.get('vertices_left'))
+    vertices_right = json.loads(request.form.get('vertices_right'))
+
+    # get array of lags
+    lags = np.arange(nlag, plag+1)
+
+    # left hemisphere
+    if left_key:
+        if use_preprocess:
+            left_img = cache.get('preprocessed_left')
+        else:
+            left_img = cache.get(left_key)
+
+        # convert to array
+        left_img_array = gii_to_array(left_img)
+
+        # compute correlation
+        correlation_map_l = analysis.correlation(left_img_array, ts, lags)
+
+        # convert to gifti
+        corr_left_img = array_to_gii(correlation_map_l)
+
+        # get new min and max
+        global_min_left, global_max_left = utils.get_minmax(
+            corr_left_img, 'gifti'
+        )
+    else:
+        # set new min and max as nan
+        global_min_left, global_max_left = np.nan, np.nan
+
+    # right hemisphere
+    if right_key:
+        if use_preprocess:
+            right_img = cache.get('preprocessed_right')
+        else:
+            right_img = cache.get(right_key)
+
+        # convert to array
+        right_img_array = gii_to_array(right_img)
+
+        # compute correlation
+        correlation_map_r = analysis.correlation(right_img_array, ts, lags)
+
+        # convert to gifti
+        corr_right_img = array_to_gii(correlation_map_r)
+
+        # get new min and max
+        global_min_right, global_max_right = utils.get_minmax(
+            corr_right_img, 'gifti'
+        )
+    else:
+        # set new min and max as nan
+        global_min_right, global_max_right = np.nan, np.nan
+
+    # get min and max across left and/or right hemi of new data
+    global_min = np.nanmin(
+        [global_min_left, global_min_right]
+    )
+    global_max = np.nanmax(
+        [global_max_left, global_max_right]
+    )
+
+    # save correlation map data in cache
+    cache['corr_l'] = corr_left_img if left_key else None
+    cache['corr_r']= corr_right_img if right_key else None
+    cache['corr_map'] = {}
+    cache['corr_map']['plot_type'] = 'gifti'
+    # ensure front-end knows where correlation maps are stored
+    cache['corr_map']['left_key'] = 'corr_l' if left_key else None
+    cache['corr_map']['right_key'] = 'corr_r' if right_key else None
+    cache['corr_map']['global_min'] = global_min
+    cache['corr_map']['global_max'] = global_max
+    cache['corr_map']['timepoints'] = lags.tolist()
+    cache['corr_map']['vertices_left'] = vertices_left if left_key else None
+    cache['corr_map']['vertices_right'] = vertices_right if right_key else None
+    cache['corr_map']['faces_left'] = faces_left if left_key else None
+    cache['corr_map']['faces_right'] = faces_right if right_key else None
+
+    return jsonify(success=True)
 
 
 # utility - convert gifti to 2d array
