@@ -4,17 +4,21 @@ import csv
 import decimal
 import json
 import os
+import pickle
+import tempfile
 
 from io import TextIOWrapper
 
 import numpy as np
 import plotly.colors as pc
 
-from flask import Blueprint, render_template, request, jsonify
+from flask import Blueprint, render_template, request, jsonify, send_file
 from nilearn.glm.first_level import compute_regressor
 from scipy.signal import find_peaks
 
 from findviz.routes import utils
+from findviz.routes.utils import package_gii_metadata, package_nii_metadata
+
 
 common_bp = Blueprint('common', __name__)  # Create a blueprint
 
@@ -26,15 +30,119 @@ cache = {}
 def index():
     return render_template('index.html')
 
-
-@common_bp.route('/results_view/<analysis>')
 # display results view for a specific analysis route
+@common_bp.route('/results_view/<analysis>')
 def results_view(analysis):
     if analysis == 'average':
         data = cache['avg_map']
     elif analysis == 'correlate':
         data = cache['corr_map']
     return render_template('results.html', data=data, analysis=analysis)
+
+
+# allow user to download cache for future uploads
+@common_bp.route('/download_cache')
+def download_cache():
+    # Create a temporary file to save the cache
+    temp_dir = tempfile.gettempdir()
+    file_path = os.path.join(temp_dir, 'FIND_SCENE.pkl')
+
+    # Save the data to a temporary file
+    with open(file_path, 'wb') as f:
+        pickle.dump(cache, f)
+    # send cache to client
+    return send_file(file_path, as_attachment=True)
+
+# clear cache on file reupload
+@common_bp.route('/clear_cache')
+def clear_cache():
+    # clear cache
+    cache.clear()
+    return "", 200
+
+# allow user to upload cache ('scene') and start app
+@common_bp.route('/upload_cache', methods=['POST'])
+def upload_cache():
+    # get cache file
+    cache_file = request.files.get('scene_file')
+    # try to load scene file
+    try:
+        upload_cache = pickle.load(cache_file.stream)
+    except Exception as e:
+        # return 500 error if problem
+        return {'Error': str(e)}, 500
+    # overwrite the existing cache
+    global cache
+    cache.clear()
+    cache.update(upload_cache)
+
+    # load cache data to 'simulate' file upload
+    try:
+        data_out = {}
+        file_type = cache['file_type']
+        data_out['file_type'] = file_type
+        # handle nifti file uploads
+        if file_type == 'nifti':
+            data_out['file_key'] = cache['file_key']
+            data_out['anat_key'] = cache.get('anat_key')
+            data_out['mask_key'] = cache.get('mask_key')
+            # get nifti img and calculate metadata
+            nifti_img = cache[cache['file_key']]
+            # get nifti metadata for viewer
+            metadata = package_nii_metadata(nifti_img)
+            data_out['timepoints'] = metadata['timepoints']
+            data_out['global_min'] = metadata['global_min']
+            data_out['global_max'] = metadata['global_max']
+            data_out['slice_len'] = metadata['slice_len']
+
+        elif file_type == 'gifti':
+            data_out['left_key'] = cache.get('left_key')
+            data_out['right_key'] = cache.get('right_key')
+            data_out['vertices_right'] = cache.get('vertices_right')
+            data_out['vertices_left'] = cache.get('vertices_left')
+            data_out['faces_right'] = cache.get('faces_right')
+            data_out['faces_left'] = cache.get('faces_left')
+            # get gifti metadata for viewer
+            left_img = cache.get(data_out['left_key'])
+            right_img = cache.get(data_out['right_key'])
+            metadata = package_gii_metadata(left_img, right_img)
+            data_out['timepoints'] = metadata['timepoints']
+            data_out['global_min'] = metadata['global_min']
+            data_out['global_max'] = metadata['global_max']
+
+        # check whether timeseries were passed in input (don't count 'fmri')
+        data_out['ts_enabled'] = False
+        if 'timeseries' in cache:
+            cache['timeseries'].pop('fmri', None)
+            if len(cache['timeseries']) > 0:
+                data_out['timeseries'] = {
+                    'ts': list(cache['timeseries'].values()),
+                    'tsLabels': list(cache['timeseries'].keys())
+                }
+                data_out['ts_enabled'] = True
+
+        # check whether task design was passed in input
+        if 'task' in cache:
+            data_out['task'] = {
+                "conditions_block": [
+                    cache['task']['task_reg'][c]['block']
+                    for c in cache['task']['conditions']
+                ],
+                "conditions_hrf": [
+                    cache['task']['task_reg'][c]['hrf']
+                    for c in cache['task']['conditions']
+                ],
+                "labels": cache['task']['conditions']
+            }
+            data_out['task_enabled'] = True
+        else:
+            data_out['task_enabled'] = False
+
+    except KeyError as e:
+        # cache is missing essential file input
+        return {"Error": str(e)}, 500
+
+    return jsonify(data_out)
 
 
 # Route to load time series
@@ -132,8 +240,10 @@ def upload_task():
     # calculate frame times based on lenght of fmri, slicetime ref and tr
     frame_times =  tr * (np.arange(fmri_len) + slicetime_ref)
     task_reg, conditions = get_task_regressors(task_events, frame_times)
-    # assign task regressors to cache
-    cache['task_reg'] = task_reg
+    # assign task regressors and conditions to cache
+    cache['task'] = {}
+    cache['task']['task_reg'] = task_reg
+    cache['task']['conditions'] = conditions
     return jsonify(
         {
             "conditions_block": [task_reg[c]['block'] for c in conditions],

@@ -10,6 +10,7 @@ from nibabel.gifti import GiftiDataArray
 from findviz import analysis
 from findviz.routes import utils
 from findviz.routes.common import cache
+from findviz.routes.utils import package_gii_metadata
 
 gifti_bp = Blueprint('gifti', __name__)  # Create a blueprint
 
@@ -17,6 +18,7 @@ gifti_bp = Blueprint('gifti', __name__)  # Create a blueprint
 # Route to handle file upload and return initial visualizations
 @gifti_bp.route('/upload_gii', methods=['POST'])
 def upload_files_gii():
+    cache['file_type'] = 'gifti'
     # get form data
     left_file = request.files.get('left_hemisphere_file')
     right_file = request.files.get('right_hemisphere_file')
@@ -29,7 +31,7 @@ def upload_files_gii():
     faces_left = None
     vertices_right = None
     faces_right = None
-    timepoints = []
+    timepoints = None
 
     if left_file:
         # load left hemisphere functional and store in cache
@@ -44,6 +46,7 @@ def upload_files_gii():
             error_msg = 'there was a problem loading the left hemisphere func.gii file. Expecting 1d-array per timepoint. Check format.'
             return jsonify({'error': error_msg, 'file': 'left'}), 400
         left_key = left_file.filename
+        cache['left_key'] = left_key
         # store in cache
         cache[left_key] = left_img
 
@@ -61,8 +64,9 @@ def upload_files_gii():
         # assumes first position is coordinates, and second is faces
         vertices_left = fsmesh_left.darrays[0].data
         faces_left = fsmesh_left.darrays[1].data
+        cache['vertices_left'] = vertices_left
+        cache['faces_left'] = faces_left
 
-        timepoints = list(range(len(left_img.darrays)))
     else:
         left_img = None
 
@@ -79,6 +83,7 @@ def upload_files_gii():
             error_msg = 'there was a problem loading the right hemisphere func.gii file. Expecting 1d-array per timepoint. Check format.'
             return jsonify({'error': error_msg, 'file': 'right'}), 400
         right_key = right_file.filename
+        cache['right_key'] = right_key
         # store in cache
         cache[right_key] = right_img
 
@@ -96,8 +101,8 @@ def upload_files_gii():
         # assumes first position is coordinates, and second is faces
         vertices_right = fsmesh_right.darrays[0].data
         faces_right = fsmesh_right.darrays[1].data
-        if not timepoints:
-            timepoints = list(range(len(right_img.darrays)))
+        cache['vertices_right'] = vertices_right
+        cache['faces_right'] = faces_right
     else:
         right_img = None
 
@@ -107,29 +112,8 @@ def upload_files_gii():
             error_msg = 'the number of timepoints in the left and right func.gii are not the same'
             return jsonify({'error': error_msg, 'file': 'none'}), 400
 
-
-    # get first time point for initial display
-    func_data_left = left_img.darrays[0].data if left_img else None
-    func_data_right = right_img.darrays[0].data if right_img else None
-
     # get global min and max
-    global_min_left = np.nan
-    global_max_left = np.nan
-    global_min_right = np.nan
-    global_max_right = np.nan
-    if left_img:
-        global_min_left, global_max_left = utils.get_minmax(
-            left_img, 'gifti'
-        )
-    if right_img:
-        global_min_right, global_max_right = utils.get_minmax(
-            right_img, 'gifti'
-        )
-    global_min = np.nanmin([global_min_left, global_min_right])
-    global_max = np.nanmax([global_max_left, global_max_right])
-    # save global min and global max in cache
-    cache['global_min'] = global_min
-    cache['global_max'] = global_max
+    metadata = package_gii_metadata(left_img, right_img)
 
     response_data = {
         'left_key': left_key,
@@ -138,9 +122,9 @@ def upload_files_gii():
         'faces_left': faces_left.tolist() if faces_left is not None else None,
         'vertices_right': vertices_right.tolist() if vertices_right is not None else None,
         'faces_right': faces_right.tolist() if faces_right is not None else None,
-        'timepoints': timepoints,
-        'global_min': global_min.item(),
-        'global_max': global_max.item()
+        'timepoints': metadata['timepoints'],
+        'global_min': metadata['global_min'].item(),
+        'global_max': metadata['global_max'].item()
     }
     return jsonify(response_data)
 
@@ -299,13 +283,9 @@ def preprocess_gii():
         left_img = array_to_gii(left_img_array)
         # save to cache
         cache['preprocessed_left'] = left_img
-        # get new min and max
-        global_min_left, global_max_left = utils.get_minmax(
-            left_img, 'gifti'
-        )
     else:
-        # set new min and max as nan
-        global_min_left, global_max_left = np.nan, np.nan
+        left_img = None
+
 
     # normalize right hemisphere Gifti file
     if right_key:
@@ -329,26 +309,18 @@ def preprocess_gii():
         right_img = array_to_gii(right_img_array)
         # save to cache
         cache['preprocessed_right'] = right_img
-        # get new min and max
-        global_min_right, global_max_right = utils.get_minmax(
-            right_img, 'gifti'
-        )
+
     else:
-        # set new min and max as nan
-        global_min_right, global_max_right = np.nan, np.nan
+        right_img = None
 
 
-    # get min and max across left and/or right hemi of new data
-    global_min = np.nanmin(
-        [global_min_left, global_min_right]
-    )
-    global_max = np.nanmax(
-        [global_max_left, global_max_right]
-    )
+    # get min and max for preprocessed data
+    metadata = package_gii_metadata(left_img, right_img)
+
     # pass new global min and global max
     return jsonify({
-        'global_min': global_min.item(),
-        'global_max': global_max.item()
+        'global_min': metadata['global_min'].item(),
+        'global_max': metadata['global_max'].item()
     })
 
 
@@ -394,13 +366,8 @@ def compute_avg_gii():
         # convert to gifti
         left_avg_img = array_to_gii(left_w_avg)
 
-        # get new min and max
-        global_min_left, global_max_left = utils.get_minmax(
-            left_avg_img, 'gifti'
-        )
     else:
-        # set new min and max as nan
-        global_min_left, global_max_left = np.nan, np.nan
+        left_avg_img = None
 
     # right hemisphere
     if right_key:
@@ -420,21 +387,11 @@ def compute_avg_gii():
         # convert to gifti
         right_avg_img = array_to_gii(right_w_avg)
 
-        # get new min and max
-        global_min_right, global_max_right = utils.get_minmax(
-            right_avg_img, 'gifti'
-        )
     else:
-        # set new min and max as nan
-        global_min_right, global_max_right = np.nan, np.nan
+        right_avg_img = None
 
-    # get min and max across left and/or right hemi of new data
-    global_min = np.nanmin(
-        [global_min_left, global_min_right]
-    )
-    global_max = np.nanmax(
-        [global_max_left, global_max_right]
-    )
+    # get min and max for avg data
+    metadata = package_gii_metadata(left_avg_img, right_avg_img)
 
     # save average map data in cache
     cache['avg_l'] = left_avg_img if left_key else None
@@ -444,13 +401,13 @@ def compute_avg_gii():
     # ensure front-end knows where average maps are stored
     cache['avg_map']['left_key'] = 'avg_l' if left_key else None
     cache['avg_map']['right_key'] = 'avg_r' if right_key else None
-    cache['avg_map']['global_min'] = global_min
-    cache['avg_map']['global_max'] = global_max
+    cache['avg_map']['global_min'] = metadata['global_min']
+    cache['avg_map']['global_max'] = metadata['global_max']
     cache['avg_map']['timepoints'] = np.arange(l_edge, r_edge+1).tolist()
-    cache['avg_map']['vertices_left'] = vertices_left if left_key else None
-    cache['avg_map']['vertices_right'] = vertices_right if right_key else None
-    cache['avg_map']['faces_left'] = faces_left if left_key else None
-    cache['avg_map']['faces_right'] = faces_right if right_key else None
+    cache['avg_map']['vertices_left'] = cache['vertices_left'] if left_key else None
+    cache['avg_map']['vertices_right'] = cache['vertices_right'] if right_key else None
+    cache['avg_map']['faces_left'] = cache['faces_left'] if left_key else None
+    cache['avg_map']['faces_right'] = cache['faces_right'] if right_key else None
 
     return jsonify(success=True)
 
@@ -501,13 +458,8 @@ def compute_corr_nii():
         # convert to gifti
         corr_left_img = array_to_gii(correlation_map_l)
 
-        # get new min and max
-        global_min_left, global_max_left = utils.get_minmax(
-            corr_left_img, 'gifti'
-        )
     else:
-        # set new min and max as nan
-        global_min_left, global_max_left = np.nan, np.nan
+        corr_left_img = None
 
     # right hemisphere
     if right_key:
@@ -525,21 +477,12 @@ def compute_corr_nii():
         # convert to gifti
         corr_right_img = array_to_gii(correlation_map_r)
 
-        # get new min and max
-        global_min_right, global_max_right = utils.get_minmax(
-            corr_right_img, 'gifti'
-        )
     else:
-        # set new min and max as nan
-        global_min_right, global_max_right = np.nan, np.nan
+        corr_right_img = None
 
-    # get min and max across left and/or right hemi of new data
-    global_min = np.nanmin(
-        [global_min_left, global_min_right]
-    )
-    global_max = np.nanmax(
-        [global_max_left, global_max_right]
-    )
+    # get min and max for correlation map
+    metadata = package_gii_metadata(corr_left_img, corr_right_img)
+
 
     # save correlation map data in cache
     cache['corr_l'] = corr_left_img if left_key else None
@@ -549,13 +492,13 @@ def compute_corr_nii():
     # ensure front-end knows where correlation maps are stored
     cache['corr_map']['left_key'] = 'corr_l' if left_key else None
     cache['corr_map']['right_key'] = 'corr_r' if right_key else None
-    cache['corr_map']['global_min'] = global_min
-    cache['corr_map']['global_max'] = global_max
+    cache['corr_map']['global_min'] = metadata['global_min']
+    cache['corr_map']['global_max'] = metadata['global_max']
     cache['corr_map']['timepoints'] = lags.tolist()
-    cache['corr_map']['vertices_left'] = vertices_left if left_key else None
-    cache['corr_map']['vertices_right'] = vertices_right if right_key else None
-    cache['corr_map']['faces_left'] = faces_left if left_key else None
-    cache['corr_map']['faces_right'] = faces_right if right_key else None
+    cache['corr_map']['vertices_left'] = cache['vertices_left'] if left_key else None
+    cache['corr_map']['vertices_right'] = cache['vertices_right'] if right_key else None
+    cache['corr_map']['faces_left'] = cache['faces_left'] if left_key else None
+    cache['corr_map']['faces_right'] = cache['faces_right'] if right_key else None
 
     return jsonify(success=True)
 

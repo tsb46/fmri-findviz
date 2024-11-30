@@ -55,7 +55,7 @@ class FileUploader {
         spinnerDiv.style.display = 'block'
 
         // collect fmri files
-        let [formData, fileOut] = this.collectFmriFiles(fileType);
+        let formData = this.collectFmriFiles(fileType);
 
         // pass user inputs to Flask 'upload' route
         try {
@@ -135,11 +135,11 @@ class FileUploader {
               // Show the visualization container after a successful upload
               document.getElementById('visualization_container').style.display = 'block';
               // Call the callback function provided during construction
-              this.onUploadComplete(data, fileOut);
+              this.onUploadComplete(data, fileType);
               // close modal
               $('#uploadModal').modal('hide');
-              // Change upload button
-              this.changeUploadButton()
+              // after upload listeners
+              this.afterUpload()
           } else {
             // if route returns error, display
             let errorMessage = document.getElementById('error-message');
@@ -157,10 +157,77 @@ class FileUploader {
         }
     }
 
+    // 'simulate' file upload with scene file
+    async uploadSceneFile(data) {
+      // Start spinner to indicate loading of files
+      let spinnerOverlayDiv = document.getElementById(
+        'file-load-spinner-overlay'
+      )
+      spinnerOverlayDiv.style.display = 'block'
+      let spinnerDiv = document.getElementById('file-load-spinner')
+      spinnerDiv.style.display = 'block'
+      // send uploaded scene file in POST request
+      const sceneFile = event.target.files[0];
+      const formData = new FormData();
+      formData.append('scene_file', sceneFile);
+      return fetch('/upload_cache', {
+          method: 'POST',
+          body: formData
+      })
+      .then(response => {
+        if (!response.ok) {
+          // if response status is 500, log error message
+          if (response.status == 500) {
+            response.json().then(errorData => {
+              console.log(`Error in upload: ${errorData.Error}`);
+              throw new Error('failed server processing of uploaded cache');
+            });
+          }
+          // end spinner to indicate loading of files
+          spinnerOverlayDiv.style.display = 'none';
+          spinnerDiv.style.display = 'none';
+          // show error modal
+          $('#errorSceneModal').modal('show');
+          throw new Error('failed server processing of uploaded cache');
+        }
+        return response.json()
+      })
+      .then(data => {
+        // get data and call callback function
+        // assign time series output to data
+        if (data.ts_enabled) {
+          Object.assign(data, {timeCourses: data.timeseries})
+        } else {
+          // If no time courses append empty lists
+          Object.assign(data, {timeCourses: {ts: [], tsLabels: []}})
+        }
+
+        if (data.task_enabled) {
+          Object.assign(data, {taskConditions: data.task})
+        } else {
+          Object.assign(data, {taskConditions: null})
+        }
+
+        // call callback function
+        this.onUploadComplete(data, data.file_type);
+        // close modal
+        $('#uploadModal').modal('hide');
+        // after upload listeners
+        this.afterUpload()
+      })
+      .catch(error => {
+        // end spinner to indicate loading of files
+        spinnerOverlayDiv.style.display = 'none';
+        spinnerDiv.style.display = 'none';
+        // show error modal
+        $('#errorSceneModal').modal('show');
+      });
+
+    }
+
     // collect fmri files
     collectFmriFiles(fmriType) {
       const formData = new FormData();
-      let fileOut = null
       // Get nifti files
       if (fmriType == 'nifti') {
         const niftiFile = document.getElementById('nifti_file').files[0];
@@ -171,8 +238,6 @@ class FileUploader {
           'anatomical_file'
         ).files[0];
 
-        // Package data for POST request
-        fileOut = {niftiFile, anatomicalFile, maskFile};
         formData.append('nifti_file', niftiFile);
         formData.append('anatomical_file', anatomicalFile);
         formData.append('mask_file', maskFile);
@@ -194,14 +259,13 @@ class FileUploader {
             'right_surface_mesh_file'
           ).files[0];
           // package data for POST request
-          fileOut = {leftFile, rightFile}
           formData.append('left_hemisphere_file', leftFile);
           formData.append('right_hemisphere_file', rightFile);
           formData.append('left_hemisphere_mesh_file', leftMeshFile);
           formData.append('right_hemisphere_mesh_file', rightMeshFile);
       }
 
-      return [formData, fileOut]
+      return formData
 
     }
 
@@ -252,6 +316,19 @@ class FileUploader {
           // Reset only the FMRI inputs (Nifti or Gifti based on active tab)
           self.removeFmriFiles(fileType, 'all');
         });
+      });
+
+      // Open file dialog when user clicks upload scene
+      const uploadSceneButton = $('#uploadScene');
+      const sceneFileDiv = $('#fileScene');
+      uploadSceneButton.on('click', () => {
+        // open file dialog
+        sceneFileDiv.click();
+      });
+
+      // on scene file upload pass to flask route
+      sceneFileDiv.on('change', (event) => {
+        this.uploadSceneFile();
       });
 
       // Add event listener for bootstrap model close to clear error message
@@ -397,7 +474,7 @@ class FileUploader {
     }
 
     displayHeaderError(message, fileInput) {
-      // Create an alert div or append an error message to an existing placeholder in the modal
+      // Display header error
       const errorMessage = document.getElementById('error-message');
       errorMessage.textContent = message;
       errorMessage.style.display = 'block';
@@ -409,8 +486,8 @@ class FileUploader {
       }, 5000);
     }
 
-    // change upload button to 'reupload' button and handle page refresh
-    changeUploadButton(){
+    // Changes to DOM after upload
+    afterUpload(){
       const uploadButton = document.getElementById('uploadFile')
       // Change button color
       uploadButton.classList.add('btn-secondary');
@@ -418,7 +495,14 @@ class FileUploader {
       // Change button text to reupload file
       uploadButton.innerHTML = 'Reupload Files'
       // Set listener to refresh page when user clicks reupload files
-      uploadButton.addEventListener("click", () => {location.reload()});
+      uploadButton.addEventListener("click", () => {
+        // clear cache
+        window.location.href = '/clear_cache';
+        location.reload()
+      });
+      // set saveScene button to display
+      const saveSceneDisplay = document.getElementById('saveSceneDisplay');
+      saveSceneDisplay.style.display = 'block';
     }
 
     // Get uploaded time series (if any)
@@ -548,6 +632,7 @@ class FileUploader {
       }
     }
 
+    // validate uploaded files
     async validateInputs(
       fileType,
       timeSeries,

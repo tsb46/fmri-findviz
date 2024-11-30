@@ -18,6 +18,8 @@ from scipy.stats import zscore
 from findviz import analysis
 from findviz.routes import utils
 from findviz.routes.common import cache
+from findviz.routes.utils import package_nii_metadata
+
 
 nifti_bp = Blueprint('nifti', __name__)  # Create a blueprint
 
@@ -27,11 +29,13 @@ nifti_dir = tempfile.mkdtemp()
 # Upload nifti file
 @nifti_bp.route('/upload_nii', methods=['POST'])
 def upload_files_nii():
+    cache['file_type'] = 'nifti'
     nifti_file = request.files.get('nifti_file')
     anatomical_file = request.files.get('anatomical_file')
     mask_file = request.files.get('mask_file')
     # Load NIfTI files
     file_key = nifti_file.filename
+    cache['file_key'] = file_key
     try:
         nifti_img = load_nii_file(nifti_file)
     except nib.spatialimages.HeaderDataError:
@@ -52,6 +56,7 @@ def upload_files_nii():
     anatomical_img = None
     if anatomical_file:
         anatomical_key = anatomical_file.filename
+        cache['anat_key'] = anatomical_key
         # load anatomical file
         try:
             anatomical_img = load_nii_file(anatomical_file)
@@ -77,6 +82,7 @@ def upload_files_nii():
     mask_img = None
     if mask_file:
         mask_key = mask_file.filename
+        cache['mask_key'] = mask_key
         # load mask file
         try:
             mask_img = load_nii_file(mask_file)
@@ -100,22 +106,16 @@ def upload_files_nii():
         cache[mask_key] = mask_img
 
     # get data for return to app
-    timepoints = list(range(nifti_img.shape[3]))
-    nifti_data = nifti_img.get_fdata()
-    global_min, global_max = utils.get_minmax(nifti_data, 'nifti')
-    # save global min and global max in cache
-    cache['global_min'] = global_min
-    cache['global_max'] = global_max
-
+    metadata = package_nii_metadata(nifti_img)
 
     return jsonify({
         'file_key': file_key,
         'anat_key': anatomical_key if anatomical_img else None,
         'mask_key': mask_key if mask_img else None,
-        'timepoints': timepoints,
-        'slice_len': {'x': nifti_img.shape[0], 'y': nifti_img.shape[1], 'z': nifti_img.shape[2]},
-        'global_min': global_min,
-        'global_max': global_max
+        'timepoints': metadata['timepoints'],
+        'slice_len': metadata['slice_len'],
+        'global_min': metadata['global_min'],
+        'global_max': metadata['global_max']
     })
 
 
@@ -325,8 +325,7 @@ def preprocess_nii():
 
     # get preprocessed data for min and max
     nifti_data = nifti_img.get_fdata()
-    global_min_norm = np.nanmin(nifti_data)
-    global_max_norm = np.nanmax(nifti_data)
+    global_min_norm, global_max_norm = utils.get_minmax(nifti_data, 'nifti')
 
     # save preprocessed data in cache
     cache['preprocessed'] = nifti_img
@@ -396,6 +395,8 @@ def compute_avg_nii():
         w_avg,
         mask_img
     )
+    # get min and max of new nifti
+    metadata = package_nii_metadata(nifti_img_avg)
     # save correlation map data in cache
     cache['avg'] = nifti_img_avg
     cache['avg_map'] = {}
@@ -404,15 +405,10 @@ def compute_avg_nii():
     cache['avg_map']['file_key'] = 'avg'
     cache['avg_map']['mask_key'] = mask_key
     cache['avg_map']['anat_key'] = anat_key
-    cache['avg_map']['slice_len'] = slice_len
-    cache['avg_map']['global_min'] = np.nanmin(w_avg)
-    cache['avg_map']['global_max'] = np.nanmax(w_avg)
+    cache['avg_map']['slice_len'] = metadata['slice_len']
+    cache['avg_map']['global_min'] = metadata['global_min']
+    cache['avg_map']['global_max'] = metadata['global_max']
     cache['avg_map']['timepoints'] = np.arange(l_edge, r_edge+1).tolist()
-    cache['avg_map']['slice_len'] =  {
-        'x': nifti_img_avg.shape[0],
-        'y': nifti_img_avg.shape[1],
-        'z': nifti_img_avg.shape[2]
-    }
 
     return jsonify(success=True)
 
@@ -463,6 +459,9 @@ def compute_corr_nii():
         mask_img
     )
 
+    # get min and max of new nifti
+    metadata = package_nii_metadata(nifti_img_avg)
+
     # save correlation map data in cache
     cache['corr'] = nifti_img_corr
     cache['corr_map'] = {}
@@ -471,15 +470,10 @@ def compute_corr_nii():
     cache['corr_map']['file_key'] = 'corr'
     cache['corr_map']['mask_key'] = mask_key
     cache['corr_map']['anat_key'] = anat_key
-    cache['corr_map']['slice_len'] = slice_len
-    cache['corr_map']['global_min'] = np.nanmin(correlation_map)
-    cache['corr_map']['global_max'] = np.nanmax(correlation_map)
+    cache['corr_map']['slice_len'] = metadata['slice_len']
+    cache['corr_map']['global_min'] = metadata['global_min']
+    cache['corr_map']['global_max'] = metadata['global_max']
     cache['corr_map']['timepoints'] = lags.tolist()
-    cache['corr_map']['slice_len'] =  {
-        'x': nifti_img_corr.shape[0],
-        'y': nifti_img_corr.shape[1],
-        'z': nifti_img_corr.shape[2]
-    }
 
     return jsonify(success=True)
 

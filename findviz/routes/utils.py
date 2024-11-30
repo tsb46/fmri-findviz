@@ -88,6 +88,52 @@ def get_minmax(data, file_type):
     return data_min, data_max
 
 
+# package gifti metadata for input to viewer
+def package_gii_metadata(left_img, right_img):
+    metadata = {}
+    timepoints = None
+    # get global min and max
+    global_min_left = np.nan
+    global_max_left = np.nan
+    global_min_right = np.nan
+    global_max_right = np.nan
+    if left_img:
+        global_min_left, global_max_left = get_minmax(
+            left_img, 'gifti'
+        )
+        timepoints = list(range(len(left_img.darrays)))
+    if right_img:
+        global_min_right, global_max_right = get_minmax(
+            right_img, 'gifti'
+        )
+        if timepoints is None:
+            timepoints = list(range(len(right_img.darrays)))
+
+    metadata['global_min'] = np.nanmin([global_min_left, global_min_right])
+    metadata['global_max'] = np.nanmax([global_max_left, global_max_right])
+    metadata['timepoints'] = timepoints
+    return metadata
+
+
+# package nifti metadata for input to viewer
+def package_nii_metadata(nifti_img):
+    metadata = {}
+    # get timepoints
+    metadata['timepoints'] = list(range(nifti_img.shape[3]))
+    # get global min and max
+    nifti_data = nifti_img.get_fdata()
+    metadata['global_min'], metadata['global_max'] = get_minmax(
+        nifti_data, 'nifti'
+    )
+    # get slice lengths
+    metadata['slice_len'] = {
+        'x': nifti_img.shape[0],
+        'y': nifti_img.shape[1],
+        'z': nifti_img.shape[2]
+    }
+    return metadata
+
+
 # check string is numeric
 def is_numeric(value):
     try:

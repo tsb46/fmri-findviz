@@ -8,9 +8,18 @@
           </div>
           <p class="lead">FMRI Interactive Navigation and Discovery Viewer</p>
           <hr class="my-4">
-          <button type="button" class="btn btn-primary btn-lg mt-4" data-toggle="modal" id='uploadFile' data-target="#uploadModal">
-            Upload Files
-          </button>
+          <div class='row'>
+            <div class='col'>
+              <button type="button" class="btn btn-primary btn-lg mt-4" data-toggle="modal" id='uploadFile' data-target="#uploadModal">
+                Upload Files
+              </button>
+            </div>
+          </div>
+          <div class='row mt-5' id='saveSceneDisplay' style="display: none;">
+            <div class='col'>
+              <a id='saveScene' class="btn btn-sm btn-outline-secondary" href="{{ url_for('common.download_cache') }}">Save Scene</a>
+            </div>
+          </div>
         </div>
     </div>
     <!-- Modal File Upload-->
@@ -19,10 +28,23 @@
       <div id='uploadModalDialog' class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
           <div class="modal-header">
-            <h5 class="modal-title" id="uploadModalLabel">Upload Files</h5>
-            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-              <span aria-hidden="true">&times;</span>
-            </button>
+            <div class="container-fluid">
+              <div class='row'>
+                <div class='col-4'>
+                  <h5 class="modal-title" id="uploadModalLabel">Upload Files</h5>
+                </div>
+                <div class='col-3 offset-4'>
+                  <button id='uploadScene' type="button" class="btn btn-outline-secondary">Upload Scene</button>
+                  <!-- Hidden JSON File Input -->
+                  <input type="file" id="fileScene" style="display: none;">
+                </div>
+                <div class='col-1'>
+                  <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                  </button>
+                </div>
+              </div>
+            </div>
           </div>
           <!-- Navigation Bar inside the modal -->
           <nav class="navbar navbar-expand-lg navbar-light bg-light">
@@ -36,7 +58,6 @@
               </li>
             </ul>
           </nav>
-
           <!-- Unified Form for Both Tabs -->
           <form id="uploadForm" enctype="multipart/form-data">
             <div class="modal-body">
@@ -151,7 +172,7 @@
                 <div class='card mt-2'>
                   <div class="card-header">
                     <h5 class="card-title d-inline-block">Task Design File</h5>
-                    <span class="fa-solid fa-circle-info d-inline-block toggle-immediate" id='tooltipTask' data-toggle="tooltip" data-placement="top" title=" (Optional) A task design file in .csv or .tsv format. The file must contain an 'onset' and 'duration' column. Optionally, for multiple event types, you can include an 'trial_type' column. Example: <br><br>
+                    <span class="fa-solid fa-circle-info d-inline-block toggle-immediate" id='tooltipTask' data-toggle="tooltip" data-placement="top" title=" (Optional) A task design file in .csv or .tsv format. The file must contain an 'onset' and 'duration' column. Values in these columns must be in seconds. Optionally, for multiple event types, you can include an 'trial_type' column. Example: <br><br>
                     <img width=180 src='{{ url_for('static', filename='images/task_design_file.png') }}'/>
                     " aria-hidden="true"></span>
                   </div>
@@ -168,15 +189,14 @@
                         </div>
                         <div class="col-3">
                           <label for="task-design-slicetime">Slicetime Ref:</label>
-                          <span class="fa fa-info-circle ml-1 toggle-immediate" data-toggle="tooltip" data-placement="top" title="The time of the reference slice used in the fmri slice timing correction. It is expressed as a percentage of the TR (repetition time): 0 - 1. For example, if slicetiming was referenced to the slice at the middle of the fmri acquisition, it would be 0.5. Default is 0.5, which is commonly used in most preprocessing pipelines." aria-hidden="true"></span>
+                          <span class="fa fa-info-circle ml-1 toggle-immediate" data-toggle="tooltip" data-placement="top" title="The time of the reference slice used in the fmri slice timing correction. It is expressed as a percentage of the TR (repetition time): 0 - 1. For example, if slicetiming was referenced to the slice at the middle of the fmri acquisition, it would be 0.5. Default is 0.5, which is commonly used in fmri preprocessing pipelines." aria-hidden="true"></span>
                           <input type="number" class="form-control" id="task-design-slicetime" step="0.01" min="0", max="1" value="0.5">
                         </div>
                     </div>
                   </div>
                 </div>
               </div>
-
-              <!-- Error Message Placeholder -->
+              <!-- Within-Modal Error Message Placeholder -->
               <div id="error-message" class="alert alert-danger" role='alert' style="display: none;"></div>
             </div>
 
@@ -185,6 +205,27 @@
               <button type="submit" class="btn btn-primary" id='submit-file' data-dismiss="static">Upload and Visualize</button>
             </div>
           </form>
+        </div>
+      </div>
+    </div>
+    <!-- Error Modal for Upload Cache Errors -->
+    <div class="modal fade" id="errorSceneModal" tabindex="-1" role="dialog" aria-labelledby="errorSceneModalLabel" aria-hidden="true">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="errorSceneModalLabel">Error in Scene Upload</h5>
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+          <div class="modal-body">
+            <div class="alert alert-danger" role="alert">
+              Error uploading scene file. Ensure that the uploaded file was downloaded via the 'save scene' button in the FIND viewer, and that the downloaded file came from the same FIND viewer version as the current FIND viewer version.
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+          </div>
         </div>
       </div>
     </div>
