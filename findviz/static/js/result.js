@@ -11,7 +11,6 @@ class Result {
       plotTitle
     ) {
         // Set text in visualization card
-        document.getElementById('fmri-visualization-title').textContent = plotTitle['title'];
         document.getElementById('time-slider-title').textContent = plotTitle['timeSliderTitle'];
         // set attributes based on nifti or gifti file input
         if (plotData.plot_type == 'nifti') {

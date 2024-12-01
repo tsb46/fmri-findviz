@@ -102,6 +102,7 @@ class GiftiViewer {
         colorMax,
         thresholdMin,
         thresholdMax,
+        opacity,
         hoverTextOn,
         preprocState,
         updateCoord=false, // unused, for consistency with API
@@ -134,6 +135,7 @@ class GiftiViewer {
                     colorMax,
                     thresholdMin,
                     thresholdMax,
+                    opacity,
                     hoverTextOn,
                     updateLayoutOnly,
                 );
@@ -149,6 +151,7 @@ class GiftiViewer {
                     colorMax,
                     thresholdMin,
                     thresholdMax,
+                    opacity,
                     hoverTextOn,
                     updateLayoutOnly
                 );
@@ -170,6 +173,7 @@ class GiftiViewer {
         colorMax,
         thresholdMin,
         thresholdMax,
+        opacity,
         hoverTextOn,
         updateLayoutOnly
     ) {
@@ -195,7 +199,6 @@ class GiftiViewer {
             vertices = this.verticesRight;
             faces = this.facesRight;
         }
-
         let plotData = {
             type: 'mesh3d',
             x: vertices.map(v => v[0]),
@@ -208,6 +211,7 @@ class GiftiViewer {
             colorscale: colorMap,
             cmin: colorMin,
             cmax: colorMax,
+            opacity: opacity,
             showscale: false,
             text: intensityValues,
             hoverinfo: hoverTextOn ? 'x+y+z' : 'none',

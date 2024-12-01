@@ -216,11 +216,11 @@ class FileUploader {
         this.afterUpload()
       })
       .catch(error => {
+        // There was an unspecified error
+        console.error('Error during file upload:', error);
         // end spinner to indicate loading of files
         spinnerOverlayDiv.style.display = 'none';
         spinnerDiv.style.display = 'none';
-        // show error modal
-        $('#errorSceneModal').modal('show');
       });
 
     }

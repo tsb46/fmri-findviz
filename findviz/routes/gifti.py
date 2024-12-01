@@ -114,6 +114,9 @@ def upload_files_gii():
 
     # get global min and max
     metadata = package_gii_metadata(left_img, right_img)
+    # store global min and max in cache
+    cache['global_min'] = metadata['global_min']
+    cache['global_max'] = metadata['global_max']
 
     response_data = {
         'left_key': left_key,

@@ -3,26 +3,24 @@
   <div id="time-course-plot-container" style="display: none;">
     <div class='row'>
       <!-- Visualization Options for Time course -->
-      <div class = 'col-3 pl-3 pr-2' id='tsVizOptions'>
+      <div class = 'col-2 pl-1 pr-2' id='tsVizOptions'>
+        <!-- Color/Line Options -->
         <div class='row'>
           <div class='col-12 pr-0'>
             <div class='card w-100'>
-              <div class='card-header pt-1 pb-0'>
-                <h5 class="card-title">Time Course Options</h5>
-              </div>
-              <div class="card-body pt-1">
+              <div class="card-body pt-1 pb-2">
                 <form>
                   <!-- Select time course drop down -->
                   <div class='row pt-0'>
-                    <label for="ts-select">Time Course</label>
+                    <label for="ts-select" class='small'><strong> Choose Time Course</strong></label>
                       <select class="custom-select w-100" id="ts-select">
                         <!-- Options will be dynamically added here -->
                       </select>
                   </div>
                   <!-- Time Course Color Selection Options -->
-                  <div class='row mt-2'>
+                  <div class='row mt-1'>
                     <div class='col-6 pr-3 pl-0'>
-                      <span><strong>Color</strong></span>
+                      <span class='small'><strong>Color</strong></span>
                       <select class="custom-select" id="ts-color-select">
                         <option value="red">Red</option>
                         <option value="blue">Blue</option>
@@ -57,7 +55,7 @@
                       </select>
                     </div>
                     <div class='col-6 pr-3 pl-0'>
-                      <span><strong>Line Marker</strong></span>
+                      <span class='small'><strong>Line Marker</strong></span>
                       <select class="custom-select" id="ts-marker-select">
                         <option value="lines+markers">Lines+Markers</option>
                         <option value="lines">Lines</option>
@@ -65,13 +63,13 @@
                       </select>
                     </div>
                   </div>
-                  <div class='row mt-2'>
+                  <div class='row mt-1'>
                     <div class='col-6 pr-3 pl-0'>
-                      <label for="ts-width-slider"><strong>Line Width</strong></label>
+                      <label for="ts-width-slider" class='small'><strong>Line Width</strong></label>
                         <input id="ts-width-slider" type="text" class="slider" data-slider-responsive="true"/>
                     </div>
                     <div class='col-6 pr-3 pl-0'>
-                      <label for="ts-opacity-slider"><strong>Opacity</strong></label>
+                      <label for="ts-opacity-slider" class='small'><strong>Opacity</strong></label>
                       <input id="ts-opacity-slider" type="text" class="slider" data-slider-responsive="true"/>
                     </div>
                   </div>
@@ -80,35 +78,102 @@
             </div>
           </div>
         </div>
+        <!-- Time Point Marker Options -->
         <div class='row mt-1'>
           <div class='col-12 pr-0'>
             <div class='card w-100'>
-              <div class='card-header pt-1 pb-0'>
-                <h5 class="card-title">Time Course Preprocessing</h5>
+              <div class="card-body pt-1 pb-2">
+                <form>
+                  <!-- Time Point Marker Color Selection Options -->
+                  <div class='row'>
+                    <div class='col-6 pr-3 pl-0'>
+                      <span class='small'><strong>Marker Color</strong></span>
+                      <select class="custom-select" id="timepoint-color-select">
+                        <option value="red">Red</option>
+                        <option value="blue">Blue</option>
+                        <option value="green">Green</option>
+                        <option value="orange">Orange</option>
+                        <option value="purple">Purple</option>
+                        <option value="black">Black</option>
+                        <option value="grey">Grey</option>
+                        <option value="yellow">Yellow</option>
+                        <option value="brown">Brown</option>
+                        <option value="darkred">Dark Red</option>
+                        <option value="darkred">Tomato</option>
+                        <option value="magenta">Magenta</option>
+                        <option value="crimson">Crimson</option>
+                        <option value="salmon">Salmon</option>
+                        <option value="firebrick">Fire Brick</option>
+                        <option value="navy">Navy</option>
+                        <option value="royalblue">Royal Blue</option>
+                        <option value="turquoise">Turquoise</option>
+                        <option value="coral">Coral</option>
+                        <option value="seagreen">Sea Green</option>
+                        <option value="forestgreen">Forest Green</option>
+                        <option value="olive">Olive</option>
+                        <option value="darkgreen">Dark Green</option>
+                        <option value="darkorange">Dark Orange</option>
+                        <option value="violet">Violet</option>
+                        <option value="slategrey">Slate Grey</option>
+                        <option value="slateblue">Slate Blue</option>
+                        <option value="darkgrey">Dark Grey</option>
+                        <option value="khaki">Khaki</option>
+                        <option value="tan">Tan</option>
+                      </select>
+                    </div>
+                    <div class='col-6 pr-3 pl-0'>
+                      <span class='small'><strong>Marker Shape</strong></span>
+                      <select class="custom-select" id="timepoint-marker-select">
+                        <option value="solid">Solid</option>
+                        <option value="dash">Dash</option>
+                        <option value="dot">Dot</option>
+                        <option value="longdash">Long Dash</option>
+                        <option value="dashdot">Dash+Dot</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div class='row mt-1'>
+                    <div class='col-6 pr-3 pl-0'>
+                      <label for="timepoint-width-slider" class='small'><strong>Marker Width</strong></label>
+                        <input id="timepoint-width-slider" type="text" class="slider" data-slider-responsive="true"/>
+                    </div>
+                    <div class='col-6 pr-3 pl-0'>
+                      <label for="timepoint-opacity-slider" class='small'><strong>Marker Opacity</strong></label>
+                      <input id="timepoint-opacity-slider" type="text" class="slider" data-slider-responsive="true"/>
+                    </div>
+                  </div>
+                </form>
               </div>
-              <div class="card-body pt-1">
+            </div>
+          </div>
+        </div>
+        <!-- Preprocessing Options -->
+        <div class='row mt-1'>
+          <div class='col-12 pr-0'>
+            <div class='card w-100'>
+              <div class="card-body pt-2 pb-1">
                 <form>
                   <!-- Normalization Options -->
                   <div class='row'>
                     <select class="selectpicker w-100" id='ts-norm-select' multiple data-actions-box="true" title="Choose Time Course(s)">
                     </select>
                   </div>
-                  <div class='row mt-2'>
+                  <div class='row mt-1'>
                     <div class='col-12 ml-1'>
                       <div class='row'>
                         <div class="custom-control custom-switch">
                           <input type="checkbox" class="custom-control-input" id="ts-enable-normalization">
-                          <label class="custom-control-label" for="ts-enable-normalization"><strong>Normalization</strong></label>
+                          <label class="custom-control-label small" for="ts-enable-normalization"><strong>Normalization</strong></label>
                         </div>
                       </div>
                       <div class='row'>
                         <div class="form-check form-check-inline">
                           <input class="form-check-input ts-norm-option" type="radio" name="norm-options" id="ts-select-mean-center" value="mean-center" disabled>
-                          <label class="form-check-label" for="ts-select-mean-center">mean-center</label>
+                          <label class="form-check-label small" for="ts-select-mean-center">mean-center</label>
                         </div>
                         <div class="form-check form-check-inline">
                           <input class="form-check-input ts-norm-option" type="radio" name="norm-options" id="ts-select-z-score" value="z-score" disabled>
-                          <label class="form-check-label" for="ts-select-z-score">z-score</label>
+                          <label class="form-check-label small" for="ts-select-z-score">z-score</label>
                         </div>
                       </div>
                     </div>
@@ -119,47 +184,45 @@
                       <div class='row pl-2'>
                         <div class="custom-control custom-switch">
                           <input type="checkbox" class="custom-control-input" id="ts-enable-filtering">
-                          <label class="custom-control-label" for="ts-enable-filtering"><strong>Filter</strong></label>
+                          <label class="custom-control-label small" for="ts-enable-filtering"><strong>Filter</strong></label>
                           <span class="fa-solid fa-circle-info ml-1 toggle-immediate" data-toggle="tooltip" data-placement="top" title="Temporal filtering of time courses is performed with a Butterworth 5th-order filter. Low-cut and high-cut are provided in Hertz (Hz). Providing only low-cut performs high-pass filtering. Providing only high-cut performs low-pass filtering. Providing both performs bandpass filtering." aria-hidden="true"></span>
                         </div>
                       </div>
                       <!-- Filter options layout -->
                       <div class='row pl-2 justify-content-start'>
-                        <div class="col-md-3 pl-0 pr-2">
+                        <div class="col-4 pl-0 pr-1">
                           <div class="form-group filter-options mb-1">
                             <label for="ts-filter-tr" class='mb-0'><small>TR:</small></label>
                             <span class="fa-solid fa-circle-info ml-1 toggle-immediate" data-toggle="tooltip" data-placement="top" title="The repitition time of the time courses (should be same as fMRI)" aria-hidden="true"></span>
                             <input type="number" class="form-control form-control-sm ts-filter-option" id="ts-filter-tr" step="0.01" disabled>
                           </div>
                         </div>
-                        <div class="col-md-4 pl-0 pr-2">
+                        <div class="col-4 pl-0 pr-1">
                           <div class="form-group filter-options mb-1">
                             <label for="ts-filter-low-cut" class='mb-0'><small>Low-Cut:</small></label>
                             <div class="d-flex align-items-center">
                               <input type="number" class="form-control form-control-sm ts-filter-option mr-1" id="ts-filter-low-cut" step="0.01" disabled>
-                              <span><small>Hz</small></span>
                             </div>
                           </div>
                         </div>
-                        <div class="col-md-4 pl-0 pr-2">
+                        <div class="col-4 pl-0 pr-1">
                           <div class="form-group filter-options mb-1">
                             <label for="ts-filter-high-cut" class='mb-0'><small>High-Cut:</small></label>
                             <div class="d-flex align-items-center">
                               <input type="number" class="form-control form-control-sm ts-filter-option mr-1" id="ts-filter-high-cut" step="0.01" disabled>
-                              <span><small>Hz</small></span>
                             </div>
                           </div>
                         </div>
                       </div>
                     </div>
                   </div>
-                  <div class='row pl-1'>
+                  <div class='row mt-2 mb-1'>
                     <!-- Error Message Placeholder -->
                     <div id="ts-error-message-preprocess" class="alert alert-danger" role='alert' style="display: none;"></div>
-                    <div class='col-md-5'>
+                    <div class='col-7 pl-1 pr-1'>
                       <button type="button" class="btn btn-primary btn-sm btn-block" id='ts-submit-preprocess' type='submit'>Preprocess</button>
                     </div>
-                    <div class='col-md-5'>
+                    <div class='col-5 pl-1'>
                       <button type="button" class="btn btn-secondary btn-sm btn-block" id='ts-reset-preprocess'>Reset</button>
                     </div>
                   </div>
@@ -169,20 +232,13 @@
           </div>
         </div>
       </div>
-      <div class = 'col-9'>
+      <div class = 'col-10'>
         <div class='card w-100 h-100'>
-          <div class='card-header pt-1 pb-0 pr-1'>
+          <div class='card-header pt-1 pb-1 pr-1'>
             <div class='row'>
-              <div class='col-2 pr-1 pl-1'>
-                <div class='row'>
-                  <div class='col-9 pr-1'>
-                    <h5 class="card-title">Time Course</h5>
-                  </div>
-                  <div class='col-2 pl-1 pr-1 pb-1 pt-0'>
-                    <div class="alert alert-info small p-2 m-0 text-center toggle-immediate" role="alert" id='ts-preprocess-alert' data-toggle="tooltip" data-placement="top" title="Viewing preprocessed data" style="display: none;">
-                      <i class="fa-solid fa-p"></i>
-                    </div>
-                  </div>
+              <div class='col-1 pl-1 pr-1 pb-1 pt-0'>
+                <div class="alert alert-info small p-2 m-0 text-center toggle-immediate" role="alert" id='ts-preprocess-alert' data-toggle="tooltip" data-placement="top" title="Viewing preprocessed data" style="display: none;">
+                  <i class="fa-solid fa-p"></i>
                 </div>
               </div>
               <div class='col-3 pr-1 pl-1'>
@@ -273,7 +329,7 @@
                 <!-- Average Modal Button -->
                 <button type="button" class="btn btn-outline-primary btn-sm" data-toggle="modal" id='runAverageButton' data-target="#averageModal">
                   Average
-              </button>
+                </button>
                 <!-- Correlation Modal Button -->
                 <button type="button" class="btn btn-outline-primary btn-sm" data-toggle="modal" id='runCorrelationButton' data-target="#correlationModal">
                   Correlate

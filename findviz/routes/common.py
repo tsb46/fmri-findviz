@@ -53,12 +53,14 @@ def download_cache():
     # send cache to client
     return send_file(file_path, as_attachment=True)
 
+
 # clear cache on file reupload
 @common_bp.route('/clear_cache')
 def clear_cache():
     # clear cache
     cache.clear()
     return "", 200
+
 
 # allow user to upload cache ('scene') and start app
 @common_bp.route('/upload_cache', methods=['POST'])

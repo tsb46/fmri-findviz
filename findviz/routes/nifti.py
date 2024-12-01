@@ -107,6 +107,9 @@ def upload_files_nii():
 
     # get data for return to app
     metadata = package_nii_metadata(nifti_img)
+    # store global min and max in cache
+    cache['global_min'] = metadata['global_min']
+    cache['global_max'] = metadata['global_max']
 
     return jsonify({
         'file_key': file_key,

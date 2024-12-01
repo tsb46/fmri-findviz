@@ -129,6 +129,13 @@ class TimeCourse {
         this.taskPlotType = 'hrf';
         // initialize time point marker as true
         this.timePointMarker = true;
+        // initialize time point marker state vars
+        this.timePointMarkerState = {
+            width: 1,
+            shape: 'solid',
+            color: 'grey',
+            opacity: 0.5
+        }
         // initialize grid line markers as true
         this.plotGridLine = true;
         // Initialize plot layout as null
@@ -152,7 +159,6 @@ class TimeCourse {
     // Initialize time course user options
     initializeOptions() {
         this.opacitySlider = $('#ts-opacity-slider');
-        // Initialize opacity slider
         this.opacitySlider.slider({
             min: 0,
             max: 1,
@@ -160,9 +166,8 @@ class TimeCourse {
             value: 1,
             tooltip: 'show',
         });
-        // Initialize line width slider
+        // Initialize time series line width slider
         this.lineWidthSlider = $('#ts-width-slider');
-        // Initialize opacity slider
         this.lineWidthSlider.slider({
             min: 0.5,
             max: 10,
@@ -170,17 +175,38 @@ class TimeCourse {
             value: 2,
             tooltip: 'show',
         });
-        // Initialize time course selection listener
-        this.initializeTimeCourseSelect();
+        // Initialize time series line width slider
+        this.timePointLineWidthSlider = $('#timepoint-width-slider');
+        this.timePointLineWidthSlider.slider({
+            min: 1,
+            max: 10,
+            step: 1,
+            value: this.timePointMarkerState['width'],
+            tooltip: 'show',
+        });
+        // Initialize time point marker opacity slider
+        this.timePointOpacitySlider = $('#timepoint-opacity-slider');
+        this.timePointOpacitySlider.slider({
+            min: 0,
+            max: 1,
+            step: 0.01,
+            value: this.timePointMarkerState['opacity'],
+            tooltip: 'show',
+        });
+
+        // Initialize time course plot option listeners
+        this.initializeTimeCoursePlotOptions();
         // Initialize the color change listener once the card is loaded
         this.initializeColorChangeListener();
+        // Initialize time marker plot option listeners
+        this.initializeTimeMarkerPlotOptions();
         // Initialize switches
         this.initializeSwitches();
         // Initialize preprocessing time course selection menu
         this.initializeTimeCoursePrepSelect();
         // Initialize selection menu in analysis modals
         this.updateAnalysisMenu();
-        // Initialize peak finder popup code
+        // Initialize peak finder popup
         this.initializePeakFinderPopup();
         // Get preprocessing button
         this.preprocessSubmit = $('#ts-submit-preprocess');
@@ -337,7 +363,7 @@ class TimeCourse {
     }
 
     // Initialize time course select
-    initializeTimeCourseSelect() {
+    initializeTimeCoursePlotOptions() {
         // get time course select dropdown
         const tsSelectMenu = document.getElementById('ts-select');
         // get time course labels
@@ -389,7 +415,7 @@ class TimeCourse {
 
     }
 
-    // Initialize color change listener
+    // Initialize color change listener in time course plot options
     initializeColorChangeListener() {
         // Time course color change listener
         const colorSelect = document.getElementById('ts-color-select');
@@ -415,6 +441,48 @@ class TimeCourse {
                     this.plotTimeCourses(this.timePoint)
                 }
             }
+        });
+    }
+
+    // initialize time marker plot option panel listeners
+    initializeTimeMarkerPlotOptions() {
+        // Time marker color selection
+        const colorSelect = document.getElementById('timepoint-color-select');
+        colorSelect.value = this.timePointMarkerState['color'];
+        // Time marker color change listener
+        colorSelect.addEventListener('change', (event) => {
+            const color = event.target.value;
+            this.timePointMarkerState['color'] = color;
+            // replot with new marker color
+            this.plotTimeCourses(this.timePoint)
+        });
+
+        // Time marker shape change listener
+        const shapeSelect = document.getElementById('timepoint-marker-select');
+        shapeSelect.value = this.timePointMarkerState['shape'];
+        shapeSelect.addEventListener('change', (event) => {
+            const shape = event.target.value;
+            this.timePointMarkerState['shape'] = shape;
+            // replot with new marker shape
+            this.plotTimeCourses(this.timePoint)
+        });
+
+        // Time marker line width listener
+        const lineWidthSlider = $('#timepoint-width-slider');
+        lineWidthSlider.on('change', (event) => {
+            const lineWidthValue = event.value;
+            this.timePointMarkerState['width'] = lineWidthValue.newValue;
+            // replot with new line width
+            this.plotTimeCourses(this.timePoint)
+        });
+
+        // Time marker opacity listener
+        const opacitySlider = $('#timepoint-opacity-slider');
+        opacitySlider.on('change', (event) => {
+            const opacityValue = event.value;
+            this.timePointMarkerState['opacity'] = opacityValue.newValue;
+            // replot with new opacity
+            this.plotTimeCourses(this.timePoint)
         });
     }
 
@@ -772,10 +840,11 @@ class TimeCourse {
                     x1: timePoint,
                     y1: 1,
                     yref: 'paper',
-                    opacity: 0.5,
+                    opacity: this.timePointMarkerState['opacity'],
                     line: {
-                        color: 'rgb(127, 127, 127)',
-                        width: 1
+                        color: this.timePointMarkerState['color'],
+                        width: this.timePointMarkerState['width'],
+                        dash: this.timePointMarkerState['shape']
                     },
                 }
             ]

@@ -11,12 +11,6 @@ class MainViewer{
         plotData,
         plotType
       ) {
-        if (plotType == 'nifti') {
-            // Set text in visualization card
-            document.getElementById('fmri-visualization-title').textContent = 'FMRI Ortho View'
-        } else if (plotType == 'gifti') {
-            document.getElementById('fmri-visualization-title').textContent = 'FMRI Surface View'
-        }
         document.getElementById('time-slider-title').textContent = 'Time Point:'
         // set attributes based on nifti or gifti file input
         if (plotType == 'nifti') {
@@ -57,6 +51,8 @@ class MainViewer{
         // Initialize thresholds (set to [0,0] for no threshold by default)
         this.thresholdMin = 0;
         this.thresholdMax = 0;
+        // Initialize color opacity
+        this.opacity = 1;
         // Initialize hover text state
         this.hoverTextOn = true;
         // Initialize Preprocess state as false
@@ -119,6 +115,7 @@ class MainViewer{
             this.colorMax,
             this.thresholdMin,
             this.thresholdMax,
+            this.opacity,
             this.hoverTextOn,
             this.preprocState,
             true // update voxel coordinate labels (only for nifti)
@@ -161,6 +158,7 @@ class MainViewer{
                 this.colorMax,
                 this.thresholdMin,
                 this.thresholdMax,
+                this.opacity,
                 this.hoverTextOn,
                 this.preprocState,
                 false, // do not update coordinates
@@ -186,6 +184,7 @@ class MainViewer{
                 this.colorMax,
                 this.thresholdMin,
                 this.thresholdMax,
+                this.opacity,
                 this.hoverTextOn,
                 this.preprocState,
                 false, // do not update coordinates
@@ -209,6 +208,24 @@ class MainViewer{
                 this.colorMax,
                 this.thresholdMin,
                 this.thresholdMax,
+                this.opacity,
+                this.hoverTextOn,
+                this.preprocState
+            );
+        });
+        // Listen for threshold slider change
+        $(document).on('opacitySliderChange', (event) => {
+            const opacityValue = event.detail.newValue;
+            this.opacity = opacityValue;
+            // Plot brain map with new thresholds
+            this.viewer.plot(
+                this.timePoint,
+                this.colormap,
+                this.colorMin,
+                this.colorMax,
+                this.thresholdMin,
+                this.thresholdMax,
+                this.opacity,
                 this.hoverTextOn,
                 this.preprocState
             );
@@ -226,6 +243,7 @@ class MainViewer{
                 this.colorMax,
                 this.thresholdMin,
                 this.thresholdMax,
+                this.opacity,
                 this.hoverTextOn,
                 this.preprocState
             );
@@ -249,6 +267,7 @@ class MainViewer{
                     this.colorMax,
                     this.thresholdMin,
                     this.thresholdMax,
+                    this.opacity,
                     this.hoverTextOn,
                     this.preprocState
                 );
@@ -271,6 +290,7 @@ class MainViewer{
                         this.colorMax,
                         this.thresholdMin,
                         this.thresholdMax,
+                        this.opacity,
                         this.hoverTextOn,
                         this.preprocState
                     );
@@ -296,6 +316,7 @@ class MainViewer{
                             this.colorMax,
                             this.thresholdMin,
                             this.thresholdMax,
+                            this.opacity,
                             this.hoverTextOn,
                             this.preprocState
                         );
@@ -315,6 +336,7 @@ class MainViewer{
                     this.colorMax,
                     this.thresholdMin,
                     this.thresholdMax,
+                    this.opacity,
                     this.hoverTextOn,
                     this.preprocState
                 );
@@ -332,6 +354,7 @@ class MainViewer{
                     this.colorMax,
                     this.thresholdMin,
                     this.thresholdMax,
+                    this.opacity,
                     this.hoverTextOn,
                     this.preprocState
                 );
@@ -384,6 +407,7 @@ class MainViewer{
                     this.colorMax,
                     this.thresholdMin,
                     this.thresholdMax,
+                    this.opacity,
                     this.hoverTextOn,
                     this.preprocState
                 );
@@ -432,6 +456,7 @@ class MainViewer{
                         this.colorMax,
                         this.thresholdMin,
                         this.thresholdMax,
+                        this.opacity,
                         this.hoverTextOn,
                         this.preprocState
                     );
@@ -453,6 +478,7 @@ class MainViewer{
                 this.colorMax,
                 this.thresholdMin,
                 this.thresholdMax,
+                this.opacity,
                 this.hoverTextOn,
                 this.preprocState
             );
@@ -481,6 +507,7 @@ class MainViewer{
                 this.colorMax,
                 this.thresholdMin,
                 this.thresholdMax,
+                this.opacity,
                 this.hoverTextOn,
                 this.preprocState,
                 true, // update coordinate labels (only for nifti)

@@ -110,6 +110,7 @@ class NiftiViewer {
         colorMax,
         thresholdMin,
         thresholdMax,
+        opacity,
         hoverTextOn,
         preprocState,
         updateCoord=false,
@@ -168,15 +169,15 @@ class NiftiViewer {
             // plot three slices individually
             this.plotSlice(
                 'x_slice_container', data.x_slice, data.x_slice_anat, 'x',
-                colorMap, colorMin, colorMax, hoverTextOn, updateLayoutOnly
+                colorMap, colorMin, colorMax, opacity, hoverTextOn, updateLayoutOnly
             );
             this.plotSlice(
                 'y_slice_container', data.y_slice, data.y_slice_anat, 'y',
-                 colorMap, colorMin, colorMax, hoverTextOn, updateLayoutOnly
+                 colorMap, colorMin, colorMax, opacity, hoverTextOn, updateLayoutOnly
             );
             this.plotSlice(
                 'z_slice_container', data.z_slice, data.z_slice_anat, 'z',
-                 colorMap, colorMin, colorMax, hoverTextOn, updateLayoutOnly
+                 colorMap, colorMin, colorMax, opacity, hoverTextOn, updateLayoutOnly
             );
         })
         .catch(error => {
@@ -193,6 +194,7 @@ class NiftiViewer {
         colorMap,
         colorMin,
         colorMax,
+        opacity,
         hoverTextOn,
         updateLayoutOnly
     ) {
@@ -209,7 +211,6 @@ class NiftiViewer {
         if (this.directionMarkerOn) {
             directionMark = this.createDirectionMarkers(axisLabel);
         }
-
         const data = [{
             z: sliceData,
             name: 'fMRI',
@@ -217,6 +218,7 @@ class NiftiViewer {
             colorscale: colorMap,
             zmin: colorMin,
             zmax: colorMax,
+            opacity: opacity,
             showscale: false,
             hoverinfo: hoverTextOn ? 'all' : 'none',
             // Display voxel coordinates

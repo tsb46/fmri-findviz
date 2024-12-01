@@ -77,6 +77,8 @@ export class VisualizationOptions {
         this.colorSlider = $('#colorRangeSlider');
         // get threshold slider
         this.thresholdSlider = $('#thresholdSlider');
+        // get opacity slider
+        this.opacitySlider = $('#opacitySlider');
         // get reset slider button
         this.resetSliderButton = $('#reset-slider-button');
         // get ortho to montage viewer
@@ -110,7 +112,7 @@ export class VisualizationOptions {
 
     createVizOptions() {
         // Remove an existing visualization options, if they exist
-        let colorMapContainer = document.getElementById('form-colormap');
+        let colorMapContainer = document.getElementById('colormapSelect');
 
         // Dynamically generate the colormap options
         let colormapOptions = Object.keys(this.colormapData).map(cmap => `
@@ -125,13 +127,10 @@ export class VisualizationOptions {
 
         // Generate Bootstrap dropdown
         colorMapContainer.innerHTML = `
-            <label for="colormapSelect"> <strong>Choose Colormap:</strong></label>
-            <div class="custom-dropdown" id="colormapSelect">
-                <div class="dropdown-toggle" style="color:black;">Viridis</div> <!-- Default value set to 'Viridis' -->
-                <ul class="dropdown-menu">
-                    ${colormapOptions}
-                </ul>
-            </div>
+            <div class="dropdown-toggle" style="color:black;">Viridis</div> <!-- Default value set to 'Viridis' -->
+            <ul class="dropdown-menu">
+                ${colormapOptions}
+            </ul>
         `;
 
         // Attach event listeners
@@ -162,9 +161,8 @@ export class VisualizationOptions {
             range: true,
             value: [this.colorMin, this.colorMax],  // Set initial value to min and max
             tooltip: 'show',
-            // formatter: formatter_slider
         });
-        // Initialize color threshold slider similarly
+        // Initialize color threshold slider
         this.thresholdSlider.slider({
             min: +this.colorMin.toFixed(this.precision),
             max: +this.colorMax.toFixed(this.precision),
@@ -172,7 +170,14 @@ export class VisualizationOptions {
             range: true,
             value: [0, 0],
             tooltip: 'show',
-            // formatter: formatter_slider
+        });
+        // Initialize opacity threshold slider
+        this.opacitySlider.slider({
+            min: 0,
+            max: 1,
+            step: 0.01,  // Dynamic step size
+            value: 1,
+            tooltip: 'show',
         });
     }
 
@@ -262,6 +267,9 @@ export class VisualizationOptions {
 
         // Threshold Slider listener
         this.thresholdSlider.on('change', this.handleThresholdSlider.bind(this));
+
+        // Opacity Slider listener
+        this.opacitySlider.on('change', this.handleOpacitySlider.bind(this));
 
         // Reset slider button listener
         this.resetSliderButton.on('click', this.handleResetSliders.bind(this));
@@ -368,6 +376,18 @@ export class VisualizationOptions {
         );
         // Dispatch the custom event
         $(document).trigger(customEventThreshold);
+    }
+
+    // Initiate threshold slider event
+    handleOpacitySlider(event) {
+        // event.value gives the current slider value
+        const opacityValue = event.value;
+        // Trigger a custom event using jQuery
+        const customEventOpacity = $.Event(
+            'opacitySliderChange', { detail: opacityValue }
+        );
+        // Dispatch the custom event
+        $(document).trigger(customEventOpacity);
     }
 
     // Trigger custom toggle ortho to montage viewer event

@@ -1,46 +1,17 @@
 <!-- FMRI Visualization Card -->
 <div class='card'>
-  <div class="card-header pt-1 pb-0">
+  <div class="card-header pt-1 pb-1">
     <div class='row'>
-      <div class='col-3'>
-        <div class='row'>
-          <div class='col-10'>
-            <h5 class="card-title" id='fmri-visualization-title'></h5>
-          </div>
-          <div class='col-2 pl-1 pr-1 pb-1 pt-0'>
-            <div class="alert alert-info small p-2 m-0 text-center toggle-immediate" role="alert" id='preprocess-alert' data-toggle="tooltip" data-placement="top" title="Viewing preprocessed data" style="display: none;">
-              <i class="fa-solid fa-p"></i>
-            </div>
-          </div>
+      <div class='col-1 pl-1 pr-1 pb-1 pt-0'>
+        <div class="alert alert-info small p-2 m-0 text-center toggle-immediate" role="alert" id='preprocess-alert' data-toggle="tooltip" data-placement="top" title="Viewing preprocessed data" style="display: none;">
+          <i class="fa-solid fa-p"></i>
         </div>
       </div>
-      <div class='col mb-1'>
+      <div class='col-2'>
         <!-- Toggle slice montage or othoview -->
         <button class="btn btn-outline-secondary btn-sm toggle-wait" id='toggle-view' data-toggle="tooltip" data-placement="top" title="Toggle between ortho and slice montage views.">
           <i class="fa-solid fa-brain"></i>
         </button>
-        <!-- Toggle crosshair for Nifti -->
-        <button class="btn btn-outline-secondary btn-sm toggle-wait" id='toggle-crosshair' data-toggle="tooltip" data-placement="top" title="Toggle crosshair">
-          <i class="fa-solid fa-plus"></i>
-        </button>
-        <!-- Toggle plotly hover text -->
-        <button class="btn btn-outline-secondary btn-sm toggle-wait" id='toggle-hover' data-toggle="tooltip" data-placement="top" title="Toggle hover text">
-          <i class="fa-solid fa-message"></i>
-        </button>
-        <!-- Toggle direction labels for Nifti -->
-        <button class="btn btn-outline-secondary btn-sm toggle-wait" id='toggle-direction' data-toggle="tooltip" data-placement="top" title="Toggle direction labels">
-          <i class="fa-solid fa-text-slash"></i>
-        </button>
-        <!-- Take screenshot of visualization container -->
-        <button class="btn btn-outline-secondary btn-sm toggle-wait" id='select-screenshot' data-toggle="tooltip" data-placement="top" title="Take screenshot">
-          <i class="fa-solid fa-image"></i>
-        </button>
-        <!-- Play movie -->
-        <button class="btn btn-outline-secondary btn-sm toggle-wait" id='play-movie' data-toggle="tooltip" data-placement="top" title="Cycle through timepoints">
-          <i class="fa-solid fa-play"></i>
-        </button>
-      </div>
-      <div class='col-3'>
         <button id="montage-popover" title="Slice Montage Options" type="button" class="btn btn-outline-secondary btn-sm" data-container="body" data-toggle="popover" data-placement="top"
         data-content= "
           <div class='row'>
@@ -73,16 +44,42 @@
           Montage
         </button>
       </div>
+      <div class='col'>
+        <!-- Toggle crosshair for Nifti -->
+        <button class="btn btn-outline-secondary btn-sm toggle-wait" id='toggle-crosshair' data-toggle="tooltip" data-placement="top" title="Toggle crosshair">
+          <i class="fa-solid fa-plus"></i>
+        </button>
+        <!-- Toggle plotly hover text -->
+        <button class="btn btn-outline-secondary btn-sm toggle-wait" id='toggle-hover' data-toggle="tooltip" data-placement="top" title="Toggle hover text">
+          <i class="fa-solid fa-message"></i>
+        </button>
+        <!-- Toggle direction labels for Nifti -->
+        <button class="btn btn-outline-secondary btn-sm toggle-wait" id='toggle-direction' data-toggle="tooltip" data-placement="top" title="Toggle direction labels">
+          <i class="fa-solid fa-text-slash"></i>
+        </button>
+        <!-- Take screenshot of visualization container -->
+        <button class="btn btn-outline-secondary btn-sm toggle-wait" id='select-screenshot' data-toggle="tooltip" data-placement="top" title="Take screenshot">
+          <i class="fa-solid fa-image"></i>
+        </button>
+        <!-- Play movie -->
+        <button class="btn btn-outline-secondary btn-sm toggle-wait" id='play-movie' data-toggle="tooltip" data-placement="top" title="Cycle through timepoints">
+          <i class="fa-solid fa-play"></i>
+        </button>
+      </div>
+      <div class = 'col-2'>
+        <button type="button" class="btn btn-outline-primary btn-sm" data-toggle="modal" id='runDecomposeButton' data-target="#decomposeModal">Decompose
+        </button>
+      </div>
       <div class='col-3'>
         <div class="custom-control custom-switch">
           <input type="checkbox" class="custom-control-input" id="enable-time-course">
-          <label class="custom-control-label" for="enable-time-course">Enable Time Course</label>
+          <label class="custom-control-label small" for="enable-time-course">Enable Time Course</label>
           <span class="fa-solid fa-circle-info toggle-immediate" data-toggle="tooltip" data-placement="top" title="Plot time course of selected voxel/vertex" aria-hidden="true"></span>
         </div>
       </div>
     </div>
   </div>
-  <div class="card-body">
+  <div class="card-body pt-1 pb-1">
     <div class='row'>
       <div id="surface_container" class="mt-2 p-0" style="display: none; width: 100%; height: 100%;">
         <!-- JavaScript will dynamically create and insert left and right hemisphere visualizations here -->
@@ -92,7 +89,7 @@
       </div>
     </div>
   </div>
-  <div class='card-footer'>
+  <div class='card-footer pt-1 pb-1'>
     <div class='row' id='slider-container'>
       <div class='col'>
         <div class='row'>
