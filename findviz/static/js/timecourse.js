@@ -140,6 +140,8 @@ class TimeCourse {
         this.plotGridLine = true;
         // Initialize plot layout as null
         this.plotLayout = null;
+        // Initialize hover as true
+        this.plotHoverText = true;
         // initialize fmri time course switch listener
         this.initializefMRISwitch();
         // Initialize user options
@@ -221,7 +223,7 @@ class TimeCourse {
             'click', this.handleResetPreprocess.bind(this)
         );
 
-        // initialize time marker icon button listener
+        // initialize time marker toggle listener
         $('#toggle-time-marker').on('click', (event) => {
             // if checked
             this.timePointMarker = !this.timePointMarker;
@@ -229,10 +231,18 @@ class TimeCourse {
             this.plotTimeCourses(this.timePoint);
         });
 
-        // initialize plot grid button listener
+        // initialize grid toggle listener
         $('#toggle-grid').on('click', (event) => {
             // if checked
             this.plotGridLine = !this.plotGridLine;
+            // plot with or without grid
+            this.plotTimeCourses(this.timePoint);
+        });
+
+        // Initialize hover toggle listener
+        $('#toggle-ts-hover').on('click', (event) => {
+            // if checked
+            this.plotHoverText = !this.plotHoverText;
             // plot with or without grid
             this.plotTimeCourses(this.timePoint);
         });
@@ -803,7 +813,8 @@ class TimeCourse {
                     width: this.timeCourses[tsLabel]['width']
                 },
                 visible: this.timeCourses[tsLabel]['plot'],
-                opacity: this.timeCourses[tsLabel]['opacity']
+                opacity: this.timeCourses[tsLabel]['opacity'],
+                hoverinfo: this.plotHoverText ? 'all' : 'none'
             };
             plotData.push(tsTrace)
         }
@@ -825,7 +836,8 @@ class TimeCourse {
                     width: this.taskRegressors[taskLabel]['width']
                 },
                 visible: this.taskRegressors[taskLabel]['plot'],
-                opacity: this.taskRegressors[taskLabel]['opacity']
+                opacity: this.taskRegressors[taskLabel]['opacity'],
+                hoverinfo: this.plotHoverText ? 'all' : 'none'
             };
             plotData.push(tsTrace)
         }
