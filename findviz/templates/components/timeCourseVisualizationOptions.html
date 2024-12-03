@@ -1,0 +1,74 @@
+<!-- Time Course Visualization Options -->
+<div class='row'>
+  <div class='col-12 pr-0 pl-1'>
+    <div class='card'>
+      <div class="card-body pt-1 pb-2">
+        <form>
+          <!-- Select time course drop down -->
+          <div class='row pt-0'>
+            <label for="ts-select" class='small'><strong> Choose Time Course</strong></label>
+              <select class="custom-select w-100" id="ts-select">
+                <!-- Options will be dynamically added here -->
+              </select>
+          </div>
+          <!-- Time Course Color Selection Options -->
+          <div class='row mt-1'>
+            <div class='col-6 pr-3 pl-0'>
+              <span class='small'><strong>Color</strong></span>
+              <select class="custom-select" id="ts-color-select">
+                <option value="red">Red</option>
+                <option value="blue">Blue</option>
+                <option value="green">Green</option>
+                <option value="orange">Orange</option>
+                <option value="purple">Purple</option>
+                <option value="black">Black</option>
+                <option value="grey">Grey</option>
+                <option value="yellow">Yellow</option>
+                <option value="brown">Brown</option>
+                <option value="darkred">Dark Red</option>
+                <option value="darkred">Tomato</option>
+                <option value="magenta">Magenta</option>
+                <option value="crimson">Crimson</option>
+                <option value="salmon">Salmon</option>
+                <option value="firebrick">Fire Brick</option>
+                <option value="navy">Navy</option>
+                <option value="royalblue">Royal Blue</option>
+                <option value="turquoise">Turquoise</option>
+                <option value="coral">Coral</option>
+                <option value="seagreen">Sea Green</option>
+                <option value="forestgreen">Forest Green</option>
+                <option value="olive">Olive</option>
+                <option value="darkgreen">Dark Green</option>
+                <option value="darkorange">Dark Orange</option>
+                <option value="violet">Violet</option>
+                <option value="slategrey">Slate Grey</option>
+                <option value="slateblue">Slate Blue</option>
+                <option value="darkgrey">Dark Grey</option>
+                <option value="khaki">Khaki</option>
+                <option value="tan">Tan</option>
+              </select>
+            </div>
+            <div class='col-6 pr-3 pl-0'>
+              <span class='small'><strong>Line Marker</strong></span>
+              <select class="custom-select" id="ts-marker-select">
+                <option value="lines+markers">Lines+Markers</option>
+                <option value="lines">Lines</option>
+                <option value="markers">Markers</option>
+              </select>
+            </div>
+          </div>
+          <div class='row mt-1'>
+            <div class='col-6 pr-3 pl-0'>
+              <label for="ts-width-slider" class='small'><strong>Line Width</strong></label>
+                <input id="ts-width-slider" type="text" class="slider" data-slider-responsive="true"/>
+            </div>
+            <div class='col-6 pr-3 pl-0'>
+              <label for="ts-opacity-slider" class='small'><strong>Opacity</strong></label>
+              <input id="ts-opacity-slider" type="text" class="slider" data-slider-responsive="true"/>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>

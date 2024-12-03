@@ -1,0 +1,84 @@
+<!-- Time Course Preprocessing Options -->
+<div class='row mt-1'>
+  <div class='col-12 pr-0 pl-1'>
+    <div class='card'>
+      <div class="card-body pt-2 pb-1">
+        <form>
+          <!-- Normalization Options -->
+          <div class='row'>
+            <select class="selectpicker w-100" id='ts-norm-select' multiple data-actions-box="true" title="Choose Time Course(s)">
+            </select>
+          </div>
+          <div class='row mt-1'>
+            <div class='col-12 ml-1'>
+              <div class='row'>
+                <div class="custom-control custom-switch">
+                  <input type="checkbox" class="custom-control-input" id="ts-enable-normalization">
+                  <label class="custom-control-label small" for="ts-enable-normalization"><strong>Normalization</strong></label>
+                </div>
+              </div>
+              <div class='row'>
+                <div class="form-check form-check-inline">
+                  <input class="form-check-input ts-norm-option" type="radio" name="norm-options" id="ts-select-mean-center" value="mean-center" disabled>
+                  <label class="form-check-label small" for="ts-select-mean-center">mean-center</label>
+                </div>
+                <div class="form-check form-check-inline">
+                  <input class="form-check-input ts-norm-option" type="radio" name="norm-options" id="ts-select-z-score" value="z-score" disabled>
+                  <label class="form-check-label small" for="ts-select-z-score">z-score</label>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- Filter Options -->
+          <div class='row mt-1 mb-1'>
+            <div class='col-12'>
+              <div class='row pl-2'>
+                <div class="custom-control custom-switch">
+                  <input type="checkbox" class="custom-control-input" id="ts-enable-filtering">
+                  <label class="custom-control-label small" for="ts-enable-filtering"><strong>Filter</strong></label>
+                  <span class="fa-solid fa-circle-info ml-1 toggle-immediate" data-toggle="tooltip" data-placement="top" title="Temporal filtering of time courses is performed with a Butterworth 5th-order filter. Low-cut and high-cut are provided in Hertz (Hz). Providing only low-cut performs high-pass filtering. Providing only high-cut performs low-pass filtering. Providing both performs bandpass filtering." aria-hidden="true"></span>
+                </div>
+              </div>
+              <!-- Filter options layout -->
+              <div class='row pl-2 justify-content-start'>
+                <div class="col-4 pl-0 pr-1">
+                  <div class="form-group filter-options mb-1">
+                    <label for="ts-filter-tr" class='mb-0'><small>TR:</small></label>
+                    <span class="fa-solid fa-circle-info ml-1 toggle-immediate" data-toggle="tooltip" data-placement="top" title="The repitition time of the time courses (should be same as fMRI)" aria-hidden="true"></span>
+                    <input type="number" class="form-control form-control-sm ts-filter-option" id="ts-filter-tr" step="0.01" disabled>
+                  </div>
+                </div>
+                <div class="col-4 pl-0 pr-1">
+                  <div class="form-group filter-options mb-1">
+                    <label for="ts-filter-low-cut" class='mb-0'><small>Low-Cut:</small></label>
+                    <div class="d-flex align-items-center">
+                      <input type="number" class="form-control form-control-sm ts-filter-option mr-1" id="ts-filter-low-cut" step="0.01" disabled>
+                    </div>
+                  </div>
+                </div>
+                <div class="col-4 pl-0 pr-1">
+                  <div class="form-group filter-options mb-1">
+                    <label for="ts-filter-high-cut" class='mb-0'><small>High-Cut:</small></label>
+                    <div class="d-flex align-items-center">
+                      <input type="number" class="form-control form-control-sm ts-filter-option mr-1" id="ts-filter-high-cut" step="0.01" disabled>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class='row mt-2 mb-1'>
+            <!-- Error Message Placeholder -->
+            <div id="ts-error-message-preprocess" class="alert alert-danger" role='alert' style="display: none;"></div>
+            <div class='col-7 pl-1 pr-1'>
+              <button type="button" class="btn btn-primary btn-sm btn-block" id='ts-submit-preprocess' type='submit'>Preprocess</button>
+            </div>
+            <div class='col-5 pl-1'>
+              <button type="button" class="btn btn-secondary btn-sm btn-block" id='ts-reset-preprocess'>Reset</button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>

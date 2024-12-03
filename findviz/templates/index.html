@@ -43,16 +43,17 @@
   <div id="parent-container" class="container-fluid mt-5" style="display: none;">
     <!-- Spinner overlay for preprocessing wait -->
     <div class='spinner-overlay' id="preproc-spinner-overlay"></div>
-    <div id="parent-container-row" class='row justify-content-md-center'>
-      <!-- User Options Container -->
-      <div class="col-2 pl-3 pr-2" id="user_options_container">
+    <!-- FMRI Container -->
+    <div id="fmriContainer" class='row justify-content-center'>
+      <!-- FMRI User Options Container -->
+      <div id="fmriUserOptionsContainer">
         <!-- Visualization Options -->
-        {% include 'components/visualizationOptions.html' %}
+        {% include 'components/fmriVisualizationOptions.html' %}
         <!-- Preprocessing Options -->
-        {% include 'components/preprocessingOptions.html' %}
+        {% include 'components/fmriPreprocessingOptions.html' %}
       </div>
       <!-- Visualization Container -->
-      <div class='col-10' id="visualization_container">
+      <div id="fmriVisualizationContainer">
         <div id='preproc-load-spinner' class="spinner-border spinner-viz" role="status">
           <span class="sr-only">Preprocessing...</span>
         </div>
@@ -60,9 +61,21 @@
         {% include 'components/fmriVisualizationCard.html' %}
       </div>
     </div>
-    <div class='row justify-content-md-center mt-2'>
-      <!-- Container for time courses -->
-      {% include 'components/timeCourse.html' %}
+    <!-- Time Course Container -->
+    <div id="timeCourseContainer" class='row justify-content-center mt-2' style="visibility: hidden;">
+      <!-- Time Course User Options Container -->
+      <div id="timeCourseUserOptionsContainer">
+        <!-- Visualization Options -->
+        {% include 'components/timeCourseVisualizationOptions.html' %}
+        <!-- Time Marker Options -->
+        {% include 'components/timeCourseMarkerOptions.html' %}
+        <!-- Preprocessing Options -->
+        {% include 'components/timeCoursePreprocessingOptions.html' %}
+      </div>
+      <div id='timeCourseVisualizationContainer'>
+        <!-- time course visualization card -->
+        {% include 'components/timeCourseVisualizationCard.html' %}
+      </div>
     </div>
   </div>
   <footer class="text-center mt-4">

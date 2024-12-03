@@ -13,7 +13,7 @@ class TimeCourse {
         this.timeLength = timeLength;
         // get time plot container
         this.timeCourseContainer = document.getElementById(
-            'time-course-plot-container'
+            'timeCourseContainer'
         );
         // Modify behavior of time course plot, depending on whether a
         // time course or task file was passed for display
@@ -25,7 +25,7 @@ class TimeCourse {
             // If any input passed, set userInput to true
             this.userInput = true;
             // if time course or task file is passed, display time course container
-            this.timeCourseContainer.style.display = 'block'
+            this.timeCourseContainer.style.visibility = 'visible';
             // Check if time courses were passed
             if (timeCourses === null) {
                 this.timeCourseInput = false;
@@ -319,7 +319,7 @@ class TimeCourse {
             this.fmriEnabled = !this.fmriEnabled;
             // If there is no input data, hide the time point container
             if (!this.userInput) {
-                this.timeCourseContainer.style.display = this.fmriEnabled ? 'block' : 'none';
+                this.timeCourseContainer.style.visibility = this.fmriEnabled ? 'visible' : 'hidden';
             }
             // clear fmri time courses if disabled
             if (!this.fmriEnabled) {
