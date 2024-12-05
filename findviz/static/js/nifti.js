@@ -424,9 +424,17 @@ class NiftiViewer {
     prepareSlices(data, thresholdMin, thresholdMax) {
         // Apply mask, if provided
         if (this.maskKey) {
+            // apply mask to functional
             data.x_slice = this.applyMask(data.x_slice, data.x_slice_mask)
             data.y_slice = this.applyMask(data.y_slice, data.y_slice_mask)
             data.z_slice = this.applyMask(data.z_slice, data.z_slice_mask)
+            // apply mask to anatomical, if passed
+            if (this.anatKey) {
+                data.x_slice_anat = this.applyMask(data.x_slice_anat, data.x_slice_mask)
+                data.y_slice_anat = this.applyMask(data.y_slice_anat, data.y_slice_mask)
+                data.z_slice_anat = this.applyMask(data.z_slice_anat, data.z_slice_mask)
+            }
+
         }
 
         // Apply thresholds by filtering out values outside the threshold range
