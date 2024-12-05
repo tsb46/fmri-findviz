@@ -96,7 +96,8 @@ class MainViewer{
                 plotData.timepoints.length,
                 plotData.timeCourses.ts,
                 plotData.timeCourses.tsLabels,
-                plotData.taskConditions
+                plotData.taskConditions,
+                this.timeSlider.sliderElement // pass timeslider jquery object
             );
         }
         else {

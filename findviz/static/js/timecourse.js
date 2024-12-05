@@ -1,16 +1,18 @@
 // timecourse.js
 
 // Import filter parameter validation
-import { validateFilterInputs, preprocessingInputError } from './utils.js';
+import { validateFilterInputs, preprocessingInputError, circularIndex } from './utils.js';
 
 class TimeCourse {
     constructor(
         timeLength,
         timeCourses=null,
         timeCourseLabels=null,
-        taskConditions=null
+        taskConditions=null,
+        timeSliderDiv
     ) {
         this.timeLength = timeLength;
+        this.timeSliderElement = timeSliderDiv;
         // get time plot container
         this.timeCourseContainer = document.getElementById(
             'timeCourseContainer'
@@ -125,6 +127,10 @@ class TimeCourse {
         this.annotateState = false;
         // Annotation markers
         this.annotationMarkers = [];
+        // initialize annotation selection
+        this.annotationSelection = 0;
+        // initialize annotation selection highlight state
+        this.annotationSelectionHighlight = true;
         // initialize task plot type - hrf vs block
         this.taskPlotType = 'hrf';
         // initialize time point marker as true
@@ -525,10 +531,16 @@ class TimeCourse {
             this.annotateState = this.annotateState ? false : true
             // if annotation enabled, enable annotation buttons
             if (this.annotateState){
+                $('#left-move-annotate').prop('disabled', false);
+                $('#right-move-annotate').prop('disabled', false);
+                $('#highlight-annotate').prop('disabled', false);
                 $('#undo-annotate').prop('disabled', false);
                 $('#remove-annotate').prop('disabled', false);
                 $('#peak-finder-popover').prop('disabled', false);
             } else {
+                $('#left-move-annotate').prop('disabled', true);
+                $('#right-move-annotate').prop('disabled', true);
+                $('#highlight-annotate').prop('disabled', true);
                 $('#undo-annotate').prop('disabled', true);
                 $('#remove-annotate').prop('disabled', true);
                 $('#peak-finder-popover').prop('disabled', true);
@@ -598,22 +610,94 @@ class TimeCourse {
         this.timeCourses = createProxy(this.timeCourses);
     }
 
-    // Initialize annotation listener
+    // Initialize annotation marker listeners
     initializeAnnotationListener() {
-        // annotation mark
+        // plotly annotation mark event
         document.getElementById(this.plotId).on('plotly_click', (eventData) => {
             if (this.annotateState) {
                 const x = Math.round(eventData.points[0].x);
                 // only add if not already present
                 if (!this.annotationMarkers.includes(x)) {
                     this.annotationMarkers.push(x);
+                    // set annotation selection as current selection
+                    this.annotationSelection = x;
                 }
                 this.plotTimeCourses(this.timePoint);
             };
         });
+
+        // Hide annotation selection highlight toggle
+        $('#highlight-annotate').on('click', () => {
+            this.annotationSelectionHighlight = this.annotationSelectionHighlight ? false : true;
+            // plot time course with/without annotation highlight
+            this.plotTimeCourses(this.timePoint);
+        });
+
+        // utility function to select annotation highlight in circular approach
+        function circularAnnotateSelect(markers, selection, move) {
+            // sort before indexing so we can index left to right
+            const markersSort = markers.toSorted();
+            let selectIndx = markersSort.indexOf(selection);
+            if (move == 'right') {
+                selectIndx += 1;
+            } else if (move == 'left') {
+                selectIndx -= 1;
+            }
+            // circularIndex from utils.js
+            const newIndx = circularIndex(markersSort, selectIndx);
+            return markersSort[newIndx];
+        }
+
+        // move current annotation selection to right
+        $('#right-move-annotate').on('click', () => {
+            // if no annotation markers, do nothing
+            if (this.annotationMarkers.length == 0) {
+                return
+            }
+
+            this.annotationSelection = circularAnnotateSelect(
+                this.annotationMarkers, this.annotationSelection, 'right'
+            )
+            // Plot with highlight
+            this.plotTimeCourses(this.timePoint);
+
+            // update time point on slider
+            this.timeSliderElement.slider('setValue',this.annotationSelection, true, true);
+        })
+
+        // move current annotation selection to left
+        $('#left-move-annotate').on('click', () => {
+            // if no annotation markers, do nothing
+            if (this.annotationMarkers.length == 0) {
+                return
+            }
+
+            this.annotationSelection = circularAnnotateSelect(
+                this.annotationMarkers, this.annotationSelection, 'left'
+            )
+            // Plot with highlight
+            this.plotTimeCourses(this.timePoint);
+
+            // update time point on slider
+            this.timeSliderElement.slider('setValue', this.annotationSelection, true, true);
+        })
+
         // undo most recent annotation
         $('#undo-annotate').on('click', () => {
+            // get current selection index
+            const selectIndx = this.annotationMarkers.indexOf(this.annotationSelection);
+            // If the to-be removed annotation is the last selected index, reselect to left
+            if (selectIndx == (this.annotationMarkers.length - 1)) {
+                // only select, if there will be any annotations left
+                if (this.annotationMarkers.length > 1) {
+                    this.annotationSelection = circularAnnotateSelect(
+                        this.annotationMarkers, this.annotationSelection, 'left'
+                    )
+                }
+            }
+            // remove last selected annotation
             this.annotationMarkers.pop();
+            // plot without most recent annotation marker
             this.plotTimeCourses(this.timePoint);
         })
 
@@ -732,6 +816,7 @@ class TimeCourse {
         this.lineWidthSlider.slider('setValue', tsLineWidth);
     }
 
+
     // update fmri time course and plot
     updatefMRITimeCourse(timeCourse, coordLabels) {
         // if an fmri time course is already displayed, 'give back' its color
@@ -773,7 +858,8 @@ class TimeCourse {
 
     // Method to plot the time course
     plotTimeCourses(
-        timePoint
+        timePoint,
+        highlight=false
     ) {
         // update timePoint state
         this.timePoint = timePoint
@@ -844,7 +930,7 @@ class TimeCourse {
         // create vertical line object to keep up with time point
         let timePointShape = []
         if (this.timePointMarker) {
-            timePointShape = [
+            timePointShape.push(
                 {
                     type: 'line',
                     x0: timePoint,
@@ -859,7 +945,7 @@ class TimeCourse {
                         dash: this.timePointMarkerState['shape']
                     },
                 }
-            ]
+            )
         }
         // create vertical line annotation markers
         for (const marker of this.annotationMarkers) {
@@ -879,6 +965,25 @@ class TimeCourse {
                 }
             )
         }
+        // if highlight is true, highlight current annotation selection
+        if (this.annotationSelectionHighlight && (this.annotationMarkers.length > 0)) {
+            timePointShape.push(
+                {
+                    type: 'line',
+                    x0: this.annotationSelection,
+                    y0: 0,
+                    x1: this.annotationSelection,
+                    y1: 1,
+                    yref: 'paper',
+                    opacity: 0.2,
+                    line: {
+                        color: 'gray',
+                        width: 7
+                    },
+                }
+            )
+        }
+
         // Create layout
         // initialize layout if first plot
         if (!this.plotState) {
@@ -1208,6 +1313,8 @@ class TimeCourse {
     }
 
     handlePeakFinderSubmit() {
+        // hide popover
+        $('#peak-finder-popover').popover('hide');
         // prevent reload
         event.preventDefault();
         // get peak finder parameters
@@ -1229,7 +1336,14 @@ class TimeCourse {
         })
         .then(response => response.json())
         .then(data => {
-            this.annotationMarkers.push(...data.peaks);
+            // check if any peaks were detected
+            debugger;
+            if (data.peaks.length > 0) {
+                // set all detected peaks as annotation markers
+                this.annotationMarkers.push(...data.peaks);
+                // set annotation selection as last element of list
+                this.annotationSelection = data.peaks[data.peaks.length - 1];
+            }
             // replot with new annotation markers
             this.plotTimeCourses(this.timePoint);
         })

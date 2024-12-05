@@ -87,7 +87,7 @@ function validateFilterInputs(TR, lowCut, highCut, errorDiv) {
     return true
 }
 
-// Display error from preprocessing input validation
+// Display error for preprocessing input validation
 function preprocessingInputError(errorDiv, errorMessage) {
     errorDiv.textContent = errorMessage;
     errorDiv.style.display = 'block';
@@ -97,10 +97,19 @@ function preprocessingInputError(errorDiv, errorMessage) {
     }, 5000);
 }
 
+// circular index of array
+function circularIndex(arr, index) {
+  const length = arr.length;
+  return (index % length + length) % length;
+}
+
+
+
 export {
     initBootstrapComponents,
     validateFilterInputs,
-    preprocessingInputError
+    preprocessingInputError,
+    circularIndex
 };
 
 
