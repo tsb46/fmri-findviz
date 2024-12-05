@@ -147,7 +147,7 @@ def get_slices():
     else:
         nifti_img = cache.get(file_key)
     if not nifti_img:
-        return jsonify({'error': 'File not found'}), 404
+        return jsonify({'error': 'File not found'}), 500
 
     # get anatomical file (optional), returns None if no image supplied
     anat_img = cache.get(anat_key)
@@ -224,7 +224,7 @@ def get_time_course_nii():
     else:
         nifti_img = cache.get(file_key)
     if not nifti_img:
-        return jsonify({'error': 'File not found'}), 404
+        return jsonify({'error': 'File not found'}), 500
 
     # Extract the voxel's time course
     time_course = nifti_img.get_fdata()[x, y, z, :].tolist()
@@ -282,7 +282,7 @@ def preprocess_nii():
     params = utils.convert_params(params)
     nifti_img = cache.get(file_key)
     if not nifti_img:
-        return jsonify({'error': 'File not found'}), 404
+        return jsonify({'error': 'File not found'}), 500
 
     # perform filtering first, if specified
     if filter_enabled:
@@ -313,7 +313,7 @@ def preprocess_nii():
         elif params['z_score']:
             norm_method = 'z_score'
         else:
-            return jsonify({'error': 'normalization option unrecognized'}), 404
+            return jsonify({'error': 'normalization option unrecognized'}), 500
         # Normalize data
         data_norm = utils.normalize(
             nifti_img.get_fdata(), norm_method, axis=3
@@ -380,12 +380,12 @@ def compute_avg_nii():
     else:
         nifti_img = cache.get(file_key)
     if not nifti_img:
-        return jsonify({'error': 'Nifti file not found'}), 404
+        return jsonify({'error': 'Nifti file not found'}), 500
 
     # get mask file
     mask_img = cache.get(mask_key)
     if not mask_img:
-        return jsonify({'error': 'Mask file not found'}), 404
+        return jsonify({'error': 'Mask file not found'}), 500
 
     # get 2d array within mask
     nifti_2d = masking.apply_mask(nifti_img, mask_img)
@@ -440,12 +440,12 @@ def compute_corr_nii():
     else:
         nifti_img = cache.get(file_key)
     if not nifti_img:
-        return jsonify({'error': 'Nifti file not found'}), 404
+        return jsonify({'error': 'Nifti file not found'}), 500
 
     # get mask file
     mask_img = cache.get(mask_key)
     if not mask_img:
-        return jsonify({'error': 'Mask file not found'}), 404
+        return jsonify({'error': 'Mask file not found'}), 500
 
     # get 2d array within mask
     nifti_2d = masking.apply_mask(nifti_img, mask_img)
@@ -463,7 +463,7 @@ def compute_corr_nii():
     )
 
     # get min and max of new nifti
-    metadata = package_nii_metadata(nifti_img_avg)
+    metadata = package_nii_metadata(nifti_img_corr)
 
     # save correlation map data in cache
     cache['corr'] = nifti_img_corr

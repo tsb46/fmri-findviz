@@ -153,7 +153,7 @@ def get_brain_gii_plot():
         else:
             left_img = cache.get(left_key)
         if not left_img:
-            return jsonify({'error': 'File not found'}), 404
+            return jsonify({'error': 'File not found'}), 500
         else:
             func_data_left = left_img.darrays[time_point].data
 
@@ -165,7 +165,7 @@ def get_brain_gii_plot():
         else:
             right_img = cache.get(right_key)
         if not right_img:
-            return jsonify({'error': 'File not found'}), 404
+            return jsonify({'error': 'File not found'}), 500
         else:
             func_data_right = right_img.darrays[time_point].data
 
@@ -196,7 +196,7 @@ def get_time_course_gii():
         gifti_img = cache.get(file_key)
 
     if not gifti_img:
-        return jsonify({'error': 'File not found'}), 404
+        return jsonify({'error': 'File not found'}), 500
 
     # Extract the vertex's time course
     time_course = [d.data[vertex_index] for d in gifti_img.darrays]
@@ -268,7 +268,7 @@ def preprocess_gii():
     if left_key:
         left_img = cache.get(left_key)
         if not left_img:
-            return jsonify({'error': 'File not found'}), 404
+            return jsonify({'error': 'File not found'}), 500
         # convert to array
         left_img_array = gii_to_array(left_img)
         # If filtering specified
@@ -294,7 +294,7 @@ def preprocess_gii():
     if right_key:
         right_img = cache.get(right_key)
         if not right_img:
-            return jsonify({'error': 'File not found'}), 404
+            return jsonify({'error': 'File not found'}), 500
         # convert to array
         right_img_array = gii_to_array(right_img)
         # If filtering specified

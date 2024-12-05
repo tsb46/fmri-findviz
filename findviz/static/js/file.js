@@ -133,7 +133,7 @@ class FileUploader {
                 Object.assign(data, {taskConditions: null})
               }
               // Show the visualization container after a successful upload
-              document.getElementById('visualization_container').style.display = 'block';
+              document.getElementById('fmriVisualizationContainer').style.display = 'block';
               // Call the callback function provided during construction
               this.onUploadComplete(data, fileType);
               // close modal

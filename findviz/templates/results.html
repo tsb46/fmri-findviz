@@ -40,7 +40,7 @@
       <!-- User Options Container -->
       <div class="col-3 pl-3 pr-2" id="user_options_container">
         <!-- Visualization Options -->
-        {% include 'components/visualizationOptions.html' %}
+        {% include 'components/fmriVisualizationOptions.html' %}
       </div>
       <!-- Visualization Container -->
       <div class='col-9' id="visualization_container">
@@ -66,7 +66,7 @@
     // Toggle parent visualization container to display
     const visualizationContainer = document.getElementById('parent-container');
     visualizationContainer.style.display = 'block'
-    // Load HTML components and initialize 'Correlate' class
+    // Load HTML components and initialize 'Result' class
     document.addEventListener("DOMContentLoaded", async () => {
       // initialize results after page load
       const plotData = {{ data|tojson }}

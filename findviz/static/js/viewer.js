@@ -214,7 +214,7 @@ class MainViewer{
                 this.preprocState
             );
         });
-        // Listen for threshold slider change
+        // Listen for opacity slider change
         $(document).on('opacitySliderChange', (event) => {
             const opacityValue = event.detail.newValue;
             this.opacity = opacityValue;

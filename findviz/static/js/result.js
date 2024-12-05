@@ -14,20 +14,40 @@ class Result {
         document.getElementById('time-slider-title').textContent = plotTitle['timeSliderTitle'];
         // set attributes based on nifti or gifti file input
         if (plotData.plot_type == 'nifti') {
+            // handle null string of anat
+            let anatKey
+            if (plotData.anat_key == 'null') {
+                anatKey = null;
+            } else {
+                anatKey = plotData.anat_key;
+            }
             // initialize nifti viewer
             this.viewer = new NiftiViewer(
                 plotData.file_key,
-                plotData.anat_key,
+                anatKey,
                 plotData.mask_key,
                 plotData.slice_len
             );
             // set colorbar div
             this.colorbarDiv = 'colorbar_container_nii'
         } else if (plotData.plot_type == 'gifti') {
+            // handle null string of left or right key
+            let leftKey
+            if (plotData.left_key == 'null') {
+                leftKey = null;
+            } else {
+                leftKey = plotData.left_key;
+            }
+            let rightKey
+            if (plotData.right_key == 'null') {
+                rightKey = null;
+            } else {
+                rightKey = plotData.right_key;
+            }
             // initialize gifti viewer
             this.viewer = new GiftiViewer(
-                plotData.left_key,
-                plotData.right_key,
+                leftKey,
+                rightKey,
                 plotData.vertices_left,
                 plotData.faces_left,
                 plotData.vertices_right,
@@ -51,6 +71,8 @@ class Result {
         // Initialize thresholds (set to [0,0] for no threshold by default)
         this.thresholdMin = 0;
         this.thresholdMax = 0;
+        // Initialize color opacity
+        this.opacity = 1;
         // Initialize hover text state
         this.hoverTextOn = true;
         // Initialize Preprocess state as false (not used, just for consistency with API)
@@ -95,6 +117,7 @@ class Result {
             this.colorMax,
             this.thresholdMin,
             this.thresholdMax,
+            this.opacity,
             this.hoverTextOn,
             this.preprocState,
             true // update voxel coordinate labels (only for nifti)
@@ -127,6 +150,7 @@ class Result {
                 this.colorMax,
                 this.thresholdMin,
                 this.thresholdMax,
+                this.opacity,
                 this.hoverTextOn,
                 this.preprocState,
                 false, // do not update coordinates
@@ -152,6 +176,7 @@ class Result {
                   this.colorMax,
                   this.thresholdMin,
                   this.thresholdMax,
+                  this.opacity,
                   this.hoverTextOn,
                   this.preprocState,
                   false, // do not update coordinates
@@ -175,6 +200,24 @@ class Result {
                 this.colorMax,
                 this.thresholdMin,
                 this.thresholdMax,
+                this.opacity,
+                this.hoverTextOn,
+                this.preprocState
+            );
+        });
+        // Listen for opacity slider change
+        $(document).on('opacitySliderChange', (event) => {
+            const opacityValue = event.detail.newValue;
+            this.opacity = opacityValue;
+            // Plot brain map with new thresholds
+            this.viewer.plot(
+                this.timePoint,
+                this.colormap,
+                this.colorMin,
+                this.colorMax,
+                this.thresholdMin,
+                this.thresholdMax,
+                this.opacity,
                 this.hoverTextOn,
                 this.preprocState
             );
@@ -192,6 +235,7 @@ class Result {
                 this.colorMax,
                 this.thresholdMin,
                 this.thresholdMax,
+                this.opacity,
                 this.hoverTextOn,
                 this.preprocState
             );
@@ -215,6 +259,7 @@ class Result {
                     this.colorMax,
                     this.thresholdMin,
                     this.thresholdMax,
+                    this.opacity,
                     this.hoverTextOn,
                     this.preprocState
                 );
@@ -237,6 +282,7 @@ class Result {
                         this.colorMax,
                         this.thresholdMin,
                         this.thresholdMax,
+                        this.opacity,
                         this.hoverTextOn,
                         this.preprocState
                     );
@@ -262,6 +308,7 @@ class Result {
                             this.colorMax,
                             this.thresholdMin,
                             this.thresholdMax,
+                            this.opacity,
                             this.hoverTextOn,
                             this.preprocState
                         );
@@ -281,6 +328,7 @@ class Result {
                     this.colorMax,
                     this.thresholdMin,
                     this.thresholdMax,
+                    this.opacity,
                     this.hoverTextOn,
                     this.preprocState
                 );
@@ -298,6 +346,7 @@ class Result {
                     this.colorMax,
                     this.thresholdMin,
                     this.thresholdMax,
+                    this.opacity,
                     this.hoverTextOn,
                     this.preprocState
                 );
@@ -318,6 +367,7 @@ class Result {
                 this.colorMax,
                 this.thresholdMin,
                 this.thresholdMax,
+                this.opacity,
                 this.hoverTextOn,
                 this.preprocState
             );
@@ -343,6 +393,7 @@ class Result {
                 this.colorMax,
                 this.thresholdMin,
                 this.thresholdMax,
+                this.opacity,
                 this.hoverTextOn,
                 this.preprocState,
                 true, // update coordinate labels (only for nifti)
