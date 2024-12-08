@@ -71,15 +71,22 @@
         </button>
       </div>
       <div class='col-4'>
-        <div class="custom-control custom-switch">
-          <!-- Enable fmri time course -->
-          <input type="checkbox" class="custom-control-input" id="enable-time-course">
-          <label class="custom-control-label small" for="enable-time-course">Enable Time Course</label>
-          <span class="fa-solid fa-circle-info toggle-immediate mr-2" data-toggle="tooltip" data-placement="top" title="Plot time course of selected voxel/vertex" aria-hidden="true"></span>
-          <!-- Freeze fmri time course -->
-          <button class="btn btn-outline-secondary btn-sm toggle-wait mr-2" id='freeze-time-course' data-toggle="tooltip" data-placement="top" title="Freeze fmri time course selection" disabled>
-            <i class="fa-solid fa-map-pin"></i>
-          </button>
+        <div class='row'>
+          <div class="custom-control custom-switch mr-3">
+            <!-- Enable fmri time course -->
+            <input type="checkbox" class="custom-control-input" id="enable-time-course">
+            <label class="custom-control-label small" for="enable-time-course">Enable Time Course</label>
+            <span class="fa-solid fa-circle-info toggle-immediate mr-2" data-toggle="tooltip" data-placement="top" title="Plot time course of selected voxel/vertex" aria-hidden="true"></span>
+          </div>
+          <div class="fa-solid fa-unlock pt-1 pr-1 toggle-immediate" id='freeze-icon' data-toggle="tooltip" data-placement="top" title="Freeze/unfreeze fmri time course selection"></div>
+          <div class="custom-control custom-switch">
+            <!-- Freeze fmri time course -->
+            <input type="checkbox" class="custom-control-input" id="freeze-time-course" disabled>
+            <label class="custom-control-label small" for="freeze-time-course"></label>
+          </div>
+          <!-- <button class="btn btn-outline-secondary btn-sm toggle-wait mr-2" id='freeze-time-course' data-toggle="tooltip" data-placement="top" title="Freeze/unfreeze fmri time course selection" disabled>
+            <i class="fa-solid fa-lock"></i>
+          </button> -->
           <!-- Undo fmri time course -->
           <button class="btn btn-outline-secondary btn-sm toggle-wait" id='undo-time-course' data-toggle="tooltip" data-placement="top" title="Remove most recent frozen fmri time course in plot" disabled>
             <i class="fa-solid fa-rotate-left"></i>
@@ -88,8 +95,6 @@
           <button class="btn btn-outline-secondary btn-sm toggle-wait" id='remove-time-course' data-toggle="tooltip" data-placement="top" title="Remove all fmri time courses from plot" disabled>
             <i class="fa-solid fa-xmark"></i>
           </button>
-
-
         </div>
       </div>
     </div>

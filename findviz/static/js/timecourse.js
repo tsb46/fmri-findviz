@@ -724,28 +724,12 @@ class TimeCourse {
     }
 
 
-    // update fmri time course and plot
+    // update or add fmri time course and replot
     updatefMRITimeCourse(timeCourse, timeCourseLabel, freezeState) {
         // if an fmri time course is already displayed, and fmri time course plotting
         // is not frozen delete most recent fmri time course
         if (!freezeState) {
-            const fmriTS = this.selectFmriTimeCourse();
-            if (fmriTS.length > 0) {
-                // get most recent fMRI TS selection
-                const lastFmriTS = fmriTS[fmriTS.length-1]
-                // 'give back' the most recent time course's color
-                this.colorOptions.unshift(lastFmriTS['color'])
-                // remove fmri time course entry
-                this.timeCourses = this.timeCourses.filter(
-                    ts => ts.name !== lastFmriTS.name
-                );
-                // Decrease number of time courses by 1
-                this.timeCoursesN -= 1;
-                // remove last option from time course selection dropdown
-                $('#ts-select').find("option:last").remove();
-                // remove last option from time course preprocessing dropdown
-                $('#ts-norm-select').find("option:last").remove();
-            }
+            this.removeMostRecentTimeCourse();
         }
         // insert fmri time course in timeCourse object
         this.timeCourses.push({
@@ -785,6 +769,47 @@ class TimeCourse {
         this.plotTimeCourses(this.timePoint)
     }
 
+    // remove most recent or all fmri time course and replot
+    removefMRITimeCourse(removeAll=false) {
+        // remove all, if specified
+        if (removeAll) {
+            while (this.removeMostRecentTimeCourse()) {
+                console.log("removing fmri time course");
+            }
+        } else {
+            const success = this.removeMostRecentTimeCourse();
+            if (success) {
+                console.log("removing fmri time course");
+            }
+        }
+    }
+
+    // utililty to remove most recent fmri time course, return to true for success
+    removeMostRecentTimeCourse() {
+        // get fmri time courses
+        const fmriTS = this.selectFmriTimeCourse();
+        // if no time courses, do nothing
+        if (fmriTS.length < 1) {
+            return false
+        } else {
+            // get most recent fMRI TS selection
+            const lastFmriTS = fmriTS[fmriTS.length-1]
+            // 'give back' the most recent time course's color
+            this.colorOptions.unshift(lastFmriTS['color'])
+            // remove fmri time course entry
+            this.timeCourses = this.timeCourses.filter(
+                ts => ts.name !== lastFmriTS.name
+            );
+            // Decrease number of time courses by 1
+            this.timeCoursesN -= 1;
+            // remove last option from time course selection dropdown
+            $('#ts-select').find("option:last").remove();
+            // remove last option from time course preprocessing dropdown
+            $('#ts-norm-select').find("option:last").remove();
+            return true
+        }
+    }
+
     // Method to plot the time course
     plotTimeCourses(
         timePoint
@@ -794,6 +819,8 @@ class TimeCourse {
 
         // Don't plot if no fmri time course and no input
         if (this.timeCoursesN < 1) {
+            // clear content, if there is any
+            Plotly.react(this.plotId, [], {});
             return;
         }
 

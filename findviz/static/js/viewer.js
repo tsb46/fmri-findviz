@@ -523,10 +523,34 @@ class MainViewer{
             }
         });
 
-        // // listener to freeze fmri time course
-         freezeButton.on('click', () => {
-            this.timeCourseFreeze = true;
-         });
+        // freeze fmri time course
+        freezeButton.on('click', () => {
+            this.timeCourseFreeze = this.timeCourseFreeze ? false : true;
+            // get icon
+            const timeCourseFreezeIcon = $('#freeze-icon');
+            // change icon based on time course freeze state
+            if (this.timeCourseFreeze) {
+                timeCourseFreezeIcon.removeClass('fa-unlock').addClass('fa-lock');
+            } else {
+                timeCourseFreezeIcon.removeClass('fa-lock').addClass('fa-unlock');
+            }
+
+        });
+
+        // remove most recently added fmri time course
+        undoButton.on('click', () => {
+            this.timeCourse.removefMRITimeCourse();
+            // plot time courses
+            this.timeCourse.plotTimeCourses(this.timePoint);
+        })
+
+        // remove all fmri time courses
+        removeButton.on('click', () => {
+            this.timeCourse.removefMRITimeCourse(true);
+            // plot time courses
+            this.timeCourse.plotTimeCourses(this.timePoint);
+        })
+
     }
 
     // Register click handlers that update views based on click
@@ -561,7 +585,6 @@ class MainViewer{
             .then(({ label, timeCourse }) => {
                 // update fmri time course in the TimeCourse class
                 this.timeCourse.updatefMRITimeCourse(timeCourse, label, this.timeCourseFreeze);
-                this.timeCourseFreeze = false;
             });
         }
     }
