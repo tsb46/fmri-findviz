@@ -53,10 +53,14 @@ class MainViewer{
         this.thresholdMax = 0;
         // Initialize color opacity
         this.opacity = 1;
+        // initialize fmri time course freeze state (i.e. maintain selected fmri timecourse in plot)
+        this.timeCourseFreeze = false;
         // Initialize hover text state
         this.hoverTextOn = true;
         // Initialize Preprocess state as false
         this.preprocState = false;
+        // Initialize state variable to track whether fmri time course plotting is enabled
+        this.timeCourseEnabled = false;
 
         // Initialize TimeSlider class
         this.timeSlider = new TimeSlider(
@@ -104,6 +108,8 @@ class MainViewer{
             this.timeCourse = new TimeCourse(plotData.timepoints.length)
         }
 
+        // initialize fmri time course listeners
+        this.timeCourseListeners();
     }
 
     // initialize initial plot
@@ -489,12 +495,47 @@ class MainViewer{
         });
     }
 
+    // Time course plotting listeners
+    timeCourseListeners() {
+        // Initialize the button to enable/disable time course plotting
+        const enableSwitch = document.getElementById('enable-time-course');
+        const freezeButton = $('#freeze-time-course');
+        const undoButton = $('#undo-time-course');
+        const removeButton = $('#remove-time-course');
+
+        // enable fmri time course plotting
+        enableSwitch.addEventListener('click', () => {
+            this.timeCourseEnabled = !this.timeCourseEnabled;
+            // If there is no user input time courses, hide the time point container
+            if (!this.timeCourse.userInput) {
+                this.timeCourse.timeCourseContainer.style.visibility = this.timeCourseEnabled ? 'visible' : 'hidden';
+            }
+
+            // enable time course buttons
+            if (this.timeCourseEnabled) {
+                freezeButton.prop('disabled', false);
+                undoButton.prop('disabled', false);
+                removeButton.prop('disabled', false);
+            } else {
+                freezeButton.prop('disabled', true);
+                undoButton.prop('disabled', true);
+                removeButton.prop('disabled', true);
+            }
+        });
+
+        // // listener to freeze fmri time course
+         freezeButton.on('click', () => {
+            this.timeCourseFreeze = true;
+         });
+    }
+
     // Register click handlers that update views based on click
     registerClickHandlers() {
         // bind context to master class for updating brain map on click
         const boundClickCallBack = this.clickHandlerCallBack.bind(this);
         this.viewer.plotlyClickHandler(boundClickCallBack);
     }
+
 
     // method passed as callback to viewer click handlers
     clickHandlerCallBack() {
@@ -515,11 +556,12 @@ class MainViewer{
             )
         }
         // Update time course, if fmri time course plotting enabled
-        if (this.timeCourse.fmriEnabled) {
+        if (this.timeCourseEnabled) {
             this.viewer.fetchTimeCourse(this.preprocState)
             .then(({ label, timeCourse }) => {
                 // update fmri time course in the TimeCourse class
-                this.timeCourse.updatefMRITimeCourse(timeCourse, label);
+                this.timeCourse.updatefMRITimeCourse(timeCourse, label, this.timeCourseFreeze);
+                this.timeCourseFreeze = false;
             });
         }
     }

@@ -154,12 +154,12 @@ class NiftiViewer {
                 );
                 this.voxelText['y'] = data.y_voxel_coords.map(row =>
                     row.map(
-                        c => `Voxel: (${c[0]}, ${c[1]}, ${c[2]})`
+                        c => `Voxel: (${c[1]}, ${c[0]}, ${c[2]})`
                     )
                 );
                 this.voxelText['z'] = data.z_voxel_coords.map(row =>
                     row.map(
-                        c => `Voxel: (${c[0]}, ${c[1]}, ${c[2]})`
+                        c => `Voxel: (${c[1]}, ${c[2]}, ${c[0]})`
                     )
                 );
             }

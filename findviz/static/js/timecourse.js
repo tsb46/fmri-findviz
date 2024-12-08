@@ -41,8 +41,10 @@ class TimeCourse {
                 this.taskDesignInput = true;
             }
         }
+        // Keep track of number of time courses in time course and task regressor container
+        this.timeCoursesN = 0
         // initilialize time course container
-        this.timeCourses = {}
+        this.timeCourses = []
         // grab color options in dropdown menu and store as attribute
         let colorDropdown = Array.from(
             document.getElementById('ts-color-select').options
@@ -58,11 +60,13 @@ class TimeCourse {
             for (const [index, timeCourse] of timeCourses.entries()) {
                 // start index over if timecourses exceed length of preset color list
                 colorIndex = index % this.colorOptions.length
-                this.timeCourses[timeCourseLabels[index]] = {
+                this.timeCourses.push({
                     // trace name in plot
                     name: timeCourseLabels[index],
                     // time course
                     ts: timeCourse,
+                    // Whether the time course is user-input or fmri
+                    type: 'user',
                     // initialize preprocessed state as false
                     preprocessed: false,
                     // initialize preprocessed time course as null
@@ -77,20 +81,21 @@ class TimeCourse {
                     width: 2,
                     // initialize line mode
                     mode: 'lines+markers'
-                }
+                });
             }
+            this.timeCoursesN += 1;
         }
         // initialize task regressors container
-        this.taskRegressors = {}
+        this.taskRegressors = []
         // if task design file passed, store regressors and attributes
         if (this.taskDesignInput) {
             // Loop through task conditions and assign properties
             for (const [index, cLabel] of taskConditions.labels.entries()) {
                 // start index over if loop index exceeds color list length
                 colorIndex = index % this.colorOptions.length
-                this.taskRegressors[cLabel] = {
+                this.taskRegressors.push({
                     // trace name in plot
-                    name: `Task: ${cLabel}`,
+                    name: cLabel,
                     // non-convolved hrf regressors
                     block: taskConditions.conditions_block[index],
                     // convolved hrf regressor
@@ -105,15 +110,12 @@ class TimeCourse {
                     width: 2,
                     // initialize line mode
                     mode: 'lines+markers'
-                }
+                });
             }
+            this.timeCoursesN += 1;
         }
-        // create proxies for task regressors and time courses to catch updates
-        this.initializeProxyHandlers()
         // get time course plot div
         this.plotId = 'ts-plot';
-        // Flag to track if fmri time course generation is enabled
-        this.fmriEnabled = false;
         // initialize time point state variable
         this.timePoint = 0;
         // Set states of preprocessing switches
@@ -148,8 +150,6 @@ class TimeCourse {
         this.plotLayout = null;
         // Initialize hover as true
         this.plotHoverText = true;
-        // initialize fmri time course switch listener
-        this.initializefMRISwitch();
         // Initialize user options
         this.initializeOptions();
         // Initialize correlation analysis submission event
@@ -289,15 +289,15 @@ class TimeCourse {
             // initialize button to increase task regressor scale
             $('#task-increase-scale').on('click', (event) => {
                 // increase scale of task regressors by * 2
-                 for (let label in this.taskRegressors) {
-                    const scaledTaskHRF = this.taskRegressors[label]['hrf'].map(
+                 for (let taskReg of this.taskRegressors) {
+                    const scaledTaskHRF = taskReg['hrf'].map(
                         x => x * 2
                     )
-                    this.taskRegressors[label]['hrf'] = scaledTaskHRF;
-                    const scaledTaskBlock = this.taskRegressors[label]['block'].map(
+                    taskReg['hrf'] = scaledTaskHRF;
+                    const scaledTaskBlock = taskReg['block'].map(
                         x => x * 2
                     )
-                    this.taskRegressors[label]['block'] = scaledTaskBlock;
+                    taskReg['block'] = scaledTaskBlock;
                 }
                 // plot with rescaled task regressors
                 this.plotTimeCourses(this.timePoint);
@@ -306,15 +306,11 @@ class TimeCourse {
             // initialize button to decrease task regressor scale
             $('#task-decrease-scale').on('click', (event) => {
                 // decrease scale of task regressors by / 2
-                 for (let label in this.taskRegressors) {
-                    const scaledTaskHRF = this.taskRegressors[label]['hrf'].map(
-                        x => x / 2
-                    )
-                    this.taskRegressors[label]['hrf'] = scaledTaskHRF
-                    const scaledTaskBlock = this.taskRegressors[label]['block'].map(
-                        x => x / 2
-                    )
-                    this.taskRegressors[label]['block'] = scaledTaskBlock
+                for (let taskReg of this.taskRegressors) {
+                    const scaledTaskHRF = taskReg['hrf'].map(x => x / 2)
+                    taskReg['hrf'] = scaledTaskHRF
+                    const scaledTaskBlock = taskReg['block'].map(x => x / 2)
+                    taskReg['block'] = scaledTaskBlock
                 }
                 // plot with rescaled task regressors
                 this.plotTimeCourses(this.timePoint);
@@ -328,83 +324,32 @@ class TimeCourse {
         }
     }
 
-    // Initialize the button to enable/disable time course plotting
-    initializefMRISwitch() {
-        const enableSwitch = document.getElementById('enable-time-course');
-        enableSwitch.addEventListener('click', () => {
-            this.fmriEnabled = !this.fmriEnabled;
-            // If there is no input data, hide the time point container
-            if (!this.userInput) {
-                this.timeCourseContainer.style.visibility = this.fmriEnabled ? 'visible' : 'hidden';
-            }
-            // clear fmri time courses if disabled
-            if (!this.fmriEnabled) {
-                // check whether a time course has been selected in the viewer
-                if ('fmri' in this.timeCourses) {
-                    // 'give back' the color used by fmri time course
-                    this.colorOptions.unshift(this.timeCourses['fmri']['color'])
-                    // delete fmri time course from time course object
-                    delete this.timeCourses['fmri']
-                    // remove fmri time course from selection menu
-                    const tsSelectMenu = document.getElementById('ts-select');
-                    // Find the option with the matching value using querySelector
-                    let fmriOptionSelect = tsSelectMenu.querySelector(
-                        'option[value="fmri"]'
-                    );
-                    // if found, remove
-                    if (fmriOptionSelect) {
-                        fmriOptionSelect.remove();
-                    }
-                    // remove fmri time course from preprocessing menu
-                    let fmriOptionPrep = this.timeCoursePrepMenu.find(
-                        "option[value='fmri']"
-                    );
-                    // if found, remove
-                    if (fmriOptionPrep) {
-                        fmriOptionPrep.remove();
-                        // hack to remove duplicates due to bug
-                        //https://github.com/snapappointments/bootstrap-select/issues/2738
-                        this.timeCoursePrepMenu.selectpicker('destroy');
-                        this.timeCoursePrepMenu.selectpicker();
-                    }
-                    // refresh time coure options with fmri ts removed, if time courses were passed
-                    if (this.timeCourseInput) {
-                        this.refreshTimeCourseOptions();
-                    }
-                    // replot without fmri time course
-                    this.plotTimeCourses(this.timePoint);
-                }
-            }
-        });
-    }
-
     // Initialize time course select
     initializeTimeCoursePlotOptions() {
         // get time course select dropdown
         const tsSelectMenu = document.getElementById('ts-select');
-        // get time course labels
-        const tsLabels = Object.keys(this.timeCourses);
-        // Loop through ts labels and append to select dropdown menu
-        tsLabels.forEach(label => {
+
+        // Loop through timecourses and append label to select dropdown menu
+        for (let ts of this.timeCourses) {
+            const label = ts['name'];
             let opt = document.createElement('option');
             opt.value = label;
             opt.textContent = label;
             // set 'data-type' attribute to recognize as 'time course' or 'task'
             opt.setAttribute('data-type', 'ts');
             tsSelectMenu.appendChild(opt);
-        });
+        };
 
-        // get task condition labels
-        const taskLabels = Object.keys(this.taskRegressors);
         // Loop through task labels and append to select dropdown menu
-        taskLabels.forEach(label => {
+        for (let task of this.taskRegressors) {
+            const label = task['name'];
             let opt = document.createElement('option');
             opt.value = label;
             opt.textContent = label;
             // set 'data-type' attribute to recognize as 'time course' or 'task'
             opt.setAttribute('data-type', 'task');
             tsSelectMenu.appendChild(opt);
-        });
+        };
 
         // Fill in options with current ts selection, if any input passed
         if (this.userInput) {
@@ -443,17 +388,23 @@ class TimeCourse {
             // check whether it's a time course or task regression
             const optionType = tsSelectMenu.options[currentIndx].dataset.type;
             if (optionType == 'ts') {
+                const selectedTS = this.selectObjectFromArray(
+                    this.timeCourses, currentSelect, 'name'
+                );
                 // Update the selected color, if there is anything to plot
-                if (currentSelect in this.timeCourses) {
-                    this.timeCourses[currentSelect]['color'] = event.target.value;
-                    // replot with new color
+                if (selectedTS) {
+                    // change color and replot
+                    selectedTS['color'] = event.target.value;
                     this.plotTimeCourses(this.timePoint)
                 }
             } else if (optionType == 'task') {
+                const selectedTS = this.selectObjectFromArray(
+                    this.taskRegressors, currentSelect, 'name'
+                );
                 // Update the selected color, if there is anything to plot
-                if (currentSelect in this.taskRegressors) {
-                    this.taskRegressors[currentSelect]['color'] = event.target.value;
-                    // replot with new color
+                if (selectedTS) {
+                    // change color and replot
+                    selectedTS['color'] = event.target.value;
                     this.plotTimeCourses(this.timePoint)
                 }
             }
@@ -550,64 +501,17 @@ class TimeCourse {
 
     // initialize time course preprocessing selection menu event
     initializeTimeCoursePrepSelect() {
-        this.timeCoursePrepMenu = $('#ts-norm-select')
-        // get time course labels
-        const tsLabels = Object.keys(this.timeCourses);
-
-        // Loop through ts labels and create an option element
-        tsLabels.forEach(label => {
+        const timeCoursePrepMenu = $('#ts-norm-select')
+        // Loop through time courses and append label to select dropdown menu
+        for (let ts of this.timeCourses) {
+            const label = ts['name'];
             let newOption = $('<option>', { value: label, text: label });
-            this.timeCoursePrepMenu.append(newOption);
-        });
+            timeCoursePrepMenu.append(newOption);
+        };
         // hack to remove duplicates due to bug
         //https://github.com/snapappointments/bootstrap-select/issues/2738
-        this.timeCoursePrepMenu.selectpicker('destroy');
-        this.timeCoursePrepMenu.selectpicker();
-    }
-
-    // initialize proxy handles to catch updates timecourses
-    initializeProxyHandlers() {
-        const handler = {
-            set: (target, property, value) => {
-                const isNewKey = !(property in target);
-                target[property] = value;
-
-                // catch when fmri time course is added
-                if (isNewKey) {
-                    this.updateAnalysisMenu();
-                }
-                // If preprocessing is performed on timeCourses, update the selection
-                // to reflect the timecourse is preprocessed
-                else if (property === 'preprocessed') {
-                    this.updateAnalysisMenu();
-                }
-
-                return true;
-            },
-            // catch when fMRI time course is removed
-            deleteProperty: (target, property) => {
-                if (property in target) {
-                    delete target[property];
-                    // Update the menu when a key is deleted
-                    this.updateAnalysisMenu();
-                }
-                return true;
-            }
-        };
-
-        // Helper function to create recursive proxies
-        const createProxy = (obj) => {
-            for (const key in obj) {
-                if (typeof obj[key] === 'object' && obj[key] !== null) {
-                    // Recursively wrap nested objects in proxies
-                    obj[key] = createProxy(obj[key]);
-                }
-            }
-            return new Proxy(obj, handler);
-        };
-
-        // Overwrite timeCourses with recursive proxies
-        this.timeCourses = createProxy(this.timeCourses);
+        timeCoursePrepMenu.selectpicker('destroy');
+        timeCoursePrepMenu.selectpicker();
     }
 
     // Initialize annotation marker listeners
@@ -717,26 +621,28 @@ class TimeCourse {
         correlateSelectMenu.innerHTML = '';
 
         // Populate select menu with time courses
-        for (let ts in this.timeCourses) {
+        for (let ts of this.timeCourses) {
             const option = document.createElement('option');
-            option.value = ts;
-            if (this.timeCourses[ts]['preprocessed']) {
-                option.textContent = `${ts} [Preprocessed]`;
+            const label = ts['name'];
+            option.value = label;
+            if (ts['preprocessed']) {
+                option.textContent = `${label} [Preprocessed]`;
                 option.dataset.preprocessed = true;
             } else {
-                option.textContent = ts;
+                option.textContent = label;
                 option.dataset.preprocessed = false;
             }
-            // set type as task
+            // set type as ts
             option.dataset.type = 'ts';
             correlateSelectMenu.appendChild(option);
         }
 
         // Populate select menu with task regressors
-        for (let task in this.taskRegressors) {
+        for (let task of this.taskRegressors) {
             const option = document.createElement('option');
-            option.value = task;
-            option.textContent = `${task} [${this.taskPlotType}]`;
+            const label = task['name'];
+            option.value = label;
+            option.textContent = `${label} [${this.taskPlotType}]`;
             // set type as task
             option.dataset.type = 'task';
             option.dataset.plotType = this.taskPlotType;
@@ -802,47 +708,50 @@ class TimeCourse {
         } else if (optionType == 'task') {
             timeCourse = this.taskRegressors;
         }
+        tsSelect = this.selectObjectFromArray(timeCourse, currentSelect, 'name');
         // get ts color dropdown
         const tsColorSelect = document.getElementById('ts-color-select');
-        tsColorSelect.value = timeCourse[currentSelect]['color'];
+        tsColorSelect.value = tsSelect['color'];
         // set line marker dropdown
         const tsMarkerSelect = document.getElementById('ts-marker-select');
-        tsMarkerSelect.value = timeCourse[currentSelect]['mode'];
+        tsMarkerSelect.value = tsSelect['mode'];
         // set value for opacity slider
-        const tsOpacity = timeCourse[currentSelect]['opacity'];
+        const tsOpacity = tsSelect['opacity'];
         this.opacitySlider.slider('setValue', tsOpacity);
         // set value for line width slider
-        const tsLineWidth = timeCourse[currentSelect]['width'];
+        const tsLineWidth = tsSelect['width'];
         this.lineWidthSlider.slider('setValue', tsLineWidth);
     }
 
 
     // update fmri time course and plot
-    updatefMRITimeCourse(timeCourse, coordLabels) {
-        // if an fmri time course is already displayed, 'give back' its color
-        if ('fmri' in this.timeCourses) {
-            this.colorOptions.unshift(this.timeCourses['fmri']['color'])
-        } else {
-            // if no fmri time course already exists to time course selection dropdown
-            const tsSelectMenu = document.getElementById('ts-select');
-            let opt = document.createElement('option');
-            opt.value = 'fmri';
-            opt.textContent = 'fmri';
-            opt.setAttribute('data-type', 'ts');
-            tsSelectMenu.appendChild(opt);
-
-             // add fmri time course to preprocessing selection dropdown
-            let fmriOption = $('<option>', { value: 'fmri', text: 'fmri' });
-            this.timeCoursePrepMenu.append(fmriOption);
-            // hack to remove duplicates due to bug
-            //https://github.com/snapappointments/bootstrap-select/issues/2738
-            this.timeCoursePrepMenu.selectpicker('destroy');
-            this.timeCoursePrepMenu.selectpicker();
+    updatefMRITimeCourse(timeCourse, timeCourseLabel, freezeState) {
+        // if an fmri time course is already displayed, and fmri time course plotting
+        // is not frozen delete most recent fmri time course
+        if (!freezeState) {
+            const fmriTS = this.selectFmriTimeCourse();
+            if (fmriTS.length > 0) {
+                // get most recent fMRI TS selection
+                const lastFmriTS = fmriTS[fmriTS.length-1]
+                // 'give back' the most recent time course's color
+                this.colorOptions.unshift(lastFmriTS['color'])
+                // remove fmri time course entry
+                this.timeCourses = this.timeCourses.filter(
+                    ts => ts.name !== lastFmriTS.name
+                );
+                // Decrease number of time courses by 1
+                this.timeCoursesN -= 1;
+                // remove last option from time course selection dropdown
+                $('#ts-select').find("option:last").remove();
+                // remove last option from time course preprocessing dropdown
+                $('#ts-norm-select').find("option:last").remove();
+            }
         }
-        // initialize fmri time course in timeCourse object
-        this.timeCourses['fmri'] = {
-            name: coordLabels,
+        // insert fmri time course in timeCourse object
+        this.timeCourses.push({
+            name: timeCourseLabel,
             ts: timeCourse,
+            type: 'fmri',
             preprocessed: false,
             ts_prep: null,
             color: this.colorOptions.shift(),
@@ -850,22 +759,41 @@ class TimeCourse {
             opacity: 1,
             width: 2,
             mode: 'lines+markers'
-        }
+        });
+        // increase number of time courses by 1
+        this.timeCoursesN += 1;
+        // add new time course selection dropdown
+        const tsSelectMenu = document.getElementById('ts-select');
+        let opt = document.createElement('option');
+        opt.value = timeCourseLabel;
+        opt.textContent = timeCourseLabel;
+        opt.setAttribute('data-type', 'ts');
+        tsSelectMenu.appendChild(opt);
 
+         // add fmri time course to preprocessing selection dropdown
+        const timeCoursePrepMenu = $('#ts-norm-select')
+        let fmriOption = $('<option>', { value: timeCourseLabel, text: timeCourseLabel });
+        timeCoursePrepMenu.append(fmriOption);
+        // hack to remove duplicates due to bug
+        //https://github.com/snapappointments/bootstrap-select/issues/2738
+        timeCoursePrepMenu.selectpicker('destroy');
+        timeCoursePrepMenu.selectpicker();
+
+        // Refresh analysis menu
+        this.updateAnalysisMenu();
         // plot new fmri time course
         this.plotTimeCourses(this.timePoint)
     }
 
     // Method to plot the time course
     plotTimeCourses(
-        timePoint,
-        highlight=false
+        timePoint
     ) {
         // update timePoint state
         this.timePoint = timePoint
 
         // Don't plot if no fmri time course and no input
-        if (!this.fmriEnabled && !this.userInput) {
+        if (this.timeCoursesN < 1) {
             return;
         }
 
@@ -875,54 +803,54 @@ class TimeCourse {
         // initialize plot data
         let plotData = []
         // add input time courses to plot, if any
-        for (let tsLabel in this.timeCourses){
+        for (let ts of this.timeCourses){
             // keep up with trace labels
-            this.traceLabels.push({'label': tsLabel, type: 'ts'})
+            this.traceLabels.push({'label': ts.name, type: 'ts'})
             // whether to plot preprocessed time course
             let plotTimeCourse
-            if (this.timeCourses[tsLabel]['preprocessed']) {
-                plotTimeCourse = this.timeCourses[tsLabel]['ts_prep'];
+            if (ts['preprocessed']) {
+                plotTimeCourse = ts['ts_prep'];
             }
             else {
-                plotTimeCourse = this.timeCourses[tsLabel]['ts'];
+                plotTimeCourse = ts['ts'];
             }
             // create time course line plot
             const tsTrace = {
                 x: Array.from({ length: plotTimeCourse.length }, (_, i) => i),
                 y: plotTimeCourse,
                 type: 'scatter',
-                mode: this.timeCourses[tsLabel]['mode'],
-                name: this.timeCourses[tsLabel]['name'],
-                marker: { color: this.timeCourses[tsLabel]['color'] },
+                mode: ts['mode'],
+                name: ts['name'],
+                marker: { color: ts['color'] },
                 line: {
                     shape: 'linear',
-                    width: this.timeCourses[tsLabel]['width']
+                    width: ts['width']
                 },
-                visible: this.timeCourses[tsLabel]['plot'],
-                opacity: this.timeCourses[tsLabel]['opacity'],
+                visible: ts['plot'],
+                opacity: ts['opacity'],
                 hoverinfo: this.plotHoverText ? 'all' : 'none'
             };
             plotData.push(tsTrace)
         }
         // add task regressors to plot, if any
-        for (let taskLabel in this.taskRegressors) {
+        for (let task of this.taskRegressors) {
             // keep up with trace labels
-            this.traceLabels.push({'label': taskLabel, type: 'task'});
-            let plotTimeCourse = this.taskRegressors[taskLabel][this.taskPlotType];
+            this.traceLabels.push({'label': task.name, type: 'task'});
+            let plotTimeCourse = task[this.taskPlotType];
             // create time course line plot
             const tsTrace = {
                 x: Array.from({ length: plotTimeCourse.length }, (_, i) => i),
                 y: plotTimeCourse,
                 type: 'scatter',
-                mode: this.taskRegressors[taskLabel]['mode'],
-                name: this.taskRegressors[taskLabel]['name'],
-                marker: { color: this.taskRegressors[taskLabel]['color'] },
+                mode: task['mode'],
+                name: task['name'],
+                marker: { color: task['color'] },
                 line: {
                     shape: 'linear',
-                    width: this.taskRegressors[taskLabel]['width']
+                    width: task['width']
                 },
-                visible: this.taskRegressors[taskLabel]['plot'],
-                opacity: this.taskRegressors[taskLabel]['opacity'],
+                visible: task['plot'],
+                opacity: task['opacity'],
                 hoverinfo: this.plotHoverText ? 'all' : 'none'
             };
             plotData.push(tsTrace)
@@ -1056,11 +984,16 @@ class TimeCourse {
         // set new visibility value based on current value
         const visibilityNew = visibility == 'legendonly' ? true : 'legendonly'
         const traceType = this.traceLabels[traceIndex]['type'];
+        let timeCourse
         if (traceType == 'ts') {
-            this.timeCourses[this.traceLabels[traceIndex]['label']]['plot'] = visibilityNew;
+            timeCourse = this.timeCourses;
         } else if (traceType == 'task') {
-            this.taskRegressors[this.traceLabels[traceIndex]['label']]['plot'] = visibilityNew;
+            timeCourse = this.taskRegressors
         }
+        const tsSelect = this.selectObjectFromArray(
+            timeCourse, this.traceLabels[traceIndex]['label'], 'name'
+        );
+        tsSelect['plot'] = visibilityNew;
     }
 
     // Initialize plotly legend double click (hide all other traces)
@@ -1069,15 +1002,18 @@ class TimeCourse {
         const traceIndex = data.curveNumber;
         for (const [index, trace] of this.traceLabels.entries()) {
             let timeCourse
-            if (trace['label'] == 'ts') {
+            if (trace['type'] == 'ts') {
                 timeCourse = this.timeCourses;
-            } else if (trace['label'] == 'task') {
+            } else if (trace['type'] == 'task') {
                 timeCourse = this.taskRegressors;
             }
+            const tsSelect = this.selectObjectFromArray(
+                timeCourse, trace['label'], 'name'
+            );
             if (index == traceIndex) {
-                timeCourse[trace['label']]['plot'] = true;
+                tsSelect['plot'] = true;
             } else {
-                timeCourse[trace['label']]['plot'] = 'legendonly'
+                tsSelect['plot'] = 'legendonly';
             }
         }
     }
@@ -1102,14 +1038,20 @@ class TimeCourse {
         const lineMarker = event.target.value;
         // update line marker value, if anything to plot
         if (optionType == 'ts') {
-            if (currentSelect in this.timeCourses) {
-                this.timeCourses[currentSelect]['mode'] = lineMarker;
+            const selectedTS = this.selectObjectFromArray(
+                this.timeCourses, currentSelect, 'name'
+            );
+            if (selectedTS) {
+                selectedTS['mode'] = lineMarker;
                 // replot with new line marker value
                 this.plotTimeCourses(this.timePoint)
             }
         } else if (optionType == 'task') {
-            if (currentSelect in this.taskRegressors) {
-                this.taskRegressors[currentSelect]['mode'] = lineMarker;
+            const selectedTS = this.selectObjectFromArray(
+                this.taskRegressors, currentSelect, 'name'
+            );
+            if (selectedTS) {
+                selectedTS['mode'] = lineMarker;
                 this.plotTimeCourses(this.timePoint)
             }
         }
@@ -1126,14 +1068,20 @@ class TimeCourse {
         const opacityValue = event.value;
         // update opacity value, if anything to plot
         if (optionType == 'ts') {
-            if (currentSelect in this.timeCourses) {
-                this.timeCourses[currentSelect]['opacity'] = opacityValue.newValue;
+            const selectedTS = this.selectObjectFromArray(
+                this.timeCourses, currentSelect, 'name'
+            );
+            if (selectedTS) {
+                selectedTS['opacity'] = opacityValue.newValue;
                 // replot with new opacity value
                 this.plotTimeCourses(this.timePoint)
             }
         } else if (optionType == 'task') {
-            if (currentSelect in this.taskRegressors) {
-                this.taskRegressors[currentSelect]['opacity'] = opacityValue.newValue;
+            const selectedTS = this.selectObjectFromArray(
+                this.taskRegressors, currentSelect, 'name'
+            );
+            if (selectedTS) {
+                selectedTS['opacity'] = opacityValue.newValue;
                 this.plotTimeCourses(this.timePoint)
             }
         }
@@ -1150,14 +1098,20 @@ class TimeCourse {
         const lineWidth = event.value;
         // update line width value, if anything to plot
         if (optionType == 'ts') {
-            if (currentSelect in this.timeCourses) {
-                this.timeCourses[currentSelect]['width'] = lineWidth.newValue;
+            const selectedTS = this.selectObjectFromArray(
+                this.timeCourses, currentSelect, 'name'
+            );
+            if (selectedTS) {
+                selectedTS['width'] = lineWidth.newValue;
                 // replot with new line width value
                 this.plotTimeCourses(this.timePoint)
             }
         } else if (optionType == 'task') {
-            if (currentSelect in this.taskRegressors) {
-                this.taskRegressors[currentSelect]['width'] = lineWidth.newValue;
+            const selectedTS = this.selectObjectFromArray(
+                this.taskRegressors, currentSelect, 'name'
+            );
+            if (selectedTS) {
+                selectedTS['width'] = lineWidth.newValue;
                 this.plotTimeCourses(this.timePoint)
             }
         }
@@ -1173,7 +1127,8 @@ class TimeCourse {
         let errorMessage
 
         // Check whether any time course is selected
-        const tsSelect = this.timeCoursePrepMenu.val();
+        const timeCoursePrepMenu = $('#ts-norm-select')
+        const tsSelect = timeCoursePrepMenu.val();
         if (tsSelect.length < 1) {
             errorMessage = 'Please select at least one time course';
             preprocessingInputError(errorDiv, errorMessage);
@@ -1236,14 +1191,17 @@ class TimeCourse {
         .then(response => response.json())
         .then(data => {
             // loop through preprocessed time courses and update
-            for (let tsLabel in data) {
+            for (let ts of data) {
                 // set time course as preprocessed
-                this.timeCourses[tsLabel]['preprocessed'] = true;
+                ts['preprocessed'] = true;
                 // store preprocessed time course
-                this.timeCourses[tsLabel]['ts_prep'] = data[tsLabel];
+                ts['ts_prep'] = data[ts.name];
             }
             // plot time course
             this.plotTimeCourses(this.timePoint);
+
+            // refresh analysis menu
+            this.updateAnalysisMenu();
 
             // Turn on preprocess alert
             document.getElementById('ts-preprocess-alert').style.display = 'block';
@@ -1274,15 +1232,18 @@ class TimeCourse {
         document.getElementById('ts-filter-high-cut').value = ''
 
         // clear all preprocessed time courses, if time courses plotted
-        if (Object.keys(this.timeCourses).length > 0) {
-            for (let tsLabel in this.timeCourses) {
-                this.timeCourses[tsLabel]['preprocessed'] = false;
-                this.timeCourses[tsLabel]['ts_prep'] = null;
+        if (this.timeCourses.length > 0) {
+            for (let ts of this.timeCourses) {
+                ts['preprocessed'] = false;
+                ts['ts_prep'] = null;
             }
         }
 
         // Refresh plot
         this.plotTimeCourses(this.timePoint)
+
+        // refresh analysis menu
+        this.updateAnalysisMenu();
 
         // turn off preprocess alert
         document.getElementById('ts-preprocess-alert').style.display = 'none';
@@ -1361,7 +1322,9 @@ class TimeCourse {
         // get time course or task regressor
         let ts
         if (tsType == 'ts') {
-            const timeCourse = this.timeCourses[tsValue];
+            const timeCourse = this.selectObjectFromArray(
+                this.timeCourses, tsValue, 'name'
+            );
             if (tsSelect[0].dataset.preprocessed === 'true') {
                 ts = timeCourse['ts_prep'];
             } else {
@@ -1369,7 +1332,10 @@ class TimeCourse {
             }
         } else if (tsType == 'task') {
             const plotType = tsSelect[0].dataset.plotType;
-            ts = this.taskRegressors[tsValue][plotType];
+            const timeCourse = this.selectObjectFromArray(
+                this.taskRegressors, tsValue, 'name'
+            );
+            ts = timeCourse[plotType];
         }
         return [label, ts]
     }
@@ -1377,6 +1343,28 @@ class TimeCourse {
     // Resize time course plots with window changes
     onWindowResize() {
         Plotly.Plots.resize(document.getElementById(this.plotId));
+    }
+
+    // utility function to select object from array of objects based on label
+    selectObjectFromArray(array, label, key) {
+        let foundObj = null
+        for (const obj of array) {
+            if (obj[key] == label) {
+                foundObj = obj;
+            }
+        }
+        return foundObj
+    }
+
+    // utility function to select fmri time courses from time course array
+    selectFmriTimeCourse() {
+        let fmriTS = [];
+        for (let ts of this.timeCourses){
+            if (ts['type'] == 'fmri') {
+                fmriTS.push(ts)
+            }
+        };
+        return fmriTS
     }
 
 }
