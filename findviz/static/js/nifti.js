@@ -178,21 +178,6 @@ class NiftiViewer {
                     );
 
                 }
-                // this.voxelText['x'] = data.x_voxel_coords.map(row =>
-                //     row.map(
-                //         c => `Voxel: (${c[coordIndex['x'][0]]}, ${coordIndex['x'][1]}, ${coordIndex['x'][2]})`
-                //         )
-                // );
-                // this.voxelText['y'] = data.y_voxel_coords.map(row =>
-                //     row.map(
-                //         c => `Voxel: (${coordIndex['y'][1]}, ${coordIndex['y'][0]}, ${coordIndex['y'][2]})`
-                //     )
-                // );
-                // this.voxelText['z'] = data.z_voxel_coords.map(row =>
-                //     row.map(
-                //         c => `Voxel: (${coordIndex['z'][1]}, ${coordIndex['z'][2]}, ${coordIndex['z'][0]})`
-                //     )
-                // );
 
             }
             // mask and threshold slices
