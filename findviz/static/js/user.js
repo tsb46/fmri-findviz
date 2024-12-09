@@ -199,7 +199,14 @@ export class VisualizationOptions {
                         tooltip: 'show',
                     });
                 };
-                // attach montage listeners
+                // Hide popover when clicking outside
+                $(document).on('click', function (e) {
+                    // Check if the click is outside the popover and the button
+                    if (!$(e.target).closest('.popover, #montage-popover').length) {
+                      $('#montage-popover').popover('hide');
+                    }
+                });
+                    // attach montage listeners
                 this.attachMontageListeners();
             });
         // if already shown, revise sliders
