@@ -94,7 +94,7 @@ class MainViewer{
             this.colorbarDiv, this.globalMin, this.globalMax, 'Intensity'
         );
 
-        // Initialize the TimeCourse class (with input time series, optional)
+        // Initialize the TimeCourse class with input time series
         if (plotData.timeCourses.ts.length > 0 || plotData.taskConditions !== null) {
             this.timeCourse = new TimeCourse(
                 plotData.timepoints.length,
@@ -105,6 +105,7 @@ class MainViewer{
             );
         }
         else {
+            // Initialize the TimeCourse class without input time courses
             this.timeCourse = new TimeCourse(
                 plotData.timepoints.length,
                 null,

@@ -819,8 +819,6 @@ class TimeCourse {
 
         // Don't plot if no fmri time course and no input
         if (this.timeCoursesN < 1) {
-            // clear content, if there is any
-            Plotly.react(this.plotId, [], {});
             return;
         }
 

@@ -91,6 +91,11 @@ class NiftiViewer {
         }
         // update montage slice indices if montage state
         if (this.viewerState == 'montage') {
+            // distribute slice containers evenly
+            document.getElementById('x_slice_container').style.width = '33%';
+            document.getElementById('y_slice_container').style.width = '33%';
+            document.getElementById('z_slice_container').style.width = '33%';
+
             if (sliceDirection) {
                 this.montageSliceDirection = sliceDirection;
             }
@@ -100,6 +105,12 @@ class NiftiViewer {
                 sliceIndex['slice2'][this.montageSliceDirection] = sliceUpdate['slice2Slider'];
                 sliceIndex['slice3'][this.montageSliceDirection] = sliceUpdate['slice3Slider'];
             }
+        } else {
+            // if ortho view, give more room to first slice
+            document.getElementById('x_slice_container').style.width = '38%';
+            document.getElementById('y_slice_container').style.width = '31%';
+            document.getElementById('z_slice_container').style.width = '31%';
+
         }
     }
 
