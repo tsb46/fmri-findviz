@@ -105,7 +105,13 @@ class MainViewer{
             );
         }
         else {
-            this.timeCourse = new TimeCourse(plotData.timepoints.length)
+            this.timeCourse = new TimeCourse(
+                plotData.timepoints.length,
+                null,
+                null,
+                null,
+                this.timeSlider.sliderElement
+            )
         }
 
         // initialize fmri time course listeners
