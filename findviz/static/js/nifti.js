@@ -144,24 +144,56 @@ class NiftiViewer {
         })
         .then(response => response.json())
         .then(data => {
-            // update voxel coordinates, if update
+            // update voxel coordinate labels in hover, if specified
             if (updateCoord) {
-                // convert voxel coordinates to text
-                this.voxelText['x'] = data.x_voxel_coords.map(row =>
+                let coordIndex = {}
+                // set coordinate index differently for montage vs ortho view
+                if (this.viewerState == 'montage') {
+                    if (this.montageSliceDirection == 'x') {
+                        coordIndex['x'] = [0,1,2];
+                        coordIndex['y'] = [0,1,2];
+                        coordIndex['z'] = [0,1,2];
+                    } else if (this.montageSliceDirection == 'y') {
+                        coordIndex['x'] = [1,0,2];
+                        coordIndex['y'] = [1,0,2];
+                        coordIndex['z'] = [1,0,2];
+                    } else if (this.montageSliceDirection == 'z') {
+                        coordIndex['x'] = [1,2,0];
+                        coordIndex['y'] = [1,2,0];
+                        coordIndex['z'] = [1,2,0];
+                    }
+
+                } else if (this.viewerState == 'ortho') {
+                    coordIndex['x'] = [0,1,2];
+                    coordIndex['y'] = [1,0,2];
+                    coordIndex['z'] = [1,2,0];
+                }
+                // assign coordinate labels
+                for (const coord of ['x', 'y', 'z']) {
+                    const voxelCoords = data[`${coord}_voxel_coords`];
+                    this.voxelText[coord] = voxelCoords.map(row =>
                     row.map(
-                        c => `Voxel: (${c[0]}, ${c[1]}, ${c[2]})`
-                    )
-                );
-                this.voxelText['y'] = data.y_voxel_coords.map(row =>
-                    row.map(
-                        c => `Voxel: (${c[1]}, ${c[0]}, ${c[2]})`
-                    )
-                );
-                this.voxelText['z'] = data.z_voxel_coords.map(row =>
-                    row.map(
-                        c => `Voxel: (${c[1]}, ${c[2]}, ${c[0]})`
-                    )
-                );
+                        c => `Voxel: (${c[coordIndex[coord][0]]}, ${c[coordIndex[coord][1]]}, ${c[coordIndex[coord][2]]})`
+                        )
+                    );
+
+                }
+                // this.voxelText['x'] = data.x_voxel_coords.map(row =>
+                //     row.map(
+                //         c => `Voxel: (${c[coordIndex['x'][0]]}, ${coordIndex['x'][1]}, ${coordIndex['x'][2]})`
+                //         )
+                // );
+                // this.voxelText['y'] = data.y_voxel_coords.map(row =>
+                //     row.map(
+                //         c => `Voxel: (${coordIndex['y'][1]}, ${coordIndex['y'][0]}, ${coordIndex['y'][2]})`
+                //     )
+                // );
+                // this.voxelText['z'] = data.z_voxel_coords.map(row =>
+                //     row.map(
+                //         c => `Voxel: (${coordIndex['z'][1]}, ${coordIndex['z'][2]}, ${coordIndex['z'][0]})`
+                //     )
+                // );
+
             }
             // mask and threshold slices
             data = this.prepareSlices(data, thresholdMin, thresholdMax)
@@ -328,7 +360,7 @@ class NiftiViewer {
             .then(response => response.json())
             .then(data => {
                 // create coordinate labels title
-                const coordLabels = `Voxel: (x=${this.orthoSliceIndex['x']}, y=${this.orthoSliceIndex['y']}, z=${this.orthoSliceIndex['z']})`
+                const coordLabels = `Voxel: (x=${sliceIndex['x']}, y=${sliceIndex['y']}, z=${sliceIndex['z']})`
                 return {
                     label: coordLabels,
                     timeCourse: data.time_course
