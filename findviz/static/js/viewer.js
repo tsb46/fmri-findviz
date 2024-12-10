@@ -1,5 +1,6 @@
 // viewer.js
 import ColorBar from './colorbar.js';
+import Distance from './distance.js';
 import TimeCourse from './timecourse.js';
 import TimeSlider from './timeslider.js';
 import { VisualizationOptions, PreprocessingOptions } from './user.js';
@@ -114,6 +115,8 @@ class MainViewer{
                 this.timeSlider.sliderElement
             )
         }
+        // initialize time point distance class
+        this.distance = new Distance(true, 'distancePlot', this.timeSlider.sliderElement);
 
         // initialize fmri time course listeners
         this.timeCourseListeners();
@@ -146,6 +149,11 @@ class MainViewer{
             this.timeCourse.plotTimeCourses(this.timePoint);
             // Register click handlers
             this.registerClickHandlers();
+            // Listen for distance computation submit event
+            // Listen for correlation submit event
+            $(document).on('distanceSubmit', (event) => {
+                this.initiateDistanceCompute(event)
+            });
             // Listen for correlation submit event
             $(document).on('correlationSubmit', (event, data) => {
                 this.initiateCorrelation(event, data)
@@ -596,17 +604,70 @@ class MainViewer{
         }
     }
 
-    // package up input to pass to cross-correlation routes
-    initiateAverage(event, data) {
-        // define error display function
-        function raiseError(errorDiv, errorMessage) {
-            errorDiv.textContent = errorMessage;
-            errorDiv.style.display = 'block';
-            // Clear error message after 5 seconds
-            setTimeout(function() {
-                errorDiv.style.display = 'none';
-            }, 5000);
+    // package up input to pass to time point distance routes
+    initiateDistanceCompute(event) {
+        // get error placeholder
+        const errorDiv = document.getElementById(
+            'error-message-distance'
+        );
+        let errorMessage
+        // raise error if mask is not provided for nifti file
+        if (!this.viewer.maskKey && this.plotType == 'nifti') {
+            errorMessage = 'a brain mask must be supplied (in file upload) to calculate time point distance';
+            this.raiseError(errorDiv, errorMessage);
+            return
         }
+
+        // initialize form data to pass in POST route
+        let formData = new FormData();
+        // Add parameters and input to formData
+        formData.append('dist_metric', event.detail.distMetric);
+        formData.append('time_point', event.detail.timeIndex);
+        formData.append('use_preprocess', this.preprocState);
+        let fetchURL
+        if (this.plotType == 'nifti') {
+            formData.append('file_key', this.viewer.fileKey);
+            formData.append('mask_key', this.viewer.maskKey);
+            fetchURL = '/compute_distance_nii'
+        } else if (this.plotType == 'gifti') {
+            formData.append('left_key', this.viewer.leftKey);
+            formData.append('right_key', this.viewer.rightKey);
+            fetchURL = '/compute_distance_gii'
+        }
+        // initiate spinner
+        let spinnerOverlayDiv = document.getElementById(
+              'distance-spinner-overlay'
+            )
+        spinnerOverlayDiv.style.display = 'block'
+        let spinnerDiv = document.getElementById('distance-spinner')
+        spinnerDiv.style.display = 'block'
+
+        fetch(fetchURL, {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Error in response from server during time distance analysis')
+            }
+            // turn off spinner
+            let spinnerOverlayDiv = document.getElementById(
+                'distance-spinner-overlay'
+            )
+            let spinnerDiv = document.getElementById('distance-spinner')
+            // end spinner to indicate loading of files
+            spinnerOverlayDiv.style.display = 'none'
+            spinnerDiv.style.display = 'none'
+            // close modal
+            $('#averageModal').modal('hide');
+        }).catch(error => {
+            console.error('Error during window average analysis:', error);
+        });
+
+    }
+
+    // package up input to pass to peak-average routes
+    initiateAverage(event, data) {
         // get error placeholder
         const errorDiv = document.getElementById(
             'error-message-average'
@@ -615,7 +676,7 @@ class MainViewer{
         // raise error if mask is not provided for nifti file
         if (!this.viewer.maskKey && this.plotType == 'nifti') {
             errorMessage = 'a brain mask must be supplied (in file upload) to perform windowed average analysis';
-            raiseError(errorDiv, errorMessage);
+            this.raiseError(errorDiv, errorMessage);
             return
         }
         // get lag inputs
@@ -626,20 +687,20 @@ class MainViewer{
         // check lags do not exceed zero
         if (leftEdge > 0) {
             errorMessage = 'left edge must be less than or equal to zero';
-            raiseError(errorDiv, errorMessage);
+            this.raiseError(errorDiv, errorMessage);
         }
         if (rightEdge < 0) {
             errorMessage = 'right edge must be greater than or equal to zero';
-            raiseError(errorDiv, errorMessage);
+            this.raiseError(errorDiv, errorMessage);
         }
         // check lags do not exceed half of time legnth
         if (leftEdge < -timeLengthMid) {
             errorMessage = `left edge must not be less than ${timeLengthMid} (half the length of time course) `;
-            raiseError(errorDiv, errorMessage);
+            this.raiseError(errorDiv, errorMessage);
         }
         if (rightEdge > timeLengthMid) {
             errorMessage = `right edge must not be greater than ${timeLengthMid} (half the length of time course) `;
-            raiseError(errorDiv, errorMessage);
+            this.raiseError(errorDiv, errorMessage);
         }
         // initialize form data to pass in POST route
         let formData = new FormData();
@@ -700,15 +761,6 @@ class MainViewer{
 
     // package up input to pass to cross-correlation routes
     initiateCorrelation(event, data) {
-        // define error display function
-        function raiseError(errorDiv, errorMessage) {
-            errorDiv.textContent = errorMessage;
-            errorDiv.style.display = 'block';
-            // Clear error message after 5 seconds
-            setTimeout(function() {
-                errorDiv.style.display = 'none';
-            }, 5000);
-        }
         // get error placeholder
         const errorDiv = document.getElementById(
             'error-message-correlation'
@@ -717,7 +769,7 @@ class MainViewer{
         // raise error if mask is not provided for nifti file
         if (!this.viewer.maskKey && this.plotType == 'nifti') {
             errorMessage = 'a brain mask must be supplied (in file upload) to perform correlation analysis';
-            raiseError(errorDiv, errorMessage);
+            this.raiseError(errorDiv, errorMessage);
             return
         }
         // get lag inputs
@@ -728,20 +780,20 @@ class MainViewer{
         // check lags do not exceed zero
         if (negativeLag > 0) {
             errorMessage = 'negative lag must be less than or equal to zero';
-            raiseError(errorDiv, errorMessage);
+            this.raiseError(errorDiv, errorMessage);
         }
         if (positiveLag < 0) {
             errorMessage = 'positive lag must be greater than or equal to zero';
-            raiseError(errorDiv, errorMessage);
+            this.raiseError(errorDiv, errorMessage);
         }
         // check lags do not exceed half of time legnth
         if (negativeLag < -timeLengthMid) {
             errorMessage = `negative lag must not be less than ${timeLengthMid} (half the length of time course) `;
-            raiseError(errorDiv, errorMessage);
+            this.raiseError(errorDiv, errorMessage);
         }
         if (positiveLag > timeLengthMid) {
             errorMessage = `positive lag must not be greater than ${timeLengthMid} (half the length of time course) `;
-            raiseError(errorDiv, errorMessage);
+            this.raiseError(errorDiv, errorMessage);
         }
         // initialize form data to pass in POST route
         let formData = new FormData();
@@ -793,6 +845,16 @@ class MainViewer{
         }).catch(error => {
             console.error('Error during correlation analysis:', error);
         });
+    }
+
+    // utility function to temporarily display error message
+    raiseError(errorDiv, errorMessage) {
+        errorDiv.textContent = errorMessage;
+        errorDiv.style.display = 'block';
+        // Clear error message after 5 seconds
+        setTimeout(function() {
+            errorDiv.style.display = 'none';
+        }, 5000);
     }
 
 }

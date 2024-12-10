@@ -359,6 +359,39 @@ def get_world_coords():
 
 
 # route to compute window average of nii data
+@nifti_bp.route('/compute_distance_nii', methods=['POST'])
+def compute_distance_nii():
+    # load parameters
+    time_point = utils.convert_value(request.form.get('time_point'))
+    dist_metric = utils.convert_value(request.form.get('dist_metric'))
+    file_key = request.form.get('file_key')
+    mask_key = request.form.get('mask_key')
+    anat_key = request.form.get('anat_key')
+    use_preprocess = utils.convert_value(
+        request.form.get('use_preprocess')
+    )
+    # Get nifti img
+    if use_preprocess:
+        nifti_img = cache.get('preprocessed')
+    else:
+        nifti_img = cache.get(file_key)
+    if not nifti_img:
+        return jsonify({'error': 'Nifti file not found'}), 500
+
+    # get mask file
+    mask_img = cache.get(mask_key)
+    if not mask_img:
+        return jsonify({'error': 'Mask file not found'}), 500
+
+     # get 2d array within mask
+    nifti_2d = masking.apply_mask(nifti_img, mask_img)
+
+    # get time point distance
+    dist_vec = analysis.distance(nifti_2d, time_point, dist_metric)
+    breakpoint()
+
+
+# route to compute window average of nii data
 @nifti_bp.route('/compute_avg_nii', methods=['POST'])
 def compute_avg_nii():
     # load markers

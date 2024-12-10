@@ -1,5 +1,6 @@
 // correlation.js
 import ColorBar from './colorbar.js';
+import Distance from './distance.js';
 import TimeSlider from './timeslider.js';
 import { VisualizationOptions } from './user.js';
 import NiftiViewer from './nifti.js';
@@ -101,6 +102,9 @@ class Result {
         this.colorBar = new ColorBar(
             this.colorbarDiv, this.globalMin, this.globalMax, 'Correlation'
         );
+
+        // initialize distance class - not used
+        this.distance = new Distance(false);
 
         // disable 'enable time course' switch
         $('#enable-time-course').prop('disabled', true);
