@@ -1216,11 +1216,12 @@ class TimeCourse {
         .then(response => response.json())
         .then(data => {
             // loop through preprocessed time courses and update
-            for (let ts of data) {
+            for (let ts in data) {
+                const timeCourse = this.selectObjectFromArray(this.timeCourses, ts, 'name');
                 // set time course as preprocessed
-                ts['preprocessed'] = true;
+                timeCourse['preprocessed'] = true;
                 // store preprocessed time course
-                ts['ts_prep'] = data[ts.name];
+                timeCourse['ts_prep'] = data[ts];
             }
             // plot time course
             this.plotTimeCourses(this.timePoint);

@@ -1,0 +1,22 @@
+[project]
+name = "findviz"
+version = "0.1.0"
+description = "FIND Viewer: FMRI Interactive Navigation and Discovery Viewer"
+readme = "README.md"
+license = { file = "LICENSE" }
+authors = [
+    { name = "Taylor Bolt", email = "taylor.s.bolt@gmail.com" }
+]
+dependencies = [
+    "Flask==3.0.3",
+    "matplotlib==3.9.2",
+    "nilearn==0.10.4",
+    "plotly==5.23.0"
+]
+
+[tool.setuptools]
+packages = ["findviz"]
+
+[project.scripts]
+findviz = "findviz.cli:main"
+

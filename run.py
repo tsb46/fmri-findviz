@@ -1,4 +1,6 @@
-from findviz import flask_app
+from findviz import create_app
+
+app = create_app()
 
 if __name__ == '__main__':
-    flask_app.run(debug=True, port=5001)
+    app.run(debug=True, port=5001)
