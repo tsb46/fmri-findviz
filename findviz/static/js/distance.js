@@ -46,6 +46,11 @@ class Distance {
         // Dispatch the custom event
         $(document).trigger(customEvent);
     }
+
+    // plot distance vector using plotly
+    plotDistance() {
+
+    }
 }
 
 export default Distance;

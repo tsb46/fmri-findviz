@@ -229,15 +229,22 @@ def get_time_course_nii():
     # Extract the voxel's time course
     time_course = nifti_img.get_fdata()[x, y, z, :].tolist()
 
+    # create time course label
+    time_course_label = f'Voxel: (x={x}, y={y}, z={z})'
     # store in cache
     if 'timeseries' in cache:
-        cache['timeseries']['fmri'] = time_course
+        cache['timeseries'][time_course_label] = time_course
     else:
         cache['timeseries'] = {
-            'fmri': time_course
+            time_course_label: time_course
         }
 
-    return jsonify({'time_course': time_course})
+    return jsonify(
+        {
+            'time_course': time_course,
+            'time_course_label': time_course_label
+        }
+    )
 
 
 # route to normalize nifti time course

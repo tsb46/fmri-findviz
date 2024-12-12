@@ -202,15 +202,22 @@ def get_time_course_gii():
     time_course = [d.data[vertex_index] for d in gifti_img.darrays]
     time_course = [t.item() for t in time_course]
 
+    # create time course label
+    time_course_label = f'Vertex: {vertex_index}'
     # store in cache
     if 'timeseries' in cache:
-        cache['timeseries']['fmri'] = time_course
+        cache['timeseries'][time_course_label] = time_course
     else:
         cache['timeseries'] = {
-            'fmri': time_course
+            time_course_label: time_course
         }
 
-    return jsonify({'time_course': time_course})
+    return jsonify(
+        {
+            'time_course': time_course,
+            'time_course_label': time_course_label
+        }
+    )
 
 
 # route to normalize gifti time course

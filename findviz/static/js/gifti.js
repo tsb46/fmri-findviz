@@ -323,9 +323,8 @@ class GiftiViewer {
         return fetch(`/get_time_course_gii?file_key=${fileKey}&vertex_index=${this.selectedVertex}&use_preprocess=${preprocState}&hemisphere=${this.selectedHemisphere}`)
             .then(response => response.json())
             .then(data => {
-                const coordLabels = `Vertex: ${this.selectedVertex}`
                 return {
-                    label: coordLabels,
+                    label: data.time_course_label,
                     timeCourse: data.time_course
                 }
             })

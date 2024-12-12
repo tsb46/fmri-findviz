@@ -355,10 +355,8 @@ class NiftiViewer {
         return fetch(`/get_time_course_nii?file_key=${this.fileKey}&x=${sliceIndex['x']}&y=${sliceIndex['y']}&z=${sliceIndex['z']}&use_preprocess=${preprocState}`)
             .then(response => response.json())
             .then(data => {
-                // create coordinate labels title
-                const coordLabels = `Voxel: (x=${sliceIndex['x']}, y=${sliceIndex['y']}, z=${sliceIndex['z']})`
                 return {
-                    label: coordLabels,
+                    label: data.time_course_label,
                     timeCourse: data.time_course
                 }
             })
