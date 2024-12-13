@@ -818,8 +818,10 @@ class TimeCourse {
         this.timePoint = timePoint
 
         // Don't plot if no fmri time course and no input
-        if (this.timeCoursesN < 1) {
-            return;
+        if ((this.timeCoursesN < 1) & !this.plotState) {
+            // purge plot if there are any traces currently in the plot
+            Plotly.purge(this.plotId)
+            return
         }
 
         // initialize trace labels array
