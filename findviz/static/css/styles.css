@@ -45,6 +45,8 @@
   position: fixed;
   text-align: center;
   z-index: 20;
+  top: 50%;
+  left: 50%;
   display: none;
   width: 64px;
   height: 64px;
