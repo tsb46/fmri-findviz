@@ -334,6 +334,61 @@ def preprocess_gii():
     })
 
 
+# route to compute window average of nii data
+@gifti_bp.route('/compute_distance_gii', methods=['POST'])
+def compute_distance_gii():
+    # load parameters
+    time_point = utils.convert_value(request.form.get('time_point'))
+    dist_metric = utils.convert_value(request.form.get('dist_metric'))
+    left_key = utils.convert_value(
+        request.form.get('left_key')
+    )
+    right_key = utils.convert_value(
+        request.form.get('right_key')
+    )
+    use_preprocess = utils.convert_value(
+        request.form.get('use_preprocess')
+    )
+    # left hemisphere
+    if left_key:
+        if use_preprocess:
+            left_img = cache.get('preprocessed_left')
+        else:
+            left_img = cache.get(left_key)
+
+        # convert to array
+        left_img_array = gii_to_array(left_img)
+
+    else:
+        left_img_array = None
+
+    # right hemisphere
+    if right_key:
+        if use_preprocess:
+            right_img = cache.get('preprocessed_right')
+        else:
+            right_img = cache.get(right_key)
+
+        # convert to array
+        right_img_array = gii_to_array(right_img)
+
+    else:
+        right_img_array = None
+
+    gifti_array, _ = concat_gii_hemi(
+        left_img_array, right_img_array
+    )
+
+    # get time point distance
+    dist_vec = analysis.distance(gifti_array, time_point, dist_metric)
+
+
+    return jsonify({
+        'time_point': time_point,
+        'dist_vec': dist_vec.tolist()
+    })
+
+
 # route to compute window average of gii data
 @gifti_bp.route('/compute_avg_gii', methods=['POST'])
 def compute_avg_gii():
@@ -511,6 +566,21 @@ def compute_corr_nii():
     cache['corr_map']['faces_right'] = cache['faces_right'] if right_key else None
 
     return jsonify(success=True)
+
+
+# utility concatenate 2d arrays from both hemispheres
+def concat_gii_hemi(gifti_array_l, gifti_array_r):
+    split_index = None
+    if gifti_array_l is None:
+        return gifti_array_r, split_index
+
+    if gifti_array_r is None:
+        return gifti_array_l, split_index
+
+    # left hemisphere is always in the first position
+    split_index = gifti_array_l.shape[1]
+    gifti_img = np.hstack([gifti_array_r, gifti_array_l])
+    return gifti_img, split_index
 
 
 # utility - convert gifti to 2d array

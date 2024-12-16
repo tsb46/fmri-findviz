@@ -395,8 +395,11 @@ def compute_distance_nii():
 
     # get time point distance
     dist_vec = analysis.distance(nifti_2d, time_point, dist_metric)
-    breakpoint()
 
+    return jsonify({
+        'time_point': time_point,
+        'dist_vec': dist_vec.tolist()
+    })
 
 # route to compute window average of nii data
 @nifti_bp.route('/compute_avg_nii', methods=['POST'])
