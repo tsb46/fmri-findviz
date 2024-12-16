@@ -100,17 +100,24 @@ def upload_cache():
         elif file_type == 'gifti':
             data_out['left_key'] = cache.get('left_key')
             data_out['right_key'] = cache.get('right_key')
-            data_out['vertices_right'] = cache.get('vertices_right')
-            data_out['vertices_left'] = cache.get('vertices_left')
-            data_out['faces_right'] = cache.get('faces_right')
-            data_out['faces_left'] = cache.get('faces_left')
+            # mesh data are numpy arrays, convert to json compatible
+            mesh_fields = [
+                'vertices_right',
+                'vertices_left',
+                'faces_left',
+                'faces_right'
+            ]
+            for f in mesh_fields:
+                f_data = cache.get(f)
+                data_out[f] = f_data.tolist() if f_data is not None else None
+
             # get gifti metadata for viewer
             left_img = cache.get(data_out['left_key'])
             right_img = cache.get(data_out['right_key'])
             metadata = package_gii_metadata(left_img, right_img)
             data_out['timepoints'] = metadata['timepoints']
-            data_out['global_min'] = metadata['global_min']
-            data_out['global_max'] = metadata['global_max']
+            data_out['global_min'] = metadata['global_min'].item()
+            data_out['global_max'] = metadata['global_max'].item()
 
         # check whether timeseries were passed in input (don't count 'fmri')
         data_out['ts_enabled'] = False
