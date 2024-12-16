@@ -25,6 +25,12 @@ function initBootstrapComponents() {
         sanitize: false,
     });
 
+    // Enable HTML content in the time point distance button
+    $("#distance-popover").popover({
+        html: true,
+        sanitize: false,
+    });
+
     // Enable HTML content in the find peaks button
     $("#peak-finder-popover").popover({
         html: true,
@@ -87,6 +93,43 @@ function validateFilterInputs(TR, lowCut, highCut, errorDiv) {
     return true
 }
 
+// create colormap dropdown
+function colorMapDropdrown(colorMapContainer, dropdownListeners=null, colorMapSelect='Viridis') {
+    // fetch colormap data
+    fetch('/get_colormaps')
+    .then(response => response.json())
+    .then(data => {
+        const colormapData = data;
+        // Dynamically generate the colormap options
+        let colormapOptions = Object.keys(colormapData).map(cmap => `
+            <li data-value="${cmap}" style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="flex: 1; min-width: 70px;">${colormapData[cmap].label}</span>
+                <span class="colormap-swatch" style="background: ${colormapData[cmap].gradient};"></span>
+            </li>
+        `).join('');
+
+        // Clear any existing content
+        colorMapContainer.innerHTML = '';
+
+        // Generate Bootstrap dropdown
+        colorMapContainer.innerHTML = `
+            <div class="dropdown-toggle" style="color:black;">${colorMapSelect}</div> <!-- Default value set to 'Viridis' -->
+            <ul class="dropdown-menu">
+                ${colormapOptions}
+            </ul>
+        `;
+
+        // execute call back, if provided
+        if (dropdownListeners) {
+            dropdownListeners();
+        }
+
+    })
+    .catch(error => console.error('Error fetching initializing visualization options:', error)
+    );
+
+}
+
 // Display error for preprocessing input validation
 function preprocessingInputError(errorDiv, errorMessage) {
     errorDiv.textContent = errorMessage;
@@ -107,6 +150,7 @@ function circularIndex(arr, index) {
 
 export {
     initBootstrapComponents,
+    colorMapDropdrown,
     validateFilterInputs,
     preprocessingInputError,
     circularIndex

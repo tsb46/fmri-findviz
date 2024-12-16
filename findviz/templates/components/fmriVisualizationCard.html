@@ -66,9 +66,42 @@
           <i class="fa-solid fa-play"></i>
         </button>
       </div>
-      <div class = 'col-2'>
-        <button type="button" class="btn btn-outline-primary btn-sm" data-toggle="modal" id='distanceModalButton' data-target="#distanceModal">Distance
-        </button>
+      <div class = 'col-2 mr-2'>
+        <div class='row'>
+          <button type="button" class="btn btn-outline-primary btn-sm" data-toggle="modal" id='distanceModalButton' data-target="#distanceModal">Distance
+          </button>
+          <button class="btn btn-outline-primary btn-sm toggle-wait pr-1 pl-1 mr-2" id='distance-popover' title="Time Point Distance Plot Options" data-container="body" data-toggle="popover" data-placement="top" disabled data-content= "
+            <div class='row'>
+              <div class='col mr-5 ml-5'>
+                <div id='distancePlotOptions'>
+                  <div class='row'>
+                    <label for='distancePlotColorMap'>Choose Colormap:</label>
+                    <div class='custom-dropdown' id='distancePlotColorMap'>
+                      <!-- Dropdown content goes here -->
+                    </div>
+                  </div>
+                  <div class='row mt-2'>
+                    <label for='distancePlotColorRange' class='mb-1'>Color Range:</label>
+                    <input id='distancePlotColorRange' type='text' class='slider' data-slider-responsive='true' />
+                  </div>
+                  <div class='row'>
+                    <label for='distancePlotTimeMarkerWidth' class='mb-1'>Time Marker Width:</label>
+                    <input id='distancePlotTimeMarkerWidth' type='text' class='slider' data-slider-responsive='true' />
+                  </div>
+                  <div class='row mb-2'>
+                    <label for='distancePlotTimeMarkerOpacity' class='mb-1'>Time Marker Opacity</label>
+                    <input id='distancePlotTimeMarkerOpacity' type='text' class='slider' data-slider-responsive='true' />
+                  </div>
+                </div>
+              </div>
+            </div>
+          ">
+            <i class="fa-solid fa-caret-up"></i>
+          </button>
+          <button class="btn btn-outline-secondary btn-sm toggle-wait" id='remove-distance-plot' data-toggle="tooltip" data-placement="top" title="Remove distance plot" disabled>
+            <i class="fa-solid fa-trash"></i>
+          </button>
+        </div>
       </div>
       <div class='col-4'>
         <div class='row'>
@@ -106,7 +139,9 @@
       </div>
     </div>
     <div class='row'>
-      <div id="distance-plot" style="display: none;"></div>
+      <div class='col mr-5 ml-2 mt-2' id="distance_container" style="display: none;">
+        <div id="distancePlot"></div>
+      </div>
     </div>
   </div>
   <div class='card-footer pt-1 pb-1'>

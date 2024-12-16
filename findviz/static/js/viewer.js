@@ -116,7 +116,7 @@ class MainViewer{
             )
         }
         // initialize time point distance class
-        this.distance = new Distance(true, 'distancePlot', this.timeSlider.sliderElement);
+        this.distance = new Distance(true, this.timeSlider.sliderElement);
 
         // initialize fmri time course listeners
         this.timeCourseListeners();
@@ -646,10 +646,10 @@ class MainViewer{
             method: 'POST',
             body: formData
         })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Error in response from server during time distance analysis')
-            }
+        .then(response => response.json())
+        .then(data => {
+            // plot time distance vector
+            this.distance.plotDistance(data.dist_vec, data.time_point);
             // turn off spinner
             let spinnerOverlayDiv = document.getElementById(
                 'distance-spinner-overlay'
@@ -659,9 +659,9 @@ class MainViewer{
             spinnerOverlayDiv.style.display = 'none'
             spinnerDiv.style.display = 'none'
             // close modal
-            $('#averageModal').modal('hide');
+            $('#distanceModal').modal('hide');
         }).catch(error => {
-            console.error('Error during window average analysis:', error);
+            console.error('Error during time point distance analysis:', error);
         });
 
     }

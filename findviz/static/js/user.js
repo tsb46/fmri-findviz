@@ -1,7 +1,7 @@
 // user.js - VisualizationOptions and PreprocessingOptions classes
 
-// Import filter parameter validation
-import { validateFilterInputs, preprocessingInputError } from './utils.js';
+// Import from utils
+import { colorMapDropdrown, validateFilterInputs, preprocessingInputError } from './utils.js';
 
 // Class to handle visualization options to modify brain plots
 export class VisualizationOptions {
@@ -93,45 +93,16 @@ export class VisualizationOptions {
         this.screenshotButton = $("#select-screenshot");
         // get play-movie button
         this.playMovieButton = $("#play-movie");
-        // Fetch colormap data from the server
-        this.initOptions();
-    }
-
-    // initialize components in visualization options card
-    initOptions() {
-        // fetch color map data
-        fetch('/get_colormaps')
-            .then(response => response.json())
-            .then(data => {
-                this.colormapData = data;
-                // Create the options card after fetching the colormap data
-                this.createVizOptions();
-            })
-            .catch(error => console.error('Error fetching initializing visualization options:', error));
+        // Create visualization options
+        this.createVizOptions();
     }
 
     createVizOptions() {
         // Remove an existing visualization options, if they exist
         let colorMapContainer = document.getElementById('colormapSelect');
 
-        // Dynamically generate the colormap options
-        let colormapOptions = Object.keys(this.colormapData).map(cmap => `
-            <li data-value="${cmap}" style="display: flex; justify-content: space-between; align-items: center;">
-                <span style="flex: 1; min-width: 70px;">${this.colormapData[cmap].label}</span>
-                <span class="colormap-swatch" style="background: ${this.colormapData[cmap].gradient};"></span>
-            </li>
-        `).join('');
-
-        // Clear any existing content
-        colorMapContainer.innerHTML = '';
-
-        // Generate Bootstrap dropdown
-        colorMapContainer.innerHTML = `
-            <div class="dropdown-toggle" style="color:black;">Viridis</div> <!-- Default value set to 'Viridis' -->
-            <ul class="dropdown-menu">
-                ${colormapOptions}
-            </ul>
-        `;
+        // create colormap dropdown
+        colorMapDropdrown(colorMapContainer, this.attachCustomDropDown.bind(this));
 
         // Attach event listeners
         this.attachEventListeners();
@@ -266,9 +237,6 @@ export class VisualizationOptions {
     }
 
     attachEventListeners() {
-        // Custom-drop down functionality listener
-        this.attachCustomDropDown();
-
         // Color Range Slider listener
         this.colorSlider.on('change', this.handleColorSlider.bind(this));
 
@@ -328,8 +296,8 @@ export class VisualizationOptions {
 
     // Custom-drop down functionality listener
     attachCustomDropDown() {
-        const dropdownToggle = document.querySelector('.custom-dropdown .dropdown-toggle');
-        const dropdownMenu = document.querySelector('.custom-dropdown .dropdown-menu');
+        const dropdownToggle = document.querySelector('#colormapSelect .dropdown-toggle');
+        const dropdownMenu = document.querySelector('#colormapSelect .dropdown-menu');
 
         // Toggle the dropdown menu on click
         dropdownToggle.addEventListener('click', (event) => {
