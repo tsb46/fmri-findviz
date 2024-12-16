@@ -564,11 +564,13 @@ export class VisualizationOptions {
 
     handleResetSliders() {
         // Set color range slide back to default values
-        this.colorMin = this.colorMinOrig
-        this.colorMax = this.colorMaxOrig
-        this.colorSlider.slider('setValue', [this.colorMinOrig, this.colorMaxOrig], false, true)
+        this.colorMin = this.colorMinOrig;
+        this.colorMax = this.colorMaxOrig;
+        this.colorSlider.slider('setValue', [this.colorMinOrig, this.colorMaxOrig], false, true);
         // Set threshold slider back to [0,0]
-        this.thresholdSlider.slider('setValue', [0, 0], false, true)
+        this.thresholdSlider.slider('setValue', [0, 0], false, true);
+        // set opacity slider back to 1
+        this.opacitySlider.slider('setValue', [1], false, true);
     }
 
     fetchPrecision() {
