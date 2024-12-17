@@ -719,10 +719,6 @@ class MainViewer{
         } else if (this.plotType == 'gifti') {
             formData.append('left_key', this.viewer.leftKey);
             formData.append('right_key', this.viewer.rightKey);
-            formData.append('vertices_left', JSON.stringify(this.viewer.verticesLeft));
-            formData.append('vertices_right', JSON.stringify(this.viewer.verticesRight));
-            formData.append('faces_left', JSON.stringify(this.viewer.facesLeft));
-            formData.append('faces_right', JSON.stringify(this.viewer.facesRight));
             fetchURL = '/compute_avg_gii'
         }
         // initiate spinner

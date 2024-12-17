@@ -407,11 +407,6 @@ def compute_avg_gii():
     use_preprocess = utils.convert_value(
         request.form.get('use_preprocess')
     )
-    # Load mesh and face data
-    faces_left = json.loads(request.form.get('faces_left'))
-    faces_right = json.loads(request.form.get('faces_right'))
-    vertices_left = json.loads(request.form.get('vertices_left'))
-    vertices_right = json.loads(request.form.get('vertices_right'))
 
     # left hemisphere
     if left_key:
@@ -469,10 +464,10 @@ def compute_avg_gii():
     cache['avg_map']['global_min'] = metadata['global_min']
     cache['avg_map']['global_max'] = metadata['global_max']
     cache['avg_map']['timepoints'] = np.arange(l_edge, r_edge+1).tolist()
-    cache['avg_map']['vertices_left'] = cache['vertices_left'] if left_key else None
-    cache['avg_map']['vertices_right'] = cache['vertices_right'] if right_key else None
-    cache['avg_map']['faces_left'] = cache['faces_left'] if left_key else None
-    cache['avg_map']['faces_right'] = cache['faces_right'] if right_key else None
+    cache['avg_map']['vertices_left'] = cache['vertices_left'].tolist() if left_key else None
+    cache['avg_map']['vertices_right'] = cache['vertices_right'].tolist() if right_key else None
+    cache['avg_map']['faces_left'] = cache['faces_left'].tolist() if left_key else None
+    cache['avg_map']['faces_right'] = cache['faces_right'].tolist() if right_key else None
 
     return jsonify(success=True)
 
@@ -498,11 +493,6 @@ def compute_corr_nii():
     use_preprocess = utils.convert_value(
         request.form.get('use_preprocess')
     )
-    # Load mesh and face data
-    faces_left = json.loads(request.form.get('faces_left'))
-    faces_right = json.loads(request.form.get('faces_right'))
-    vertices_left = json.loads(request.form.get('vertices_left'))
-    vertices_right = json.loads(request.form.get('vertices_right'))
 
     # get array of lags
     lags = np.arange(nlag, plag+1)
@@ -513,7 +503,6 @@ def compute_corr_nii():
             left_img = cache.get('preprocessed_left')
         else:
             left_img = cache.get(left_key)
-
         # convert to array
         left_img_array = gii_to_array(left_img)
 
@@ -560,10 +549,10 @@ def compute_corr_nii():
     cache['corr_map']['global_min'] = metadata['global_min']
     cache['corr_map']['global_max'] = metadata['global_max']
     cache['corr_map']['timepoints'] = lags.tolist()
-    cache['corr_map']['vertices_left'] = cache['vertices_left'] if left_key else None
-    cache['corr_map']['vertices_right'] = cache['vertices_right'] if right_key else None
-    cache['corr_map']['faces_left'] = cache['faces_left'] if left_key else None
-    cache['corr_map']['faces_right'] = cache['faces_right'] if right_key else None
+    cache['corr_map']['vertices_left'] = cache['vertices_left'].tolist() if left_key else None
+    cache['corr_map']['vertices_right'] = cache['vertices_right'].tolist() if right_key else None
+    cache['corr_map']['faces_left'] = cache['faces_left'].tolist() if left_key else None
+    cache['corr_map']['faces_right'] = cache['faces_right'].tolist() if right_key else None
 
     return jsonify(success=True)
 
