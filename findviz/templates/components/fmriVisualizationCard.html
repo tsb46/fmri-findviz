@@ -189,10 +189,18 @@
               <span class="sr-only">Computing...</span>
           </div>
           <div class="row">
-            <div class='col ml-3 mr-3 d-flex'>
-              <div class="alert alert-primary" role="alert">
-                <span class='mr-2'>Selected Time Point:</span>
-                <span id='timepoint-distance-label' class="fs-4 fw-bold">0</span>
+            <div class='col ml-3 mr-3'>
+              <div class='row'>
+                <div class="alert alert-primary" role="alert">
+                  <span class='mr-2'>Selected Time Point:</span>
+                  <span id='timepoint-distance-label' class="fs-4 fw-bold">0</span>
+                </div>
+              </div>
+              <div class='row'>
+                <div class="alert alert-secondary" id="distancePrepAlert" role="alert" style="display: none;">
+                  <i class="fa-solid fa-triangle-exclamation"></i>
+                  <span class='mr-2'>Using Preprocessed Data</span>
+                </div>
               </div>
             </div>
           </div>

@@ -41,10 +41,13 @@ class Distance {
             opacity: 0.8
         }
 
+        // get time slider div
         this.sliderElement = timesliderDiv;
 
         // get modal
         this.distanceModal = $('#distanceModal');
+
+        // get time point
 
         // get trash button
         this.distanceRemoveButton = $('#remove-distance-plot');
@@ -64,6 +67,14 @@ class Distance {
             $(document).on('timeSliderChange', this.timePointDisplay.bind(this));
             // re-plot on time-slider change
             $(document).on('timeSliderChange', this.timeSliderUpdate.bind(this));
+            // display preprocess alert if preprocess submit
+            $(document).on('preprocessSubmit', () => {
+                document.getElementById('distancePrepAlert').style.display='block';
+            });
+            // remove preprocess alert if preprocess submit
+            $(document).on('preprocessReset', () => {
+                document.getElementById('distancePrepAlert').style.display='none';
+            });
             // Add event listener for window resize
             window.addEventListener('resize', () => this.onWindowResize());
         }
