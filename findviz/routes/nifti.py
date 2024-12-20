@@ -15,7 +15,7 @@ from nilearn.image import index_img, reorder_img, smooth_img
 from nilearn import masking
 from scipy.stats import zscore
 
-from findviz import analysis
+from findviz.viz import analysis
 from findviz.routes import utils
 from findviz.routes.common import cache
 from findviz.routes.utils import package_nii_metadata

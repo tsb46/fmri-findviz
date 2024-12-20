@@ -1,6 +1,18 @@
-"""Register routes"""
+"""
+FIND Viewer: FMRI Interactive Navigation and Discovery Viewer
+
+This package provides tools for visualizing and discovering patterns in fMRI data.
+"""
 
 from flask import Flask
+from findviz.logger_config import setup_logger
+
+# Import core findviz module
+from findviz import viz
+
+# Set up package-level logger
+logger = setup_logger(__name__)
+
 
 def create_app():
     """Application factory function."""
@@ -17,3 +29,17 @@ def create_app():
     app.register_blueprint(common_bp)
 
     return app
+
+# Version information
+__version__ = '0.1.0'
+
+__all__ = [
+    # Core functionality
+    'viz',
+
+    # Utilities
+    'setup_logger',
+    
+    # Version
+    '__version__'
+]

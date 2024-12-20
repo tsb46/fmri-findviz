@@ -7,7 +7,7 @@ import numpy as np
 from flask import Blueprint, request, jsonify
 from nibabel.gifti import GiftiDataArray
 
-from findviz import analysis
+from findviz.viz import analysis
 from findviz.routes import utils
 from findviz.routes.common import cache
 from findviz.routes.utils import package_gii_metadata
