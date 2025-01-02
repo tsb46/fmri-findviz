@@ -124,6 +124,8 @@ class MainViewer{
 
     // initialize initial plot
     init() {
+        // change DOM elements of upload after successful upload
+        this.afterUpload();
         // Plot brain image
         this.viewer.plot(
             this.timePoint,
@@ -165,6 +167,28 @@ class MainViewer{
         }).catch(error => {
             console.error('Error during initialization:', error);
         });
+    }
+
+    /**
+    * Update DOM elements after successful file upload
+    * Changes upload button appearance and enables save scene functionality
+    */
+    afterUpload(){
+        const uploadButton = document.getElementById('upload-file')
+        // Change button color
+        uploadButton.classList.add('btn-secondary');
+        uploadButton.classList.remove('btn-primary');
+        // Change button text to reupload file
+        uploadButton.innerHTML = 'Reupload Files'
+        // Set listener to refresh page when user clicks reupload files
+        uploadButton.addEventListener("click", () => {
+            // clear cache
+            window.location.href = '/clear_cache';
+            location.reload()
+        });
+        // set saveScene button to display
+        const saveSceneDisplay = document.getElementById('save-scene-display');
+        saveSceneDisplay.style.display = 'block';
     }
 
     // Listeners to pass to VisualizationOptions class

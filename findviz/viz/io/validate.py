@@ -99,6 +99,17 @@ def validate_gii_mesh(gii: nib.GiftiImage) -> bool:
     return len(gii.darrays) == 2
 
 
+def validate_gii_func_len(
+    gii_lh: nib.GiftiImage, 
+    gii_rh: nib.GiftiImage
+) -> bool:
+    """
+    validate that gifti functionals from left and right hemisphere
+    are equal length
+    """
+    return len(gii_lh.darrays) == len(gii_rh.darrays)
+
+
 def validate_nii_ext(fp: str) -> bool:
     """
     validate uploaded nifti file extension (either .nii or .nii.gz)
@@ -220,12 +231,12 @@ def validate_task_slicetime(slicetime: float) -> bool:
     return True
 
 
-def validate_ts_task_length(reader: Iterable[List]) -> bool:
+def validate_ts_task_length(ts_list: Iterable[List]) -> bool:
     """
-    Take a csvreader and validate there is at least one row in the
+    Take a time course list and validate there is at least one row in the
     ts or task design file.
     """
-    row_count = sum(1 for row in reader)
+    row_count = len(ts_list)
     if row_count < 1:
         return False
     else:
@@ -264,6 +275,18 @@ def validate_ts_numeric(element) -> bool:
     except ValueError:
         return False
     return True
+
+def validate_ts_fmri_length(
+        fmri_len: int,
+        ts: np.ndarray
+) -> bool:
+    """
+    Validate that the length of the fmri time course length matches 
+    that the length of the time course. 
+    """
+    
+    return len(ts) == fmri_len
+
 
 
 

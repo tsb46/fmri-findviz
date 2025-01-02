@@ -1,13 +1,23 @@
-"""Utility Modules"""
+"""Utility Modules for route input handling"""
+
+from typing import Union
 
 import numpy as np
 
 from nilearn import signal
-from scipy.stats import zscore
 
 
 # Convert values from json
-def convert_value(value):
+def convert_value(value: str) -> Union[str, int, float, None]:
+    """
+    Convert values from form data to Python types 
+
+    Args:
+        value (str): string value from web browser 
+
+    Returns:
+        Union[str, int, float, None]: converted value
+    """
     # Check for booleans
     if isinstance(value, str):
         if value.lower() == 'true':
@@ -38,42 +48,6 @@ def convert_params(params):
 # Function to convert strings (passed via fetch) to list of floats
 def str_to_float_list(string):
     return list(map(float, string.split(',')))
-
-
-# Function to detect header
-def detect_header_csv(ts_file):
-    # initialize state variables
-    success = False
-    header = False
-    with open(ts_file, 'r') as file:
-        reader = csv.reader(file, delimiter=delimiter)
-        # Ensure the file only has one column
-        for row in reader:
-            if len(row) != 1:
-                firstrow = None
-                return header, firstrow, success
-
-        # Move back to the start of the file after checking the column count
-        file.seek(0)
-        reader = csv.reader(file, delimiter=delimiter)
-
-        # Read the first two rows
-        first_row = next(reader, None)
-        second_row = next(reader, None)
-
-        # If only one row exists, assume no header (we need at least two rows to compare)
-        if second_row is None:
-            success = True
-            header = False
-            return header, firstrow, success
-
-        success = True
-        # Check if the first row is non-numeric and the second row is numeric
-        if not is_numeric(first_row[0]) and is_numeric(second_row[0]):
-            header = True
-        else:
-            header = False
-        return header, firstrow, success
 
 
 # Get minimum and maximum of data of nifti or gifti

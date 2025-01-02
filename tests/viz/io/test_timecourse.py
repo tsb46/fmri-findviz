@@ -34,7 +34,7 @@ def test_timecourse_upload_valid(mock_read_ts):
     }]
     
     with patch.object(uploader, '_get_browser_input', return_value=mock_files):
-        result = uploader.upload()
+        result = uploader.upload(3)
         assert len(result) == 1
         assert result[0]['ts_label'] == 'ROI1'
         assert result[0]['ts_file'].shape == (3, 1)
@@ -57,7 +57,70 @@ def test_timecourse_upload_duplicate_labels():
     
     with patch.object(uploader, '_get_browser_input', return_value=mock_files):
         with pytest.raises(exception.FileInputError):
-            uploader.upload()
+            uploader.upload(10)
+
+def test_timecourse_upload_length_mismatch(mock_csv_data):
+    """Test time course upload with length mismatch"""
+    uploader = TimeCourseUpload(method='browser')
+    
+    # Create mock file with length 4 (from mock_csv_data)
+    mock_file = Mock()
+    mock_file.filename = 'data.csv'
+    mock_file.read.return_value = mock_csv_data.encode()
+    
+    # Create mock files list with one time course
+    mock_files = [{
+        'ts_file': mock_file,
+        'ts_label': 'ROI1',
+        'ts_header': 'False'
+    }]
+    
+    with patch.object(uploader, '_get_browser_input', return_value=mock_files):
+        with patch('findviz.viz.io.timecourse.read_ts_file') as mock_read_ts:
+            # Mock read_ts_file to return array of length 4
+            mock_read_ts.return_value = np.array([[1.0], [2.0], [3.0], [4.0]])
+            
+            # Test with matching length (should succeed)
+            result = uploader.upload(fmri_len=4)
+            assert len(result) == 1
+            assert result[0]['ts_label'] == 'ROI1'
+            assert result[0]['ts_file'].shape == (4, 1)
+            
+            # Test with mismatched length (should raise error)
+            with pytest.raises(exception.FileValidationError) as exc_info:
+                uploader.upload(fmri_len=10)
+                assert "length of ts_file (4) is not the same length as fmri volumes (10)" in str(exc_info.value)
+
+def test_timecourse_upload_multiple_length_mismatch():
+    """Test multiple time course uploads with length mismatch"""
+    uploader = TimeCourseUpload(method='browser')
+    
+    # Create mock files with different lengths
+    mock_files = [
+        {
+            'ts_file': Mock(filename='data1.csv'),
+            'ts_label': 'ROI1',
+            'ts_header': 'False'
+        },
+        {
+            'ts_file': Mock(filename='data2.csv'),
+            'ts_label': 'ROI2',
+            'ts_header': 'False'
+        }
+    ]
+    
+    with patch.object(uploader, '_get_browser_input', return_value=mock_files):
+        with patch('findviz.viz.io.timecourse.read_ts_file') as mock_read_ts:
+            # Mock read_ts_file to return arrays of different lengths
+            mock_read_ts.side_effect = [
+                np.array([[1.0], [2.0], [3.0]]),  # Length 3
+                np.array([[1.0], [2.0], [3.0], [4.0]])  # Length 4
+            ]
+            
+            # Test with mismatched length
+            with pytest.raises(exception.FileValidationError) as exc_info:
+                uploader.upload(fmri_len=3)
+                assert "length of ts_file (4) is not the same length as fmri volumes (3)" in str(exc_info.value)
 
 @patch('findviz.viz.io.timecourse.read_task_file')
 def test_task_design_upload_valid(mock_read_task):

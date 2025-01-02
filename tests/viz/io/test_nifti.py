@@ -14,16 +14,16 @@ def test_nifti_upload_valid(mock_read_nii, mock_nifti_4d):
     
     uploader = NiftiUpload(method='browser')
     mock_files = {
-        'func_file': Mock(filename='test.nii.gz'),
-        'anat_file': None,
-        'mask_file': None
+        'nii_func': Mock(filename='test.nii.gz'),
+        'nii_anat': None,
+        'nii_mask': None
     }
     
     with patch.object(uploader, '_get_browser_input', return_value=mock_files):
         result = uploader.upload()
-        assert result['func_file'] is not None
-        assert result['anat_file'] is None
-        assert result['mask_file'] is None
+        assert result['nii_func'] is not None
+        assert result['nii_anat'] is None
+        assert result['nii_mask'] is None
 
 def test_read_nii_browser_invalid():
     """Test read_nii with invalid browser file"""

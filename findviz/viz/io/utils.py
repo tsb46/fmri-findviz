@@ -4,9 +4,30 @@ File I/O utilities
 import csv
 import os
 
-from typing import List, Literal, Iterator, Optional
+from typing import List, Literal, Iterator, Optional, Union
 from io import TextIOWrapper
 
+from werkzeug.datastructures import FileStorage
+
+
+def get_filename(file_input: Union[str, 'FileStorage']) -> str:
+    """Get filename from either string path or FileStorage object.
+    
+    Parameters
+    ----------
+    file_input : Union[str, FileStorage]
+        Either a string file path or FileStorage object
+        
+    Returns
+    -------
+    str
+        The filename
+    """
+    if isinstance(file_input, str):
+        return os.path.basename(file_input)
+    else:  # FileStorage object
+        return file_input.filename
+    
 
 def get_file_ext(fp: str) -> str:
     """
@@ -55,5 +76,5 @@ def get_csv_reader(
         # propagate error to parent function
         except Exception as e:
             raise e
-
+        
     return reader

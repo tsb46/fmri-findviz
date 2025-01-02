@@ -2,9 +2,12 @@
 Utilities for handling time course and task design uploads
 """
 from enum import Enum
-from typing import List, Literal
+from pathlib import Path
+from typing import Dict, List, Literal, Optional, Union, TypedDict, Any
+from werkzeug.datastructures import FileStorage
 
 import numpy as np
+import numpy.typing as npt
 
 from flask import request
 
@@ -12,6 +15,23 @@ from findviz.viz import exception
 from findviz.viz.io import validate
 from findviz.viz.io import utils
 
+
+# Type aliases
+FilePath = Union[str, Path]
+FileInput = Union[FilePath, FileStorage]
+NumericData = Union[int, float, str]  # str included for validation before conversion
+ArrayData = npt.NDArray[np.float64]
+
+class TaskDesignDict(TypedDict):
+    onset: List[NumericData]
+    duration: List[NumericData]
+    trial_type: List[str]
+    tr: float
+    slicetime_ref: float
+
+class TimeCourseDict(TypedDict):
+    ts_file: ArrayData
+    ts_label: str
 
 # Expected time course file upload inputs
 class TimeCourseFiles(Enum):
@@ -41,6 +61,16 @@ class TaskDesignFields(Enum):
     TRIAL_TYPE = 'trial_type'
 
 
+# timecourse/task form fields in upload modal
+browser_fields = {
+    TimeCourseFiles.FILES.value: 'time-series-file',
+    TimeCourseFiles.LABELS.value: 'time-series-label',
+    TimeCourseFiles.HEADERS.value: 'has-header',
+    TaskDesignFiles.FILE.value: 'task-design-file',
+    TaskDesignFiles.TR.value: 'task-design-tr',
+    TaskDesignFiles.SLICETIME.value: 'task-design-slicetime'
+}
+
 class TaskDesignUpload:
     """
     Class for handling task design file uploads.
@@ -59,15 +89,44 @@ class TaskDesignUpload:
         self.method = method
         self.default_trial_label = default_trial_label
 
-    def upload(self) -> dict:
+    def upload(
+        self,
+        task_file: Optional[Union[str, Path]] = None,
+        tr: Optional[float] = None,
+        slicetime_ref: Optional[float] = None
+    ) -> TaskDesignDict:
         """
-        Get task design files and fields uploaded from cli or browser
+        Get task design files and fields uploaded from cli or browser.
 
-        Returns:
-        dict: uploaded files
+        Parameters
+        ----------
+        task_file : Union[str, Path], optional
+            Path to task design file
+        tr : float, optional
+            Repetition time value
+        slicetime_ref : float, optional
+            Slice timing reference value (0-1)
+
+        Returns
+        -------
+        TaskDesignDict
+            Dictionary containing task design data and parameters
+
+        Raises
+        ------
+        FileInputError
+            If required files are missing or invalid
+        FileValidationError
+            If file contents fail validation
+        FileUploadError
+            If there are issues reading the files
         """
         if self.method == 'cli':
-            file_uploads = self._get_cli_input()
+            file_uploads = {
+                TaskDesignFiles.FILE.value: task_file,
+                TaskDesignFiles.TR.value: tr,
+                TaskDesignFiles.SLICETIME.value: slicetime_ref
+            }
         elif self.method == 'browser':
             file_uploads = self._get_browser_input()
 
@@ -80,7 +139,8 @@ class TaskDesignUpload:
                 'Provided TR for task design file is not numeric: '
                 f'{task_tr}. Please check entry',
                 validate.validate_ts_numeric.__name__,
-                exception.ExceptionFileTypes.TASK.value
+                exception.ExceptionFileTypes.TASK.value,
+                [browser_fields[TaskDesignFiles.FILE.value]]
             )
 
         if not validate.validate_ts_numeric(task_slicetime):
@@ -88,7 +148,8 @@ class TaskDesignUpload:
                 f'Provided slicetime reference for task design file is not '
                 f'numeric: {task_slicetime}. Please check entry',
                 validate.validate_ts_numeric.__name__,
-                exception.ExceptionFileTypes.TASK.value
+                exception.ExceptionFileTypes.TASK.value,
+                [browser_fields[TaskDesignFiles.FILE.value]]
             )
 
         task_tr = float(task_tr)
@@ -99,7 +160,8 @@ class TaskDesignUpload:
                 f'TR must not be less than zero: {task_tr}. '
                 'Please check entry',
                 validate.validate_task_tr.__name__,
-                exception.ExceptionFileTypes.TASK.value
+                exception.ExceptionFileTypes.TASK.value,
+                [browser_fields[TaskDesignFiles.FILE.value]]
             )
 
         # validate slicetime is b/w 0 and 1
@@ -108,21 +170,43 @@ class TaskDesignUpload:
                 f'Slicetime reference must between 0 and 1: {task_slicetime}. '
                 'Please check entry',
                 validate.validate_task_slicetime.__name__,
-                exception.ExceptionFileTypes.TASK.value
+                exception.ExceptionFileTypes.TASK.value,
+                [browser_fields[TaskDesignFiles.FILE.value]]
             )
 
         # read task design file
-        task_out = read_task_file(
-            file_uploads[TaskDesignFiles.FILE.value],
-            self.default_trial_label,
-            self.method
-        )
+        try:
+            task_out = read_task_file(
+                file_uploads[TaskDesignFiles.FILE.value],
+                self.default_trial_label,
+                self.method
+            )
+        except Exception as e:
+            raise exception.FileUploadError(
+                'Error in reading task design file',
+                exception.ExceptionFileTypes.TASK.value, self.method,
+                [browser_fields[TaskDesignFiles.FILE.value]]
+            ) from e
+        
         task_out[TaskDesignFiles.SLICETIME.value] = task_slicetime
         task_out[TaskDesignFiles.TR.value] = task_tr
 
         return task_out
 
-    def _get_browser_input(self) -> List[dict]:
+    def _get_browser_input(self) -> Dict[str, Any]:
+        """
+        Get task design inputs from browser request.
+
+        Returns
+        -------
+        Dict[str, Any]
+            Dictionary containing file and parameter inputs
+
+        Raises
+        ------
+        FileInputError
+            If file extension is invalid
+        """
         task_file = request.files.get(TaskDesignFiles.FILE.value)
         task_tr = request.form.get(TaskDesignFiles.TR.value)
         task_slicetime = request.form.get(TaskDesignFiles.SLICETIME.value)
@@ -133,19 +217,17 @@ class TaskDesignUpload:
             TaskDesignFiles.SLICETIME.value: task_slicetime
         }
         # check file extension
-        if not validate.validate_task_ext(task_file.filename):
+        if not validate.validate_task_ext(
+            utils.get_filename(task_file.filename)
+        ):
             raise exception.FileInputError(
                 f'Unrecognized file extension for {task_file.filename}. '
                 'Only .csv or .tsv are allowed.',
-                exception.ExceptionFileTypes.TIMECOURSE.value, self.method
+                exception.ExceptionFileTypes.TIMECOURSE.value, self.method,
+                [browser_fields[TaskDesignFiles.FILE.value]]
             )
 
         return file_upload
-
-    def _get_cli_input() -> List[dict]:
-        raise NotImplementedError(
-            'cli upload for nifti inputs not implemented yet'
-        )
 
 
 class TimeCourseUpload:
@@ -162,17 +244,49 @@ class TimeCourseUpload:
     ):
         self.method = method
 
-    def upload(self) -> List[dict]:
+    def upload(
+        self, 
+        fmri_len: int, 
+        ts_files: Optional[List[Union[str, Path]]] = None,
+        ts_labels: Optional[List[str]] = None,
+        ts_headers: Optional[List[bool]] = None,
+    ) -> List[TimeCourseDict]:
         """
-        Get time course files and fields uploaded from cli or browser
+        Get time course files and fields uploaded from cli or browser.
 
-        Returns:
-        List[dict]: list of dictionaries containing time course array and
-        time course label
+        Parameters
+        ----------
+        fmri_len : int
+            Length of functional MRI time course
+        ts_files : List[Union[str, Path]], optional
+            List of paths to time series files
+        ts_labels : List[str], optional
+            List of labels for time series files
+        ts_headers : List[bool], optional
+            List of boolean flags indicating if time series files have headers
+
+        Returns
+        -------
+        List[TimeCourseDict]
+            List of dictionaries containing time course arrays and labels
+
+        Raises
+        ------
+        FileInputError
+            If files are missing or invalid
+        FileValidationError
+            If file contents fail validation
         """
         try:
             if self.method == 'cli':
-                file_uploads = self._get_cli_input()
+                file_uploads = []
+                for file, label, header in zip(ts_files, ts_labels, ts_headers):
+                    single_upload = {
+                        SingleTimeCourseFiles.FILE.value: file,
+                        SingleTimeCourseFiles.LABEL.value: label,
+                        SingleTimeCourseFiles.HEADER.value: header
+                    }
+                    file_uploads.append(single_upload)
             elif self.method == 'browser':
                 file_uploads = self._get_browser_input()
         except exception.FileInputError as e:
@@ -186,20 +300,54 @@ class TimeCourseUpload:
         ]
         dups = self._check_duplicate_labels(ts_labels)
         if len(dups) > 0:
+            # get indices of duplicate labels
+            dups_indx = [indx for indx, label in enumerate(ts_labels)
+                          if label == dups[0]]
             raise exception.FileInputError(
                 f'Duplicate time course labels found: {dups}. '
                 'Please use unique labels.',
-                'task', self.method
+                'task', self.method,
+                [browser_fields[TimeCourseFiles.FILES.value]],
+                index=dups_indx
             )
 
         # Loop through timecourses and read
         ts_out = []
-        for file_package in file_uploads:
+        for i, file_package in enumerate(file_uploads):
             ts_file = file_package[SingleTimeCourseFiles.FILE.value]
             ts_label = file_package[SingleTimeCourseFiles.LABEL.value]
             ts_header = file_package[SingleTimeCourseFiles.HEADER.value]
+            # check file extension
+            if not validate.validate_ts_ext(
+                utils.get_filename(ts_file.filename)
+            ):
+                raise exception.FileInputError(
+                    'Unrecognized file extension for '
+                    f'{utils.get_filename(ts_file)}.'
+                     ' Only .csv or .txt are allowed.',
+                    exception.ExceptionFileTypes.TIMECOURSE.value, self.method,
+                    [browser_fields[TimeCourseFiles.FILES.value]],
+                    index=[i]
+                )
             # read time course file
-            ts_array = read_ts_file(ts_file, ts_header, self.method)
+            try:
+                ts_array = read_ts_file(ts_file, ts_header, self.method, index=i)
+            # raise exception to be handled higher in stack
+            except Exception as e:
+                raise e
+                
+            # check time course is the same length as fmri time course
+            if not validate.validate_ts_fmri_length(fmri_len, ts_array):
+                raise exception.FileValidationError(
+                    f"length of {SingleTimeCourseFiles.FILE.value} "
+                    f"({len(ts_array)}) is not the same length as "
+                    f" fmri volumes ({fmri_len})",
+                    validate.validate_ts_fmri_length.__name__,
+                    exception.ExceptionFileTypes.TIMECOURSE.value,
+                    [browser_fields[TimeCourseFiles.FILES.value]],
+                    index=[i]
+                )
+            
             # package array in dict
             ts_dict = {
                 SingleTimeCourseFiles.FILE.value: ts_array,
@@ -209,21 +357,13 @@ class TimeCourseUpload:
 
         return ts_out
 
-
-    def _get_browser_input(self) -> List[dict]:
+    def _get_browser_input(self) -> List[Dict[str, Any]]:
         ts_file = request.files.getlist(TimeCourseFiles.FILES.value)
         ts_labels = request.form.getlist(TimeCourseFiles.LABELS.value)
         ts_headers = request.form.getlist(TimeCourseFiles.HEADERS.value)
 
         file_uploads = []
         for file, label, header in zip(ts_file, ts_labels, ts_headers):
-            # check file extension
-            if not validate.validate_ts_ext(file.filename):
-                raise exception.FileInputError(
-                    f'Unrecognized file extension for {file.filename}.'
-                     ' Only .csv or .txt are allowed.',
-                    'task', self.method
-                )
             single_upload = {
                 SingleTimeCourseFiles.FILE.value: file,
                 SingleTimeCourseFiles.LABEL.value: label,
@@ -233,14 +373,19 @@ class TimeCourseUpload:
 
         return file_uploads
 
-    def _get_cli_input() -> List[dict]:
-        raise NotImplementedError(
-            'cli upload for time course inputs not implemented yet'
-        )
-
-    def _check_duplicate_labels(self, labels):
+    def _check_duplicate_labels(self, labels: List[str]) -> List[str]:
         """
-        Check for duplicate time series labels
+        Check for duplicate time series labels.
+
+        Parameters
+        ----------
+        labels : List[str]
+            List of time series labels
+
+        Returns
+        -------
+        List[str]
+            List of duplicate labels found
         """
         duplicates = []
         seen = set()
@@ -254,29 +399,87 @@ class TimeCourseUpload:
         return duplicates
 
 
-def read_task_file(
-    file,
-    default_trial_label: str,
-    method=Literal['cli', 'browser']
-) -> dict:
+def get_ts_header(
+    file: FileInput,
+    file_index: int
+) -> str:
     """
-    Read task design file based on method of upload (cli or browser)
+    Get first row of time course file as header and validate time course file.
 
-    Parameters:
-    file: either a task file from the browser or full path to file from CLI.
-    default_trial_label (str): The default trial label for task design files
-    method (str): whether the file was uploaded through browser or CLI
+    Parameters
+    ----------
+    file : FileInput
+        Time course file from browser or CLI
+    file_index : int
+        Index of the time course file in multi-file upload
 
-    Returns:
-    dict: task design dict with fields as keys and columns as lists
+    Returns
+    -------
+    str
+        The first row (representing the header)
+
+    Raises
+    ------
+    FileInputError
+        If file extension is invalid
+    FileUploadError
+        If there are issues reading the file
+    FileValidationError
+        If file contents fail validation
+    """
+    # load time course file and validate
+    # check file extension
+    if not validate.validate_ts_ext(utils.get_filename(file.filename)):
+        raise exception.FileInputError(
+            f'Unrecognized file extension for {utils.get_filename(file)}.'
+                ' Only .csv or .txt are allowed.',
+            exception.ExceptionFileTypes.TIMECOURSE.value, 'browser',
+            [browser_fields[TimeCourseFiles.FILES.value]],
+            index=[file_index]
+        )
+    try:
+        ts = read_ts_file(
+            file, header=False, method='browser', 
+            index=file_index, validate_numeric=False
+        )
+    except Exception as e:
+        raise e
+
+    # return first row
+    return str(ts[0])
+
+
+def read_task_file(
+    file: FileInput,
+    default_trial_label: str,
+    method: Literal['cli', 'browser']
+) -> TaskDesignDict:
+    """
+    Read task design file based on method of upload.
+
+    Parameters
+    ----------
+    file : FileInput
+        Task design file from browser or CLI
+    default_trial_label : str
+        Default label for trials without type
+    method : Literal['cli', 'browser']
+        Upload method
+
+    Returns
+    -------
+    TaskDesignDict
+        Dictionary containing task design data
+
+    Raises
+    ------
+    ValueError
+        If file object is invalid
+    FileValidationError
+        If file contents fail validation
     """
      # Get filename from file object
-    if hasattr(file, 'filename'):
-        filename = file.filename
-    elif hasattr(file, 'name'):
-        filename = file.name
-    else:
-        raise ValueError("File object must have 'filename' or 'name' attribute")
+    filename = utils.get_filename(file)
     
     # get file extension (should be .tsv or .csv)
     ext = utils.get_file_ext(filename)
@@ -289,12 +492,9 @@ def read_task_file(
     # get reader for file input
     try:
         reader = utils.get_csv_reader(file, delimiter, method)
-    # raise FileUpload error from generic exception
+    # raise generic exception to be handled higher in stack
     except Exception as e:
-        raise exception.FileUploadError(
-            f'Error in reading task design file:  {filename}',
-            exception.ExceptionFileTypes.TASK.value, method
-        ) from e
+        raise e
 
     # get and validate header
     header = next(reader)
@@ -308,7 +508,8 @@ def read_task_file(
             f'Task design file is missing "{required_cols[0]}" or '
             f'"{required_cols[1]}" column:  {filename}',
             validate.validate_task_header_required_cols.__name__,
-            exception.ExceptionFileTypes.TASK.value
+            exception.ExceptionFileTypes.TASK.value,
+            [browser_fields[TaskDesignFiles.FILE.value]]
         )
 
     # validate there are no duplicate 'onset' or 'duration' columns
@@ -317,7 +518,8 @@ def read_task_file(
             f'Task design file has multiple "{required_cols[0]}" or '
             f'"{required_cols[1]}" column:  {filename}',
             validate.validate_task_header_duplicates.__name__,
-            exception.ExceptionFileTypes.TASK.value
+            exception.ExceptionFileTypes.TASK.value,
+            [browser_fields[TaskDesignFiles.FILE.value]]
         )
 
     # lower case and strip all columns in header
@@ -349,7 +551,8 @@ def read_task_file(
                 f'onset column of task design file {filename}. All '
                 'elements must be numeric.',
                 validate.validate_ts_numeric.__name__,
-                exception.ExceptionFileTypes.TASK.value
+                exception.ExceptionFileTypes.TASK.value,
+                [browser_fields[TaskDesignFiles.FILE.value]]
             )
 
         if not validate.validate_ts_numeric(row[duration_idx]):
@@ -357,7 +560,8 @@ def read_task_file(
                 f'Non-numeric entry - {row[duration_idx]} - found in onset '
                 f'column of task design file {filename}. All elements must be numeric.',
                 validate.validate_ts_numeric.__name__,
-                exception.ExceptionFileTypes.TASK.value
+                exception.ExceptionFileTypes.TASK.value,
+                [browser_fields[TaskDesignFiles.FILE.value]]
             )
         # if checks passed, append to task out dict
         task_out[TaskDesignFields.ONSET.value].append(row[onset_idx])
@@ -375,92 +579,104 @@ def read_task_file(
 
 
 def read_ts_file(
-    file,
+    file: FileInput,
     header: bool,
-    method=Literal['cli', 'browser']
-) -> np.ndarray:
+    method: Literal['cli', 'browser'],
+    index: Optional[int] = None,
+    validate_numeric: bool = True
+) -> ArrayData:
     """
-    Read time course file based on method of upload (cli or browser)
+    Read time course file based on method of upload.
 
-    Parameters:
-    file: either a ts file from the browser or full path to file from CLI.
-    header (bool): whether the file has a header
-    method str: whether the file was uploaded through browser or CLI
+    Parameters
+    ----------
+    file : FileInput
+        Time course file from browser or CLI
+    header : bool
+        Whether file has a header row
+    method : Literal['cli', 'browser']
+        Upload method
+    index : Optional[int]
+        Index of file in multi-file upload
+    validate_numeric : bool
+        Whether to validate numeric content
 
-    Returns:
-    np.ndarray: time course as 2D (one column) numpy array
+    Returns
+    -------
+    ArrayData
+        Time course as 2D numpy array
+
+    Raises
+    ------
+    FileUploadError
+        If there are issues reading the file
+    FileValidationError
+        If file contents fail validation
     """
-    """Read task design file."""
-    # Get filename from file object
-    if hasattr(file, 'filename'):
-        filename = file.filename
-    elif hasattr(file, 'name'):
-        filename = file.name
-    else:
-        raise ValueError("File object must have 'filename' or 'name' attribute")
+    filename = utils.get_filename(file)
 
     # get file reader for file input
     delimiter = ','
     try:
         reader = utils.get_csv_reader(file, delimiter, method)
-    # raise FileUpload error from generic exception
+    # raise generic exception to be handled higher in stack
     except Exception as e:
         raise exception.FileUploadError(
             f'Error in reading time course file:  {filename}',
-            exception.ExceptionFileTypes.TIMECOURSE.value, method
+            exception.ExceptionFileTypes.TIMECOURSE.value, method,
+            [browser_fields[TimeCourseFiles.FILES.value]],
+            index=index
         ) from e
-
-    # Loop through rows of time course file and validate
+    
     # skip first row, if header
     if header:
         next(reader)
-
+    
+    # read timecourse from list
+    ts_raw = list(reader)
     # ensure there are rows in the data
-    if not validate.validate_ts_task_length(reader):
+    if not validate.validate_ts_task_length(ts_raw):
         raise exception.FileValidationError(
                 f'No data found in time course file {filename}. '
                 'Please check file',
                 validate.validate_ts_task_length.__name__,
-                exception.ExceptionFileTypes.TIMECOURSE.value
+                exception.ExceptionFileTypes.TIMECOURSE.value,
+                [browser_fields[TimeCourseFiles.FILES.value]],
+                index=index
             )
 
+    # Loop through rows of time course file and validate
     ts_array = []
-    for i, row in enumerate(reader):
+    for i, row in enumerate(ts_raw):
         if not validate.validate_ts_single_col(row):
             raise exception.FileValidationError(
                 f'Multiple columns found in time course file {filename}. '
                  ' Only one column is allowed.',
                 validate.validate_ts_single_col.__name__,
-                exception.ExceptionFileTypes.TIMECOURSE.value
+                exception.ExceptionFileTypes.TIMECOURSE.value,
+                [browser_fields[TimeCourseFiles.FILES.value]],
+                index=index
             )
-        if not validate.validate_ts_numeric(row[0]):
-            if header:
-                row_i = i
-            else:
-                row_i = i+1
-            raise exception.FileValidationError(
-                f'Non-numeric entry found in time course file {filename} on {row_i}.'
-                 ' All elements must be numeric. If there is a header, '
-                 'specify in input.',
-                validate.validate_ts_numeric.__name__,
-                exception.ExceptionFileTypes.TIMECOURSE.value
-            )
+        
+        if validate_numeric:
+            if not validate.validate_ts_numeric(row[0]):
+                if header:
+                    row_i = i
+                else:
+                    row_i = i+1
+                raise exception.FileValidationError(
+                    f'Non-numeric entry found in time course file {filename} on {row_i}.'
+                    ' All elements must be numeric. If there is a header, '
+                    'specify in input.',
+                    validate.validate_ts_numeric.__name__,
+                    exception.ExceptionFileTypes.TIMECOURSE.value,
+                    [browser_fields[TimeCourseFiles.FILES.value]],
+                    index=index
+                )
         # if checks passed, append
         ts_array.append(row[0])
-
+    
     # convert to 2D numpy array with one column
     ts_array = np.array(ts_array)[:,np.newaxis]
 
     return ts_array
-
-
-
-
-
-
-
-
-
-
-
-

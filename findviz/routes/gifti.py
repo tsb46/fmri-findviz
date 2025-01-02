@@ -31,7 +31,6 @@ def upload_files_gii():
     faces_left = None
     vertices_right = None
     faces_right = None
-    timepoints = None
 
     if left_file:
         # load left hemisphere functional and store in cache

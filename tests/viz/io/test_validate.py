@@ -7,6 +7,7 @@ from findviz.viz.io.validate import (
     validate_gii_file_inputs,
     validate_gii_func,
     validate_gii_mesh,
+    validate_gii_func_len,
     validate_nii_ext,
     validate_nii_4d,
     validate_nii_3d,
@@ -20,8 +21,10 @@ from findviz.viz.io.validate import (
     validate_ts_task_length,
     validate_ts_ext,
     validate_ts_single_col,
-    validate_ts_numeric
+    validate_ts_numeric,
+    validate_ts_fmri_length
 )
+from tests.viz.io.conftest import mock_gifti_func
 
 # GIFTI validation tests
 def test_validate_gii_func_ext():
@@ -83,6 +86,19 @@ def test_validate_gii_mesh(mock_gifti_mesh):
     invalid_arrays = [nib.gifti.GiftiDataArray(np.random.rand(10, 3).astype(np.int32))]
     invalid_gii = nib.gifti.GiftiImage(darrays=invalid_arrays)
     assert validate_gii_mesh(invalid_gii) is False
+
+def test_validate_gii_func_len():
+    """test validation of left and right hemisphere func equal length"""
+    data_len10 = [np.random.rand(100).astype(np.float32) for _ in range(10)]
+    data_len20 = [np.random.rand(100).astype(np.float32) for _ in range(20)]
+    gii_len10 = nib.gifti.GiftiImage(
+        darrays=[nib.gifti.GiftiDataArray(d) for d in data_len10]
+    )
+    gii_len20 = nib.gifti.GiftiImage(
+        darrays=[nib.gifti.GiftiDataArray(d) for d in data_len20]
+    )
+    assert validate_gii_func_len(gii_len10, gii_len10) is True
+    assert validate_gii_func_len(gii_len20, gii_len10) is False
 
 # NIFTI validation tests
 def test_validate_nii_ext():
@@ -185,12 +201,12 @@ def test_validate_task_slicetime():
 # Time series validation tests
 def test_validate_ts_task_length():
     """Test validation of time series/task design file length"""
-    # Create mock readers with different lengths
-    empty_reader = iter([])
-    single_row = iter([['1.0']])
-    multiple_rows = iter([['1.0'], ['2.0'], ['3.0']])
+    # Create lists with different lengths
+    empty_list = []
+    single_row = [['1.0']]
+    multiple_rows = [['1.0'], ['2.0'], ['3.0']]
     
-    assert validate_ts_task_length(empty_reader) is False
+    assert validate_ts_task_length(empty_list) is False
     assert validate_ts_task_length(single_row) is True
     assert validate_ts_task_length(multiple_rows) is True
 
@@ -217,7 +233,12 @@ def test_validate_ts_single_col():
     ('1e-10', True),
     ('-1.23e+4', True),
 ])
-
 def test_validate_ts_numeric(value, expected):
     """Test validation of numeric values in time series"""
     assert validate_ts_numeric(value) is expected
+
+def test_validate_ts_fmri_length():
+    """Test validation of equal length between time course and fmri"""
+    ts = np.array([0,1,2])
+    assert validate_ts_fmri_length(3, ts) is True
+    assert validate_ts_fmri_length(4, ts) is False

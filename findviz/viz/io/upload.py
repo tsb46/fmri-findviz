@@ -2,7 +2,8 @@
 Utilities for loading and validating file uploads
 """
 from enum import Enum
-from typing import Literal
+from typing import Literal, List, Dict, Optional, Union, TypedDict
+from pathlib import Path
 
 from findviz.logger_config import setup_logger
 from findviz.viz import exception
@@ -13,18 +14,52 @@ from findviz.viz.io import timecourse
 # Set up a logger for the app
 logger = setup_logger(__name__)
 
+# HTML Div IDs for upload modal 
+browser_fields = {
+    'nifti': nifti.browser_fields,
+    'gifti': gifti.browser_fields,
+    'ts': timecourse.browser_fields
+}
+
+class FileOutput(TypedDict):
+    gifti: Optional[Dict[str, any]]
+    nifti: Optional[Dict[str, any]]
+    ts: Optional[Dict[str, any]]
+    task: Optional[Dict[str, any]]
+
 
 class FileUpload:
     """
-    Class for handling file uploads through browser or CLI. File inputs 
-    are not stored in class.
+    Class for handling file uploads through browser or CLI.
+    
+    File inputs are not stored in class.
 
-    Attributes:
-        fmri_file_type (str): The fMRI file type (gifti, nifti)
-        ts_status (bool): Whether time course files were provided
-        task_status (bool): Whether task design files were provided
-        method (str): The method used for file uploads (cli , browser)
+    Attributes
+    ----------
+    fmri_file_type : Literal['nifti', 'gifti']
+        The fMRI file type
+    ts_status : bool
+        Whether time course files were provided
+    task_status : bool
+        Whether task design files were provided
+    method : Literal['cli', 'browser']
+        The method used for file uploads
+    upload_status : Union[bool, Dict[str, bool]]
+        State variable tracking upload status
+    fmri_uploader : Union[NiftiUpload, GiftiUpload]
+        Uploader for fMRI files
+    fmri_file_labels : Union[NiftiFiles, GiftiFiles]
+        File labels for fMRI files
+    ts_uploader : Optional[TimeCourseUpload]
+        Uploader for time series files
+    ts_files : Optional[SingleTimeCourseFiles]
+        File labels for time series
+    task_uploader : Optional[TaskDesignUpload]
+        Uploader for task design files
+    task_files : Optional[TaskDesignFiles]
+        File labels for task design
     """
+
     def __init__(
         self,
         fmri_file_type: Literal['nifti', 'gifti'],
@@ -32,6 +67,25 @@ class FileUpload:
         task_status: bool,
         method: Literal['cli', 'browser']
     ):
+        """
+        Initialize FileUpload instance.
+
+        Parameters
+        ----------
+        fmri_file_type : Literal['nifti', 'gifti']
+            Type of fMRI files to process
+        ts_status : bool
+            Whether time series files will be uploaded
+        task_status : bool
+            Whether task design files will be uploaded
+        method : Literal['cli', 'browser']
+            Method of file upload (command line or browser)
+
+        Raises
+        ------
+        ValueError
+            If fmri_file_type is not 'nifti' or 'gifti'
+        """
         self.fmri_file_type = fmri_file_type
         self.ts_status = ts_status
         self.task_status = task_status
@@ -52,7 +106,7 @@ class FileUpload:
         if self.ts_status:
             self.ts_uploader = timecourse.TimeCourseUpload(method)
             self.ts_files = timecourse.SingleTimeCourseFiles
-        else:
+        else:   
             self.ts_uploader = None
             self.ts_files = None
 
@@ -94,12 +148,24 @@ class FileUpload:
         key: Literal['gifti', 'nifti', 'ts', 'task']
     ) -> bool:
         """
-        Check whether file type was uploaded by user based on key
-        Parameters:
-        key (Literal['gifti', 'nifti', 'ts', 'task']): The file type key.
-    
-        Returns:
-        bool: whether file was uploaded or not
+        Check whether file type was uploaded by user.
+
+        Parameters
+        ----------
+        key : Literal['gifti', 'nifti', 'ts', 'task']
+            The file type to check
+
+        Returns
+        -------
+        bool
+            Whether files of the specified type were uploaded
+
+        Raises
+        ------
+        AttributeError
+            If no files have been uploaded yet
+        KeyError
+            If key is not a recognized file label
         """
         if not self.upload_status:
             raise AttributeError('No files have been uploaded!')
@@ -111,11 +177,17 @@ class FileUpload:
 
     def hemisphere(self) -> Literal['left', 'right', 'both']:
         """
-        Check whether left, right or both hemispheres were uploaded in
-        gifti file upload. If nifti was uploaded, an exception is returned.
+        Check which hemispheres were uploaded in GIFTI file upload.
 
-        Returns:
-        str: whether left, right or both hemisphers
+        Returns
+        -------
+        Literal['left', 'right', 'both']
+            Which hemisphere(s) were uploaded
+
+        Raises
+        ------
+        AttributeError
+            If no files have been uploaded yet or if using NIFTI files
         """
         if not self.upload_status:
             raise AttributeError('No files have been uploaded!')
@@ -133,23 +205,61 @@ class FileUpload:
             elif self.fmri_uploader.right_input:
                 return 'right'
 
-    def upload(self) -> dict:
+    def upload(
+        self,
+        fmri_files: Optional[Dict[str, Union[str, Path]]] = None,
+        ts_files: Optional[List[Union[str, Path]]] = None,
+        ts_labels: Optional[List[str]] = None,
+        ts_headers: Optional[List[bool]] = None,
+        task_file: Optional[Union[str, Path]] = None,
+        tr: Optional[float] = None,
+        slicetime_ref: Optional[float] = None
+    ) -> Dict[str, Union[str, float, List[Union[str, float]]]]:
         """
-        Upload nifti or gifti files, along with time course and task design
-        files passed through CLI or web browser.
+        Upload and validate files from either browser or CLI.
 
-        Returns:
-        dict: uploaded files from cli or browser
+        Parameters
+        ----------
+        fmri_files : Dict[str, Union[str, Path]], optional
+            Dictionary of FMRI file paths. For NIFTI: {'nii_func': path, 'nii_anat': path, 'nii_mask': path}
+            For GIFTI: {'left_gii_func': path, 'right_gii_func': path, 'left_gii_mesh': path, 'right_gii_mesh': path}
+        ts_files : List[Union[str, Path]], optional
+            List of paths to time series files
+        ts_labels : List[str], optional
+            List of labels for time series files
+        ts_headers : List[bool], optional
+            List of boolean flags indicating if time series files have headers
+        task_file : Union[str, Path], optional
+            Path to task design file
+        tr : float, optional
+            Repetition time value
+        slicetime_ref : float, optional
+            Slice timing reference value (0-1)
+            
+        Returns
+        -------
+        FileOutput
+            Dictionary containing processed and validated file data
+        
+        Raises
+        ------
+        FileInputError
+            If required files are missing
+        FileUploadError
+            If there are issues uploading files
+        FileValidationError
+            If files fail validation
         """
         # init output dictionary
-        file_out = {
+        file_out: FileOutput = {
             "gifti": None,
             "nifti": None,
             "ts": None,
             "task": None
         }
+        
         # init upload status dictionary
-        self.upload_status = {
+        self.upload_status: Dict[str, bool] = {
             "gifti": False,
             "nifti": False,
             "ts": False,
@@ -158,7 +268,7 @@ class FileUpload:
         
         # get files from CLI or browser
         try:
-            fmri_files = self.fmri_uploader.upload()
+            fmri_files = self.fmri_uploader.upload(fmri_files)
             if self.fmri_file_type == 'gifti':
                 file_out['gifti'] = fmri_files
                 self.upload_status['gifti'] = True
@@ -167,12 +277,29 @@ class FileUpload:
                 self.upload_status['nifti'] = True
 
             if self.ts_status:
-                ts_files = self.ts_uploader.upload()
+                # get # of volumes from functional MRI
+                if self.fmri_file_type == 'nifti':
+                    fmri_len = file_out['nifti'][nifti.NiftiFiles.FUNC.value].shape[-1]
+                elif self.fmri_file_type == 'gifti':
+                    fmri_len = len(
+                        file_out['gifti'][gifti.GiftiFiles.LEFT_FUNC.value].darrays
+                    )
+                    
+                ts_files = self.ts_uploader.upload(
+                    fmri_len=fmri_len,
+                    ts_files=ts_files,
+                    ts_labels=ts_labels,
+                    ts_headers=ts_headers
+                )
                 file_out['ts'] = ts_files
                 self.upload_status['ts'] = True
 
             if self.task_status:
-                task_files = self.task_uploader.upload()
+                task_files = self.task_uploader.upload(
+                    task_file=task_file,
+                    tr=tr,
+                    slicetime_ref=slicetime_ref
+                )
                 file_out['ts'] = task_files
                 self.upload_status['ts'] = True
 
@@ -188,3 +315,5 @@ class FileUpload:
         self.upload_status = True
 
         return file_out
+
+        

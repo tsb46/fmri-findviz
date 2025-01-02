@@ -2,10 +2,22 @@ import pytest
 from io import StringIO, BytesIO
 from unittest.mock import Mock
 from findviz.viz.io.utils import (
+    get_filename,
     get_file_ext,
     parse_nifti_file_ext,
     get_csv_reader
 )
+
+def test_get_filename():
+    """Test getting filename from different input types"""
+    # Test with string path
+    assert get_filename('/path/to/file.txt') == 'file.txt'
+    assert get_filename('file.txt') == 'file.txt'
+    
+    # Test with FileStorage mock
+    mock_file = Mock()
+    mock_file.filename = 'uploaded.txt'
+    assert get_filename(mock_file) == 'uploaded.txt'
 
 def test_get_file_ext():
     """Test getting file extensions from various file paths"""

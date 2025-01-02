@@ -43,16 +43,16 @@
     <!-- Spinner overlay for preprocessing wait -->
     <div class='spinner-overlay' id="preproc-spinner-overlay"></div>
     <!-- FMRI Container -->
-    <div id="fmriContainer" class='row justify-content-center'>
+    <div id="fmri-container" class='row justify-content-center'>
       <!-- FMRI User Options Container -->
-      <div id="fmriUserOptionsContainer">
+      <div id="fmri-user-options-container">
         <!-- Visualization Options -->
         {% include 'components/fmriVisualizationOptions.html' %}
         <!-- Preprocessing Options -->
         {% include 'components/fmriPreprocessingOptions.html' %}
       </div>
       <!-- Visualization Container -->
-      <div id="fmriVisualizationContainer">
+      <div id="fmri-visualization-container">
         <div id='preproc-load-spinner' class="spinner-border spinner-viz" role="status">
           <span class="sr-only">Preprocessing...</span>
         </div>
@@ -61,9 +61,9 @@
       </div>
     </div>
     <!-- Time Course Container -->
-    <div id="timeCourseContainer" class='row justify-content-center mt-2' style="visibility: hidden;">
+    <div id="time-course-container" class='row justify-content-center mt-2' style="visibility: hidden;">
       <!-- Time Course User Options Container -->
-      <div id="timeCourseUserOptionsContainer">
+      <div id="time-course-user-options-container">
         <!-- Visualization Options -->
         {% include 'components/timeCourseVisualizationOptions.html' %}
         <!-- Time Marker Options -->
@@ -71,7 +71,7 @@
         <!-- Preprocessing Options -->
         {% include 'components/timeCoursePreprocessingOptions.html' %}
       </div>
-      <div id='timeCourseVisualizationContainer'>
+      <div id='time-course-visualization-container'>
         <!-- time course visualization card -->
         {% include 'components/timeCourseVisualizationCard.html' %}
       </div>
