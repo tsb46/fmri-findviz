@@ -1,34 +1,40 @@
 // viewer.js
 import ColorBar from './colorbar.js';
-import Distance from './distance.js';
-import TimeCourse from './timecourse.js';
+import Distance from '../analytics/distance.js';
+import TimeCourse from '../timecourse.js';
 import TimeSlider from './timeslider.js';
-import { VisualizationOptions, PreprocessingOptions } from './user.js';
+import { VisualizationOptions, PreprocessingOptions } from '../user.js';
 import NiftiViewer from './nifti.js';
 import GiftiViewer from './gifti.js';
 
 class MainViewer{
     constructor(
-        plotData,
-        plotType
+        viewerData
       ) {
+        // Set file type and common properties
+        this.plotType = viewerData.file_type;
+        this.timepoints = viewerData.timepoints;
+        this.globalMin = viewerData.global_min;
+        this.globalMax = viewerData.global_max;
+        this.tsEnabled = viewerData.ts_enabled;
+        this.taskEnabled = viewerData.task_enabled;
+
         document.getElementById('time-slider-title').textContent = 'Time Point:'
         // set attributes based on nifti or gifti file input
-        if (plotType == 'nifti') {
+        if (this.plotType == 'nifti') {
             // initialize nifti viewer
             this.viewer = new NiftiViewer(
-                plotData.file_key,
-                plotData.anat_key,
-                plotData.mask_key,
-                plotData.slice_len
+                viewerData.anat_input,
+                viewerData.mask_input,
+                viewerData.slice_len
             );
             // set colorbar div
             this.colorbarDiv = 'colorbar_container_nii'
-        } else if (plotType == 'gifti') {
+        } else if (this.plotType == 'gifti') {
             // initialize gifti viewer
             this.viewer = new GiftiViewer(
-                plotData.left_key,
-                plotData.right_key,
+                viewerData.left_input,
+                viewerData.right_input,
                 plotData.vertices_left,
                 plotData.faces_left,
                 plotData.vertices_right,
@@ -37,93 +43,62 @@ class MainViewer{
             // set colorbar div
             this.colorbarDiv = 'colorbar_container_gii'
         }
-        // set plot type
-        this.plotType = plotType;
-        // Initialize colormap as Viridis
-        this.colormap = 'Viridis';
-        // Set time point as zero for initial plot
-        this.timePoint = 0;
-        // Initilialize global min and global max values
-        this.globalMin = plotData.global_min;
-        this.globalMax = plotData.global_max;
-        // Initialize color min and color max based on Global min and max (for intial plot)
-        this.colorMin = this.globalMin;
-        this.colorMax = this.globalMax;
-        // Initialize thresholds (set to [0,0] for no threshold by default)
-        this.thresholdMin = 0;
-        this.thresholdMax = 0;
-        // Initialize color opacity
-        this.opacity = 1;
-        // initialize fmri time course freeze state (i.e. maintain selected fmri timecourse in plot)
-        this.timeCourseFreeze = false;
-        // Initialize hover text state
-        this.hoverTextOn = true;
-        // Initialize Preprocess state as false
-        this.preprocState = false;
-        // Initialize state variable to track whether fmri time course plotting is enabled
-        this.timeCourseEnabled = false;
 
-        // Initialize TimeSlider class
-        this.timeSlider = new TimeSlider(
-            plotData.timepoints,
-            'Time Point: '
-        );
-
-        // Initialize VisualizationOptions class
-        // pass slice length if nifti
-        if (plotType == 'nifti') {
-            this.sliceLen = plotData.slice_len
-        } else {
-            this.sliceLen = null
-        }
-        this.visualizationOptions = new VisualizationOptions(
-            this.globalMin, this.globalMax, this.plotType,
-            this.sliceLen, this.attachVizOptionListeners
-        );
-
-        // Initialize PreprocessingOptions class (pass mask, if nifti)
-        let maskKey = null;
-        if (plotType == 'nifti') {
-            maskKey = plotData.mask_key;
-        }
-        this.preprocessOptions = new PreprocessingOptions(
-            plotType, this.attachPreprocListeners, maskKey
-        );
-
-        // Initialize colorbar class
-        this.colorBar = new ColorBar(
-            this.colorbarDiv, this.globalMin, this.globalMax, 'Intensity'
-        );
-
-        // Initialize the TimeCourse class with input time series
-        if (plotData.timeCourses.ts.length > 0 || plotData.taskConditions !== null) {
-            this.timeCourse = new TimeCourse(
-                plotData.timepoints.length,
-                plotData.timeCourses.ts,
-                plotData.timeCourses.tsLabels,
-                plotData.taskConditions,
-                this.timeSlider.sliderElement // pass timeslider jquery object
-            );
-        }
-        else {
-            // Initialize the TimeCourse class without input time courses
-            this.timeCourse = new TimeCourse(
-                plotData.timepoints.length,
-                null,
-                null,
-                null,
-                this.timeSlider.sliderElement
-            )
-        }
-        // initialize time point distance class
-        this.distance = new Distance(true, this.timeSlider.sliderElement);
-
-        // initialize fmri time course listeners
+        // Initialize visualization parameters
+        this.initializeVisualizationParams();
+        
+        // Initialize components
+        this.initializeComponents(viewerData);
+        
+        // Set up fmri time course event listeners
         this.timeCourseListeners();
     }
 
+    initializeComponents(viewerData) {
+        // Initialize TimeSlider
+        this.timeSlider = new TimeSlider(
+            this.timepoints,
+            'Time Point: '
+        );
+        // Initialize VisualizationOptions
+        this.visualizationOptions = new VisualizationOptions(
+            this.globalMin,
+            this.globalMax,
+            this.plotType,
+            this.sliceLen,
+            this.attachVizOptionListeners
+        );
+
+        // Initialize PreprocessingOptions
+        this.preprocessOptions = new PreprocessingOptions(
+            this.plotType,
+            this.attachPreprocListeners,
+            viewerData.mask_input
+        );
+
+        // Initialize ColorBar
+        this.colorBar = new ColorBar(
+            this.colorbarDiv,
+            this.globalMin,
+            this.globalMax,
+            'Intensity'
+        );
+
+        // Initialize TimeCourse
+        this.timeCourse = new TimeCourse(
+            this.timepoints.length,
+            viewerData.ts,
+            viewerData.ts_labels,
+            viewerData.task,
+            this.timeSlider.sliderElement
+        );
+
+        // Initialize Distance
+        this.distance = new Distance(true, this.timeSlider.sliderElement);
+    }
+
     // initialize initial plot
-    init() {
+    initializePlot() {
         // change DOM elements of upload after successful upload
         this.afterUpload();
         // Plot brain image
@@ -167,6 +142,20 @@ class MainViewer{
         }).catch(error => {
             console.error('Error during initialization:', error);
         });
+    }
+
+    initializeVisualizationParams() {
+        this.colormap = 'Viridis';
+        this.timePoint = 0;
+        this.colorMin = this.globalMin;
+        this.colorMax = this.globalMax;
+        this.thresholdMin = 0;
+        this.thresholdMax = 0;
+        this.opacity = 1;
+        this.timeCourseFreeze = false;
+        this.hoverTextOn = true;
+        this.preprocState = false;
+        this.timeCourseEnabled = false;
     }
 
     /**

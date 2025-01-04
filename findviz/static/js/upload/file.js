@@ -74,7 +74,6 @@ class FileUploader {
     try {
         const uploadData = this.getFiles();
         uploadData.append('fmri_file_type', fmriFileType);
-
         const response = await fetch(UPLOAD_ENDPOINTS.FILES, {
             method: 'POST',
             body: uploadData
@@ -280,30 +279,23 @@ class FileUploader {
    */
   _getTimeSeriesFiles() {
       const formData = new FormData();
-      const timeSeriesArray = [];
-      const timeSeriesLabelsArray = [];
-      const timeSeriesHeaderArray = [];
-
+      let hasTimeSeries = false;
       const timeSeriesInput = document.querySelectorAll(`.${FILE_UPLOAD_FIELDS.TS.FILE}`);
       const timeSeriesInputLabel = document.querySelectorAll(`.${FILE_UPLOAD_FIELDS.TS.LABEL}`);
       const timeSeriesHeader = document.querySelectorAll(`.${FILE_UPLOAD_FIELDS.TS.HEADER}`);
 
       for (const [index, ts] of timeSeriesInput.entries()) {
           if (ts.files.length > 0) {
-              timeSeriesArray.push(ts.files[0]);
+              formData.append('ts_files', ts.files[0]);
+              hasTimeSeries = true;
               let tsLabel = timeSeriesInputLabel[index].value || ts.files[0].name;
-              timeSeriesLabelsArray.push(tsLabel);
-              timeSeriesHeaderArray.push(timeSeriesHeader[index].checked);
+              formData.append('ts_labels', tsLabel);
+              formData.append('ts_headers', timeSeriesHeader[index].checked);
           }
       }
-
-      formData.append('ts_files', timeSeriesArray);
-      formData.append('ts_labels', timeSeriesLabelsArray);
-      formData.append('ts_headers', timeSeriesHeaderArray);
-
       return {
           formData,
-          hasTimeSeries: timeSeriesArray.length > 0
+          hasTimeSeries: hasTimeSeries
       };
   }
 

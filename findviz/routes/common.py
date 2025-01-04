@@ -17,7 +17,7 @@ from nilearn.glm.first_level import compute_regressor
 from scipy.signal import find_peaks
 
 from findviz.routes import utils
-from findviz.routes.utils import package_gii_metadata, package_nii_metadata
+# from findviz.routes.utils import package_gii_metadata, package_nii_metadata
 
 
 common_bp = Blueprint('common', __name__)  # Create a blueprint

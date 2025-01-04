@@ -18,7 +18,7 @@ from scipy.stats import zscore
 from findviz.viz import analysis
 from findviz.routes import utils
 from findviz.routes.common import cache
-from findviz.routes.utils import package_nii_metadata
+# from findviz.routes.utils import package_nii_metadata
 
 
 nifti_bp = Blueprint('nifti', __name__)  # Create a blueprint

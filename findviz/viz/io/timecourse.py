@@ -30,8 +30,7 @@ class TaskDesignDict(TypedDict):
     slicetime_ref: float
 
 class TimeCourseDict(TypedDict):
-    ts_file: ArrayData
-    ts_label: str
+    ts_label: ArrayData
 
 # Expected time course file upload inputs
 class TimeCourseFiles(Enum):
@@ -312,7 +311,7 @@ class TimeCourseUpload:
             )
 
         # Loop through timecourses and read
-        ts_out = []
+        ts_out = {}
         for i, file_package in enumerate(file_uploads):
             ts_file = file_package[SingleTimeCourseFiles.FILE.value]
             ts_label = file_package[SingleTimeCourseFiles.LABEL.value]
@@ -349,11 +348,7 @@ class TimeCourseUpload:
                 )
             
             # package array in dict
-            ts_dict = {
-                SingleTimeCourseFiles.FILE.value: ts_array,
-                SingleTimeCourseFiles.LABEL.value: ts_label
-            }
-            ts_out.append(ts_dict)
+            ts_out[ts_label] = ts_array
 
         return ts_out
 
@@ -361,13 +356,14 @@ class TimeCourseUpload:
         ts_file = request.files.getlist(TimeCourseFiles.FILES.value)
         ts_labels = request.form.getlist(TimeCourseFiles.LABELS.value)
         ts_headers = request.form.getlist(TimeCourseFiles.HEADERS.value)
-
         file_uploads = []
         for file, label, header in zip(ts_file, ts_labels, ts_headers):
+            # convert header form data to boolean
+            header_bool = True if header == 'true' else False
             single_upload = {
                 SingleTimeCourseFiles.FILE.value: file,
                 SingleTimeCourseFiles.LABEL.value: label,
-                SingleTimeCourseFiles.HEADER.value: header
+                SingleTimeCourseFiles.HEADER.value: header_bool
             }
             file_uploads.append(single_upload)
 

@@ -36,8 +36,9 @@ def test_timecourse_upload_valid(mock_read_ts):
     with patch.object(uploader, '_get_browser_input', return_value=mock_files):
         result = uploader.upload(3)
         assert len(result) == 1
-        assert result[0]['ts_label'] == 'ROI1'
-        assert result[0]['ts_file'].shape == (3, 1)
+        label = list(result[0].keys())[0]
+        assert label == 'ROI1'
+        assert result[0][label].shape == (3, 1)
 
 def test_timecourse_upload_duplicate_labels():
     """Test time course upload with duplicate labels"""
@@ -83,8 +84,9 @@ def test_timecourse_upload_length_mismatch(mock_csv_data):
             # Test with matching length (should succeed)
             result = uploader.upload(fmri_len=4)
             assert len(result) == 1
-            assert result[0]['ts_label'] == 'ROI1'
-            assert result[0]['ts_file'].shape == (4, 1)
+            label = list(result[0].keys())[0]
+            assert label == 'ROI1'
+            assert result[0][label].shape == (4, 1)
             
             # Test with mismatched length (should raise error)
             with pytest.raises(exception.FileValidationError) as exc_info:

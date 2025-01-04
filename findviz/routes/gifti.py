@@ -10,7 +10,7 @@ from nibabel.gifti import GiftiDataArray
 from findviz.viz import analysis
 from findviz.routes import utils
 from findviz.routes.common import cache
-from findviz.routes.utils import package_gii_metadata
+# from findviz.routes.utils import package_gii_metadata
 
 gifti_bp = Blueprint('gifti', __name__)  # Create a blueprint
 

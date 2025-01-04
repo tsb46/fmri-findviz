@@ -21,6 +21,31 @@ browser_fields = {
     'ts': timecourse.browser_fields
 }
 
+## define output fields
+# gifti output fields
+class GiftiFields(Enum):
+    LEFT_FUNC = gifti.GiftiFiles.LEFT_FUNC.value
+    RIGHT_FUNC = gifti.GiftiFiles.RIGHT_FUNC.value
+    LEFT_MESH = gifti.GiftiFiles.LEFT_MESH.value
+    RIGHT_MESH = gifti.GiftiFiles.RIGHT_MESH.value
+
+# nifti output fields
+class NiftiFields(Enum):
+    FUNC = nifti.NiftiFiles.FUNC.value
+    ANAT = nifti.NiftiFiles.ANAT.value
+    MASK = nifti.NiftiFiles.MASK.value
+
+# time course output fields
+class TimeCourseFields(Enum):
+    FILE = timecourse.SingleTimeCourseFiles.FILE.value
+    LABEL = timecourse.SingleTimeCourseFiles.FILE.value
+
+# task design output fields
+class TaskFields(Enum):
+    ONSET = timecourse.TaskDesignFields.ONSET
+    DURATION = timecourse.TaskDesignFields.DURATION
+    TRIAL_TYPE = timecourse.TaskDesignFields.TRIAL_TYPE
+
 class FileOutput(TypedDict):
     gifti: Optional[Dict[str, any]]
     nifti: Optional[Dict[str, any]]
@@ -59,6 +84,12 @@ class FileUpload:
     task_files : Optional[TaskDesignFiles]
         File labels for task design
     """
+
+    # Reference the Enums as class attributes
+    Gifti = GiftiFields
+    Nifti = NiftiFields
+    TimeCourse = TimeCourseFields
+    Task = TaskFields
 
     def __init__(
         self,
@@ -117,31 +148,6 @@ class FileUpload:
         else:
             self.task_uploader = None
             self.task_files = None
-
-        ## define output fields
-        # gifti output fields
-        class Gifti(Enum):
-            LEFT_FUNC = gifti.GiftiFiles.LEFT_FUNC.value
-            RIGHT_FUNC = gifti.GiftiFiles.RIGHT_FUNC.value
-            LEFT_MESH = gifti.GiftiFiles.LEFT_MESH.value
-            RIGHT_MESH = gifti.GiftiFiles.RIGHT_MESH.value
-        
-        # nifti output fields
-        class Nifti(Enum):
-            FUNC = nifti.NiftiFiles.FUNC.value
-            ANAT = nifti.NiftiFiles.ANAT.value
-            MASK = nifti.NiftiFiles.MASK.value
-        
-        # time course output fields
-        class TimeCourse(Enum):
-            FILE = timecourse.SingleTimeCourseFiles.FILE.value
-            LABEL = timecourse.SingleTimeCourseFiles.FILE.value
-
-        # task design output fields
-        class Task(Enum):
-            ONSET = timecourse.TaskDesignFields.ONSET
-            DURATION = timecourse.TaskDesignFields.DURATION
-            TRIAL_TYPE = timecourse.TaskDesignFields.TRIAL_TYPE
 
     def check_files(
         self, 
@@ -300,8 +306,8 @@ class FileUpload:
                     tr=tr,
                     slicetime_ref=slicetime_ref
                 )
-                file_out['ts'] = task_files
-                self.upload_status['ts'] = True
+                file_out['task'] = task_files
+                self.upload_status['task'] = True
 
         except (
             exception.FileInputError,

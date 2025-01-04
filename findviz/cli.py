@@ -1,6 +1,7 @@
 import argparse
 import os
 import socket
+import sys
 import webbrowser
 
 from threading import Timer
@@ -133,7 +134,8 @@ def process_cli_inputs(args):
 def main():
     args = parse_args()
     # If arguments were provided, process them
-    if any(vars(args).values()):
+    # This doesn't seem robust; might need refactoring
+    if len(sys.argv) > 1:
         try:
             process_cli_inputs(args)
         except Exception as e:

@@ -4,6 +4,7 @@ Routes for file upload and validation
 
 from flask import Blueprint, request, make_response, jsonify
 
+from findviz.routes.shared import data_manager
 from findviz.routes.utils import convert_value
 from findviz.viz import exception
 from findviz.viz.io.cache import Cache
@@ -98,10 +99,33 @@ def upload():
             "index": index
         }, 400)
 
+    # pass fmri data to data manager and get viewer data
+    if fmri_file_type == 'nifti':
+        data_manager.create_nifti_state(
+            func_img = uploads['nifti'][file_upload.Nifti.FUNC.value],
+            anat_img = uploads['nifti'][file_upload.Nifti.ANAT.value],
+            mask_img = uploads['nifti'][file_upload.Nifti.MASK.value]
+        )
+    else:
+        data_manager.create_gifti_state(
+            left_func=uploads['gifti'][file_upload.Gifti.LEFT_FUNC.value],
+            right_func=uploads['gifti'][file_upload.Gifti.RIGHT_FUNC.value],
+            left_mesh=uploads['gifti'][file_upload.Gifti.LEFT_MESH.value],
+            right_mesh=uploads['gifti'][file_upload.Gifti.RIGHT_MESH.value]
+        )
+    # if timecourse data, add to viewer data
+    if file_upload.ts_status:
+        data_manager.add_timeseries(uploads['ts'])
+    
+    # if task data, add to viewer data
+    if file_upload.task_status:
+        data_manager.add_task_design(uploads['task'])
 
+    # get viewer data
+    viewer_data = data_manager.get_viewer_data()
 
-
-
-
-
+    return make_response(
+        viewer_data,
+        201
+    )
 
