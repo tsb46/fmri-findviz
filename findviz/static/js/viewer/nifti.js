@@ -2,14 +2,12 @@
 
 class NiftiViewer {
     constructor(
-        fileKey,
-        anatKey,
-        maskKey,
+        anatInput,
+        maskInput,
         sliceLen
     ) {
-        this.fileKey = fileKey;
-        this.anatKey = anatKey;
-        this.maskKey = maskKey;
+        this.anatInput = anatInput;
+        this.maskInput = maskInput;
         // Calculate middle indices for ortho view
         this.orthoSliceIndex = {
             x: Math.floor(sliceLen.x / 2),
@@ -70,13 +68,13 @@ class NiftiViewer {
 
     createContainer() {
         // Append the row container to the surface container in the DOM
-        const slicesContainer = document.getElementById('slices_container');
+        const slicesContainer = document.getElementById(NIFTI_CONTAINERS.SLICE_CONTAINER);
         if (slicesContainer) {
             slicesContainer.innerHTML = `
-            <div id="x_slice_container" class="plot-slice-container"></div>
-            <div id="y_slice_container" class="plot-slice-container"></div>
-            <div id="z_slice_container" class="plot-slice-container"></div>
-            <div id="colorbar_container_nii" class="plot-colorbar-container"></div>
+            <div id="${NIFTI_CONTAINERS.X_SLICE}" class="plot-slice-container"></div>
+            <div id="${NIFTI_CONTAINERS.Y_SLICE}" class="plot-slice-container"></div>
+            <div id="${NIFTI_CONTAINERS.Z_SLICE}" class="plot-slice-container"></div>
+            <div id="${NIFTI_CONTAINERS.COLORBAR}" class="plot-colorbar-container"></div>
         `;
         slicesContainer.style.display = 'block'
         } else {
@@ -92,9 +90,9 @@ class NiftiViewer {
         // update montage slice indices if montage state
         if (this.viewerState == 'montage') {
             // distribute slice containers evenly
-            document.getElementById('x_slice_container').style.width = '33%';
-            document.getElementById('y_slice_container').style.width = '33%';
-            document.getElementById('z_slice_container').style.width = '33%';
+            document.getElementById(NIFTI_CONTAINERS.X_SLICE).style.width = '33%';
+            document.getElementById(NIFTI_CONTAINERS.Y_SLICE).style.width = '33%';
+            document.getElementById(NIFTI_CONTAINERS.Z_SLICE).style.width = '33%';
 
             if (sliceDirection) {
                 this.montageSliceDirection = sliceDirection;
@@ -107,9 +105,9 @@ class NiftiViewer {
             }
         } else {
             // if ortho view, give more room to first slice
-            document.getElementById('x_slice_container').style.width = '38%';
-            document.getElementById('y_slice_container').style.width = '31%';
-            document.getElementById('z_slice_container').style.width = '31%';
+            document.getElementById(NIFTI_CONTAINERS.X_SLICE).style.width = '38%';
+            document.getElementById(NIFTI_CONTAINERS.Y_SLICE).style.width = '31%';
+            document.getElementById(NIFTI_CONTAINERS.Z_SLICE).style.width = '31%';
 
         }
     }
@@ -149,7 +147,7 @@ class NiftiViewer {
         formData.append('time_point', timePoint);
         formData.append('use_preprocess', preprocState);
         formData.append('update_voxel_coord', updateCoord);
-        return fetch('/get_slices', {
+        return fetch(API_ENDPOINTS.NIFTI.GET_SLICES, {
             method: 'POST',
             body: formData
         })
@@ -196,15 +194,15 @@ class NiftiViewer {
 
             // plot three slices individually
             this.plotSlice(
-                'x_slice_container', data.x_slice, data.x_slice_anat, 'x',
+                NIFTI_CONTAINERS.X_SLICE, data.x_slice, data.x_slice_anat, 'x',
                 colorMap, colorMin, colorMax, opacity, hoverTextOn, updateLayoutOnly
             );
             this.plotSlice(
-                'y_slice_container', data.y_slice, data.y_slice_anat, 'y',
+                NIFTI_CONTAINERS.Y_SLICE, data.y_slice, data.y_slice_anat, 'y',
                  colorMap, colorMin, colorMax, opacity, hoverTextOn, updateLayoutOnly
             );
             this.plotSlice(
-                'z_slice_container', data.z_slice, data.z_slice_anat, 'z',
+                NIFTI_CONTAINERS.Z_SLICE, data.z_slice, data.z_slice_anat, 'z',
                  colorMap, colorMin, colorMax, opacity, hoverTextOn, updateLayoutOnly
             );
         })
@@ -339,9 +337,9 @@ class NiftiViewer {
     // Register click handlers for each slice container using the clickHandler function
     plotlyClickHandler(clickCallBack=null) {
         // register a handler for each slice
-        this.clickHandler('x_slice_container', true, false, false, clickCallBack);
-        this.clickHandler('y_slice_container', false, true, false, clickCallBack);
-        this.clickHandler('z_slice_container', false, false, true, clickCallBack);
+        this.clickHandler(NIFTI_CONTAINERS.X_SLICE, true, false, false, clickCallBack);
+        this.clickHandler(NIFTI_CONTAINERS.Y_SLICE, false, true, false, clickCallBack);
+        this.clickHandler(NIFTI_CONTAINERS.Z_SLICE, false, false, true, clickCallBack);
     }
 
     fetchTimeCourse(preprocState) {
@@ -352,7 +350,7 @@ class NiftiViewer {
             sliceIndex = this.orthoSliceIndex;
         }
         // Fetch the time course data for the selected voxel
-        return fetch(`/get_time_course_nii?file_key=${this.fileKey}&x=${sliceIndex['x']}&y=${sliceIndex['y']}&z=${sliceIndex['z']}&use_preprocess=${preprocState}`)
+        return fetch(`${API_ENDPOINTS.NIFTI.GET_TIME_COURSE}?file_key=${this.fileKey}&x=${sliceIndex['x']}&y=${sliceIndex['y']}&z=${sliceIndex['z']}&use_preprocess=${preprocState}`)
             .then(response => response.json())
             .then(data => {
                 return {

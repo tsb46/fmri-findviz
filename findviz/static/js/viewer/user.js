@@ -1,7 +1,7 @@
 // user.js - VisualizationOptions and PreprocessingOptions classes
 
 // Import from utils
-import { colorMapDropdrown, validateFilterInputs, preprocessingInputError } from './utils.js';
+import { colorMapDropdrown, validateFilterInputs, preprocessingInputError } from '../utils.js';
 
 // Class to handle visualization options to modify brain plots
 export class VisualizationOptions {

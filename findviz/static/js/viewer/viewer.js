@@ -1,66 +1,81 @@
 // viewer.js
+import { FILE_TYPES, DOM_IDS, CONTAINER_IDS, DEFAULTS, API_ENDPOINTS } from './constants.js';
+import { EVENT_TYPES } from './EventTypes.js';
+import { Types } from './types.js';
 import ColorBar from './colorbar.js';
 import Distance from '../analytics/distance.js';
-import TimeCourse from '../timecourse.js';
+import TimeCourse from './timecourse.js';
 import TimeSlider from './timeslider.js';
-import { VisualizationOptions, PreprocessingOptions } from '../user.js';
+import { VisualizationOptions, PreprocessingOptions } from './user.js';
 import NiftiViewer from './nifti.js';
 import GiftiViewer from './gifti.js';
 
+/**
+ * @typedef {import('./types.js').ViewerData} ViewerData
+ * @typedef {import('./types.js').VisualizationParams} VisualizationParams
+ * @typedef {import('./types.js').TimeCourseData} TimeCourseData
+ */
+
+
+/**
+ * MainViewer class handles the primary visualization logic for neuroimaging data
+ * @class
+ */
 class MainViewer{
+    /**
+     * Creates a new MainViewer instance
+     * @param {ViewerData} viewerData - Data object containing visualization parameters and file information
+     * @throws {Error} If viewerData format is invalid
+     */
     constructor(
         viewerData
       ) {
+        if (!Types.isViewerData(viewerData)) {
+            throw new Error('Invalid viewer data format');
+        }
         // Set file type and common properties
+        /** @type {string} Type of plot ('nifti' or 'gifti') */
         this.plotType = viewerData.file_type;
+        
+        /** @type {number[]} Array of timepoint indices */
         this.timepoints = viewerData.timepoints;
+        
+        /** @type {number} Global minimum value across dataset */
         this.globalMin = viewerData.global_min;
+        
+        /** @type {number} Global maximum value across dataset */
         this.globalMax = viewerData.global_max;
+        
+        /** @type {boolean} Whether timeseries visualization is enabled */
         this.tsEnabled = viewerData.ts_enabled;
+        
+        /** @type {boolean} Whether task design visualization is enabled */
         this.taskEnabled = viewerData.task_enabled;
 
-        document.getElementById('time-slider-title').textContent = 'Time Point:'
-        // set attributes based on nifti or gifti file input
-        if (this.plotType == 'nifti') {
-            // initialize nifti viewer
-            this.viewer = new NiftiViewer(
-                viewerData.anat_input,
-                viewerData.mask_input,
-                viewerData.slice_len
-            );
-            // set colorbar div
-            this.colorbarDiv = 'colorbar_container_nii'
-        } else if (this.plotType == 'gifti') {
-            // initialize gifti viewer
-            this.viewer = new GiftiViewer(
-                viewerData.left_input,
-                viewerData.right_input,
-                plotData.vertices_left,
-                plotData.faces_left,
-                plotData.vertices_right,
-                plotData.faces_right,
-            );
-            // set colorbar div
-            this.colorbarDiv = 'colorbar_container_gii'
-        }
+        // set title of time slider
+        document.getElementById(DOM_IDS.TIME_SLIDER_TITLE).textContent = 'Time Point:';
 
-        // Initialize visualization parameters
+        this.initializeViewer(viewerData);
         this.initializeVisualizationParams();
-        
-        // Initialize components
         this.initializeComponents(viewerData);
         
         // Set up fmri time course event listeners
         this.timeCourseListeners();
     }
 
+    /**
+     * Initializes all viewer components (TimeSlider, VisualizationOptions, etc.)
+     * @private
+     * @param {ViewerData} viewerData - Data for component initialization
+     */
     initializeComponents(viewerData) {
-        // Initialize TimeSlider
+        /** @type {TimeSlider} Time slider component */
         this.timeSlider = new TimeSlider(
             this.timepoints,
             'Time Point: '
         );
-        // Initialize VisualizationOptions
+
+        /** @type {VisualizationOptions} Visualization options component */
         this.visualizationOptions = new VisualizationOptions(
             this.globalMin,
             this.globalMax,
@@ -69,35 +84,33 @@ class MainViewer{
             this.attachVizOptionListeners
         );
 
-        // Initialize PreprocessingOptions
+        /** @type {PreprocessingOptions} Preprocessing options component */
         this.preprocessOptions = new PreprocessingOptions(
             this.plotType,
             this.attachPreprocListeners,
             viewerData.mask_input
         );
 
-        // Initialize ColorBar
-        this.colorBar = new ColorBar(
+         /** @type {ColorBar} Color bar component */
+         this.colorBar = new ColorBar(
             this.colorbarDiv,
             this.globalMin,
             this.globalMax,
             'Intensity'
         );
 
-        // Initialize TimeCourse
-        this.timeCourse = new TimeCourse(
-            this.timepoints.length,
-            viewerData.ts,
-            viewerData.ts_labels,
-            viewerData.task,
-            this.timeSlider.sliderElement
-        );
+        // initialize time course
+        this.initializeTimeCourse(viewerData);
 
-        // Initialize Distance
+        /** @type {Distance} Distance computation component */
         this.distance = new Distance(true, this.timeSlider.sliderElement);
     }
 
-    // initialize initial plot
+    /**
+     * Initializes the initial plot and sets up event listeners
+     * @public
+     * @returns {Promise<void>}
+     */
     initializePlot() {
         // change DOM elements of upload after successful upload
         this.afterUpload();
@@ -115,8 +128,8 @@ class MainViewer{
             true // update voxel coordinate labels (only for nifti)
         ).then(() => {
             // Weird layout of first plot for niftis, initiate resize to fix
-            if (this.plotType == 'nifti') {
-                this.viewer.onWindowResize()
+            if (this.plotType === FILE_TYPES.NIFTI) {
+                this.viewer.onWindowResize();
             }
             // Plot colorbar
             this.colorBar.plotColorbar(this.colormap);
@@ -128,15 +141,15 @@ class MainViewer{
             this.registerClickHandlers();
             // Listen for distance computation submit event
             // Listen for correlation submit event
-            $(document).on('distanceSubmit', (event) => {
+            $(document).on(EVENT_TYPES.ANALYSIS.DISTANCE, (event) => {
                 this.initiateDistanceCompute(event)
             });
             // Listen for correlation submit event
-            $(document).on('correlationSubmit', (event, data) => {
+            $(document).on(EVENT_TYPES.ANALYSIS.CORRELATION, (event, data) => {
                 this.initiateCorrelation(event, data)
             });
             // Listen for window average submit event
-            $(document).on('averageSubmit', (event, data) => {
+            $(document).on(EVENT_TYPES.ANALYSIS.AVERAGE, (event, data) => {
                 this.initiateAverage(event, data)
             });
         }).catch(error => {
@@ -144,26 +157,84 @@ class MainViewer{
         });
     }
 
-    initializeVisualizationParams() {
-        this.colormap = 'Viridis';
-        this.timePoint = 0;
-        this.colorMin = this.globalMin;
-        this.colorMax = this.globalMax;
-        this.thresholdMin = 0;
-        this.thresholdMax = 0;
-        this.opacity = 1;
-        this.timeCourseFreeze = false;
-        this.hoverTextOn = true;
-        this.preprocState = false;
-        this.timeCourseEnabled = false;
+    /**
+     * Initializes time course visualization
+     * @private
+     * @param {ViewerData} viewerData - Viewer data containing time course information
+     */
+    initializeTimeCourse(viewerData) {
+        /** @type {TimeCourseData} */
+        const timeCourseData = {
+            timeseries: viewerData.ts,
+            labels: viewerData.ts_labels,
+            task: viewerData.task
+        };
+
+        /** @type {TimeCourse} Time course visualization component */
+        this.timeCourse = new TimeCourse(
+            this.timepoints.length,
+            timeCourseData.timeseries,
+            timeCourseData.labels,
+            timeCourseData.task,
+            this.timeSlider.sliderElement
+        );
     }
 
     /**
-    * Update DOM elements after successful file upload
-    * Changes upload button appearance and enables save scene functionality
-    */
+     * Initializes visualization parameters with default values
+     * @private
+     */
+    initializeVisualizationParams() {
+        /** @type {VisualizationParams} */
+        const params = {
+            colormap: DEFAULTS.COLORMAP,
+            timePoint: DEFAULTS.TIME_POINT,
+            colorMin: this.globalMin,
+            colorMax: this.globalMax,
+            thresholdMin: DEFAULTS.THRESHOLD.MIN,
+            thresholdMax: DEFAULTS.THRESHOLD.MAX,
+            opacity: DEFAULTS.OPACITY,
+            hoverTextOn: true
+        };
+
+        Object.assign(this, params);
+    }
+
+    /**
+     * Initializes the appropriate viewer based on file type
+     * @private
+     * @param {ViewerData} viewerData - Viewer initialization data
+     */
+    initializeViewer(viewerData) {
+        if (this.plotType === FILE_TYPES.NIFTI) {
+            /** @type {NiftiViewer} NIFTI-specific viewer instance */
+            this.viewer = new NiftiViewer(
+                viewerData.anat_input,
+                viewerData.mask_input,
+                viewerData.slice_len
+            );
+            this.colorbarDiv = CONTAINER_IDS.COLORBAR.NIFTI;
+        } else if (this.plotType === FILE_TYPES.GIFTI) {
+            /** @type {GiftiViewer} GIFTI-specific viewer instance */
+            this.viewer = new GiftiViewer(
+                viewerData.left_input,
+                viewerData.right_input,
+                viewerData.vertices_left,
+                viewerData.faces_left,
+                viewerData.vertices_right,
+                viewerData.faces_right
+            );
+            this.colorbarDiv = CONTAINER_IDS.COLORBAR.GIFTI;
+        }
+    }
+
+   /**
+     * Handles post-upload initialization tasks
+     * @private
+     * @returns {void}
+     */
     afterUpload(){
-        const uploadButton = document.getElementById('upload-file')
+        const uploadButton = document.getElementById(DOM_IDS.UPLOAD_BUTTON)
         // Change button color
         uploadButton.classList.add('btn-secondary');
         uploadButton.classList.remove('btn-primary');
@@ -172,15 +243,19 @@ class MainViewer{
         // Set listener to refresh page when user clicks reupload files
         uploadButton.addEventListener("click", () => {
             // clear cache
-            window.location.href = '/clear_cache';
+            window.location.href = API_ENDPOINTS.CLEAR_CACHE;
             location.reload()
         });
         // set saveScene button to display
-        const saveSceneDisplay = document.getElementById('save-scene-display');
+        const saveSceneDisplay = document.getElementById(DOM_IDS.SAVE_SCENE);
         saveSceneDisplay.style.display = 'block';
     }
 
-    // Listeners to pass to VisualizationOptions class
+    /**
+     * Attaches visualization option event listeners
+     * @private
+     * @returns {Promise<void>}
+     */
     attachVizOptionListeners = () => {
         // Listen for colormap change
         this.colormapChangeListener = (event) => {
@@ -204,10 +279,10 @@ class MainViewer{
 
         };
         document.addEventListener(
-            'colormapChange',  this.colormapChangeListener
+            EVENT_TYPES.VISUALIZATION.COLOR_MAP_CHANGE,  this.colormapChangeListener
         );
         // Listen for color range slider change
-        $(document).on('colorSliderChange', (event) => {
+        $(document).on(EVENT_TYPES.VISUALIZATION.COLOR_SLIDER_CHANGE, (event) => {
             const colorRange = event.detail.newValue
             this.colorMin = colorRange[0]
             this.colorMax = colorRange[1]
@@ -231,7 +306,7 @@ class MainViewer{
             );
         });
         // Listen for threshold slider change
-        $(document).on('thresholdSliderChange', (event) => {
+        $(document).on(EVENT_TYPES.VISUALIZATION.THRESHOLD_SLIDER_CHANGE, (event) => {
             const thresholdRange = event.detail.newValue;
             this.thresholdMin = thresholdRange[0];
             this.thresholdMax = thresholdRange[1];
@@ -249,7 +324,7 @@ class MainViewer{
             );
         });
         // Listen for opacity slider change
-        $(document).on('opacitySliderChange', (event) => {
+        $(document).on(EVENT_TYPES.VISUALIZATION.OPACITY_SLIDER_CHANGE, (event) => {
             const opacityValue = event.detail.newValue;
             this.opacity = opacityValue;
             // Plot brain map with new thresholds
@@ -267,7 +342,7 @@ class MainViewer{
         });
 
         // Listen for hover toggle click
-        $(document).on('toggleHoverChange', (event) => {
+        $(document).on(EVENT_TYPES.VISUALIZATION.HOVER_TEXT_TOGGLE, (event) => {
             // if checked
             this.hoverTextOn = !this.hoverTextOn
             // plot with or without hover text
@@ -287,7 +362,7 @@ class MainViewer{
         // attach nifti specific visualization options
         if (this.plotType == 'nifti') {
             // Listen for view toggle click
-            $(document).on('toggleViewChange', (event) => {
+            $(document).on(EVENT_TYPES.VISUALIZATION.VIEW_TOGGLE, (event) => {
                 // Change view state (ortho <-> montage)
                 this.viewer.changeViewState(
                     true,
@@ -309,7 +384,7 @@ class MainViewer{
             });
 
             // Listen for change to montage direction
-            $(document).on('montageSliceDirectionChange', (event) => {
+            $(document).on(EVENT_TYPES.VISUALIZATION.MONTAGE_SLICE_DIRECTION_CHANGE, (event) => {
                 // Change view state (ortho <-> montage)
                 this.viewer.changeViewState(
                     false,
@@ -335,7 +410,7 @@ class MainViewer{
             // Listen for change to slice indices for montage for each slice
             const sliceSliders = ['slice1Slider', 'slice2Slider', 'slice3Slider'];
             sliceSliders.forEach((sliceDiv, index) => {
-                $(document).on(`${sliceDiv}Change`, (event) => {
+                $(document).on(EVENT_TYPES.VISUALIZATION.SLICE_SLIDER[sliceDiv], (event) => {
                     // Change view state (ortho <-> montage)
                     this.viewer.changeViewState(
                         false,
@@ -360,7 +435,7 @@ class MainViewer{
             });
 
             // Listen for crosshair toggle click
-            $(document).on('toggleCrosshairChange', (event) => {
+            $(document).on(EVENT_TYPES.VISUALIZATION.TOGGLE_CROSSHAIR, (event) => {
                 // if checked
                 this.viewer.crosshairOn = !this.viewer.crosshairOn
                 // plot with or without crosshair
@@ -378,7 +453,7 @@ class MainViewer{
             });
 
             // Listen for hover toggle click
-            $(document).on('toggleDirectionMarkerChange', (event) => {
+            $(document).on(EVENT_TYPES.VISUALIZATION.TOGGLE_DIRECTION_MARKER, (event) => {
                 // if checked
                 this.viewer.directionMarkerOn = !this.viewer.directionMarkerOn
                 // plot with or without direction marker labels
@@ -397,10 +472,14 @@ class MainViewer{
         }
     }
 
-    // Listeners to pass to PreprocessingOptions class
+    /**
+     * Attaches preprocessing option event listeners
+     * @private
+     * @returns {Promise<void>}
+     */
     attachPreprocListeners = () => {
         // Listen for preprocessing submission
-        $(document).on('preprocessSubmit', (event, data) => {
+        $(document).on(EVENT_TYPES.PREPROCESSING.PREPROCESS_SUBMIT, (event, data) => {
             // Set preprocess state to true
             this.preprocState = true
             // Start spinner to indicate loading of files
@@ -460,7 +539,7 @@ class MainViewer{
         });
 
         // Listen for preprocessing reset
-        $(document).on('preprocessReset', () => {
+        $(document).on(EVENT_TYPES.PREPROCESSING.PREPROCESS_RESET, () => {
             // set preprocess state to false
             this.preprocState = false;
             // fetch original data
@@ -500,9 +579,13 @@ class MainViewer{
         });
     }
 
-    // Update plot for changes in time point from the time slider
+    /**
+     * Sets up time slider change event listener
+     * @private
+     * @returns {void}
+     */    
     listenForTimeSliderChange() {
-        $(document).on('timeSliderChange', (event) => {
+        $(document).on(EVENT_TYPES.VISUALIZATION.TIME_SLIDER_CHANGE, (event) => {
             // Access the timeIndex from event.detail and update viewer
             this.timePoint = event.detail.timeIndex;
             // update brain plot and time course plot
@@ -523,13 +606,17 @@ class MainViewer{
         });
     }
 
-    // Time course plotting listeners
+    /**
+     * Sets up time course related event listeners
+     * @private
+     * @returns {void}
+     */
     timeCourseListeners() {
         // Initialize the button to enable/disable time course plotting
-        const enableSwitch = document.getElementById('enable-time-course');
-        const freezeButton = $('#freeze-time-course');
-        const undoButton = $('#undo-time-course');
-        const removeButton = $('#remove-time-course');
+        const enableSwitch = document.getElementById(DOM_IDS.ENABLE_TIME_COURSE);
+        const freezeButton = document.getElementById(DOM_IDS.FREEZE_TIME_COURSE);
+        const undoButton = document.getElementById(DOM_IDS.UNDO_TIME_COURSE);
+        const removeButton = document.getElementById(DOM_IDS.REMOVE_TIME_COURSE);
 
         // enable fmri time course plotting
         enableSwitch.addEventListener('click', () => {
@@ -541,13 +628,13 @@ class MainViewer{
 
             // enable time course buttons
             if (this.timeCourseEnabled) {
-                freezeButton.prop('disabled', false);
-                undoButton.prop('disabled', false);
-                removeButton.prop('disabled', false);
+                freezeButton.disabled = false;
+                undoButton.disabled = false;
+                removeButton.disabled = false;
             } else {
-                freezeButton.prop('disabled', true);
-                undoButton.prop('disabled', true);
-                removeButton.prop('disabled', true);
+                freezeButton.disabled = true;
+                undoButton.disabled = true;
+                removeButton.disabled = true;
             }
         });
 
@@ -555,7 +642,7 @@ class MainViewer{
         freezeButton.on('click', () => {
             this.timeCourseFreeze = this.timeCourseFreeze ? false : true;
             // get icon
-            const timeCourseFreezeIcon = $('#freeze-icon');
+            const timeCourseFreezeIcon = document.getElementById(DOM_IDS.FREEZE_ICON);
             // change icon based on time course freeze state
             if (this.timeCourseFreeze) {
                 timeCourseFreezeIcon.removeClass('fa-unlock').addClass('fa-lock');
@@ -592,7 +679,7 @@ class MainViewer{
     // method passed as callback to viewer click handlers
     clickHandlerCallBack() {
         // only update nifti (due to slice index change)
-        if (this.plotType == 'nifti') {
+        if (this.plotType == FILE_TYPES.NIFTI) {
             // Plot the updated data from the server
             this.viewer.plot(
                 this.timePoint,
@@ -617,11 +704,15 @@ class MainViewer{
         }
     }
 
-    // package up input to pass to time point distance routes
+    /**
+     * Initiates distance computation between time courses
+     * @param {Event} event - Form submission event
+     * @returns {Promise<void>}
+     */
     initiateDistanceCompute(event) {
         // get error placeholder
         const errorDiv = document.getElementById(
-            'error-message-distance'
+            DOM_IDS.ERROR_MESSAGES.DISTANCE
         );
         let errorMessage
         // raise error if mask is not provided for nifti file
@@ -638,21 +729,23 @@ class MainViewer{
         formData.append('time_point', event.detail.timeIndex);
         formData.append('use_preprocess', this.preprocState);
         let fetchURL
-        if (this.plotType == 'nifti') {
+        if (this.plotType == FILE_TYPES.NIFTI) {
             formData.append('file_key', this.viewer.fileKey);
             formData.append('mask_key', this.viewer.maskKey);
-            fetchURL = '/compute_distance_nii'
-        } else if (this.plotType == 'gifti') {
+            fetchURL = API_ENDPOINTS.COMPUTE.DISTANCE_NIFTI
+        } else if (this.plotType == FILE_TYPES.GIFTI) {
             formData.append('left_key', this.viewer.leftKey);
             formData.append('right_key', this.viewer.rightKey);
-            fetchURL = '/compute_distance_gii'
+            fetchURL = API_ENDPOINTS.COMPUTE.DISTANCE_GIFTI
         }
         // initiate spinner
         let spinnerOverlayDiv = document.getElementById(
-              'distance-spinner-overlay'
-            )
+            CONSTANTS.SPINNERS.DISTANCE_OVERLAY
+        )
         spinnerOverlayDiv.style.display = 'block'
-        let spinnerDiv = document.getElementById('distance-spinner')
+        let spinnerDiv = document.getElementById(
+            CONSTANTS.SPINNERS.DISTANCE_OVERLAY
+        )
         spinnerDiv.style.display = 'block'
 
         fetch(fetchURL, {
@@ -665,36 +758,43 @@ class MainViewer{
             this.distance.plotDistance(data.dist_vec, data.time_point);
             // turn off spinner
             let spinnerOverlayDiv = document.getElementById(
-                'distance-spinner-overlay'
+                CONSTANTS.SPINNERS.DISTANCE_OVERLAY
             )
-            let spinnerDiv = document.getElementById('distance-spinner')
+            let spinnerDiv = document.getElementById(
+                CONSTANTS.SPINNERS.DISTANCE
+            )
             // end spinner to indicate loading of files
             spinnerOverlayDiv.style.display = 'none'
             spinnerDiv.style.display = 'none'
             // close modal
-            $('#distanceModal').modal('hide');
+            $(`#${DOM_IDS.MODALS.DISTANCE}`).modal('hide');
         }).catch(error => {
             console.error('Error during time point distance analysis:', error);
         });
 
     }
 
-    // package up input to pass to peak-average routes
+    /**
+     * Initiates average analysis
+     * @param {Event} event - Form submission event
+     * @param {Object} data - Average analysis parameters
+     * @returns {Promise<void>}
+     */
     initiateAverage(event, data) {
         // get error placeholder
         const errorDiv = document.getElementById(
-            'error-message-average'
+            DOM_IDS.ERROR_MESSAGES.AVERAGE
         );
         let errorMessage
         // raise error if mask is not provided for nifti file
-        if (!this.viewer.maskKey && this.plotType == 'nifti') {
+        if (!this.viewer.maskKey && this.plotType == FILE_TYPES.NIFTI) {
             errorMessage = 'a brain mask must be supplied (in file upload) to perform windowed average analysis';
             this.raiseError(errorDiv, errorMessage);
             return
         }
         // get lag inputs
-        const leftEdge = document.getElementById('averageLeftEdge').value;
-        const rightEdge = document.getElementById('averageRightEdge').value;
+        const leftEdge = document.getElementById(DOM_IDS.AVERAGE_LEFT_EDGE).value;
+        const rightEdge = document.getElementById(DOM_IDS.AVERAGE_RIGHT_EDGE).value;
         // get half of time length for checking lag bounds
         const timeLengthMid = Math.floor(this.timeCourse.timeLength / 2);
         // check lags do not exceed zero
@@ -723,23 +823,23 @@ class MainViewer{
         formData.append('right_edge', rightEdge);
         formData.append('use_preprocess', this.preprocState);
         let fetchURL
-        if (this.plotType == 'nifti') {
+        if (this.plotType == FILE_TYPES.NIFTI) {
             formData.append('file_key', this.viewer.fileKey);
             formData.append('mask_key', this.viewer.maskKey);
             formData.append('anat_key', this.viewer.anatKey);
             formData.append('slice_len', this.sliceLen);
-            fetchURL = '/compute_avg_nii'
-        } else if (this.plotType == 'gifti') {
+            fetchURL = API_ENDPOINTS.COMPUTE.AVERAGE_NIFTI
+        } else if (this.plotType == FILE_TYPES.GIFTI) {
             formData.append('left_key', this.viewer.leftKey);
             formData.append('right_key', this.viewer.rightKey);
-            fetchURL = '/compute_avg_gii'
+            fetchURL = API_ENDPOINTS.COMPUTE.AVERAGE_GIFTI
         }
         // initiate spinner
         let spinnerOverlayDiv = document.getElementById(
-              'average-spinner-overlay'
-            )
+            CONSTANTS.SPINNERS.AVERAGE_OVERLAY
+        )
         spinnerOverlayDiv.style.display = 'block'
-        let spinnerDiv = document.getElementById('average-spinner')
+        let spinnerDiv = document.getElementById(CONSTANTS.SPINNERS.AVERAGE)
         spinnerDiv.style.display = 'block'
 
         fetch(fetchURL, {
@@ -754,36 +854,43 @@ class MainViewer{
             window.open('/results_view/average', '_blank');
             // turn off spinner
             let spinnerOverlayDiv = document.getElementById(
-                'average-spinner-overlay'
+                CONSTANTS.SPINNERS.AVERAGE_OVERLAY
             )
-            let spinnerDiv = document.getElementById('average-spinner')
+            let spinnerDiv = document.getElementById(
+                CONSTANTS.SPINNERS.AVERAGE
+            )
             // end spinner to indicate loading of files
             spinnerOverlayDiv.style.display = 'none'
             spinnerDiv.style.display = 'none'
             // close modal
-            $('#averageModal').modal('hide');
+            $(`#${DOM_IDS.MODALS.AVERAGE}`).modal('hide');
         }).catch(error => {
             console.error('Error during window average analysis:', error);
         });
     }
 
 
-    // package up input to pass to cross-correlation routes
+    /**
+     * Initiates correlation analysis
+     * @param {Event} event - Form submission event
+     * @param {Object} data - Correlation parameters
+     * @returns {Promise<void>}
+     */
     initiateCorrelation(event, data) {
         // get error placeholder
         const errorDiv = document.getElementById(
-            'error-message-correlation'
+            DOM_IDS.ERROR_MESSAGES.CORRELATION
         );
         let errorMessage
         // raise error if mask is not provided for nifti file
-        if (!this.viewer.maskKey && this.plotType == 'nifti') {
+        if (!this.viewer.maskKey && this.plotType == FILE_TYPES.NIFTI) {
             errorMessage = 'a brain mask must be supplied (in file upload) to perform correlation analysis';
             this.raiseError(errorDiv, errorMessage);
             return
         }
         // get lag inputs
-        const negativeLag = document.getElementById('correlateNegativeLag').value;
-        const positiveLag = document.getElementById('correlatePositiveLag').value;
+        const negativeLag = document.getElementById(DOM_IDS.CORRELATION_LAGS.NEGATIVE).value;
+        const positiveLag = document.getElementById(DOM_IDS.CORRELATION_LAGS.POSITIVE).value;
         // get half of time length for checking lag bounds
         const timeLengthMid = Math.floor(this.timeCourse.timeLength / 2);
         // check lags do not exceed zero
@@ -813,22 +920,24 @@ class MainViewer{
         formData.append('label', data['label']);
         formData.append('use_preprocess', this.preprocState);
         let fetchURL
-        if (this.plotType == 'nifti') {
+        if (this.plotType == FILE_TYPES.NIFTI) {
             formData.append('file_key', this.viewer.fileKey);
             formData.append('mask_key', this.viewer.maskKey);
             formData.append('anat_key', this.viewer.anatKey);
-            fetchURL = '/compute_corr_nii'
-        } else if (this.plotType == 'gifti') {
+            fetchURL = API_ENDPOINTS.COMPUTE.CORRELATION_NIFTI
+        } else if (this.plotType == FILE_TYPES.GIFTI) {
             formData.append('left_key', this.viewer.leftKey);
             formData.append('right_key', this.viewer.rightKey);
-            fetchURL = '/compute_corr_gii'
+            fetchURL = API_ENDPOINTS.COMPUTE.CORRELATION_GIFTI
         }
         // initiate spinner
         let spinnerOverlayDiv = document.getElementById(
-              'correlate-spinner-overlay'
-            )
+            CONSTANTS.SPINNERS.CORRELATE_OVERLAY
+        )
         spinnerOverlayDiv.style.display = 'block'
-        let spinnerDiv = document.getElementById('correlate-spinner')
+        let spinnerDiv = document.getElementById(
+            CONSTANTS.SPINNERS.CORRELATE
+        )
         spinnerDiv.style.display = 'block'
 
         fetch(fetchURL, {
@@ -843,14 +952,16 @@ class MainViewer{
             window.open('/results_view/correlate', '_blank');
             // turn off spinner
             let spinnerOverlayDiv = document.getElementById(
-                'correlate-spinner-overlay'
+                CONSTANTS.SPINNERS.CORRELATE_OVERLAY
             )
-            let spinnerDiv = document.getElementById('correlate-spinner')
+            let spinnerDiv = document.getElementById(
+                CONSTANTS.SPINNERS.CORRELATE
+            )
             // end spinner to indicate loading of files
             spinnerOverlayDiv.style.display = 'none'
             spinnerDiv.style.display = 'none'
             // close modal
-            $('#correlationModal').modal('hide');
+            $(`#${DOM_IDS.MODALS.CORRELATION}`).modal('hide');
         }).catch(error => {
             console.error('Error during correlation analysis:', error);
         });

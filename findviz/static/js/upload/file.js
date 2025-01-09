@@ -75,20 +75,25 @@ class FileUploader {
         const uploadData = this.getFiles();
         uploadData.append('fmri_file_type', fmriFileType);
         const response = await fetch(UPLOAD_ENDPOINTS.FILES, {
-            method: 'POST',
-            body: uploadData
+          method: 'POST',
+          body: uploadData
         });
-
         if (response.ok) {
             const data = await response.json();
             document.getElementById('fmri-visualization-container').style.display = 'block';
             this.onUploadComplete(data, fmriFileType);
             $('#upload-modal').modal('hide');
         } else {
+          if (response.status == 400) {
+            console.log('File upload error:', response);
             await this.errorHandler.handleServerError(response, fmriFileType);
+          } else {
+            console.error('Unexpected error during file upload:', response);
+            this.errorHandler.showServerErrorModal();
+          }
         }
     } catch (error) {
-        console.error('Error during file upload:', error);
+        console.error('Unexpected error during file upload:', error);
         this.errorHandler.showServerErrorModal();
     } finally {
         this.errorHandler.hideSpinner();
@@ -385,10 +390,16 @@ class FileUploader {
             const data = await response.json();
             labelTextarea.value = data.header;
         } else {
+          if (response.status == 400) {
+            console.log('Header error:', response);
             await this.errorHandler.handleServerError(response, 'timecourse');
+          } else {
+            console.error('Unexpected error during header fetch:', response);
+            this.errorHandler.showServerErrorModal();
+          }
         }
     } catch (error) {
-      console.error('Error reading time course file to get header:', error);
+      console.error('Unexpected error during header fetch:', error);
       this.errorHandler.showServerErrorModal();
     }
   }

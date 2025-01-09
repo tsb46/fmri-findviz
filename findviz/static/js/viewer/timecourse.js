@@ -1,7 +1,7 @@
 // timecourse.js
 
 // Import filter parameter validation
-import { validateFilterInputs, preprocessingInputError, circularIndex } from './utils.js';
+import { validateFilterInputs, preprocessingInputError, circularIndex } from '../utils.js';
 
 class TimeCourse {
     constructor(

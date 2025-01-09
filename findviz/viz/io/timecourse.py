@@ -249,7 +249,7 @@ class TimeCourseUpload:
         ts_files: Optional[List[Union[str, Path]]] = None,
         ts_labels: Optional[List[str]] = None,
         ts_headers: Optional[List[bool]] = None,
-    ) -> List[TimeCourseDict]:
+    ) -> TimeCourseDict:
         """
         Get time course files and fields uploaded from cli or browser.
 
@@ -647,7 +647,7 @@ def read_ts_file(
         if not validate.validate_ts_single_col(row):
             raise exception.FileValidationError(
                 f'Multiple columns found in time course file {filename}. '
-                 ' Only one column is allowed.',
+                 'Only one column is allowed.',
                 validate.validate_ts_single_col.__name__,
                 exception.ExceptionFileTypes.TIMECOURSE.value,
                 [browser_fields[TimeCourseFiles.FILES.value]],

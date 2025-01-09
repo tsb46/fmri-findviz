@@ -1,7 +1,7 @@
 // similarity.js
 
 // Import from utils
-import { colorMapDropdrown } from './utils.js';
+import { colorMapDropdrown } from '../utils.js';
 
 class Distance {
     constructor(
