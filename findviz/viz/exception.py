@@ -15,7 +15,7 @@ class ExceptionFileTypes(Enum):
 class Routes(Enum):
     GET_DATA_UPDATE='get_data_update'
     GET_FUNCTIONAL_TIMECOURSE='get_functional_timecourse'
-
+    PREPROCESS_FMRI='preprocess_fmri'
 
 class FileInputError(Exception):
     """
@@ -232,3 +232,23 @@ class DataRequestError(Exception):
             return (f"{self.message} - missing input field: "
                    f"{self.input_field} for {self.fmri_file_type} "
                    f"via {self.route.value}")
+        
+
+class NiftiMaskError(Exception):
+    """
+    Error raised when mask is not provided for nifti processing
+
+    Attributes
+    ----------
+    message : str
+        custom error message to display to user
+    """
+    def __init__(
+        self, 
+        message: str
+    ):
+        super().__init__(message)
+        self.message = message
+
+    def __str__(self):
+        return f"Nifti mask error: {self.message}"

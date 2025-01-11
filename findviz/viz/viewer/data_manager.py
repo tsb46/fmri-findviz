@@ -74,6 +74,7 @@ class NiftiVisualizationState:
 
     # task design and timeseries
     task_data: Optional[TaskDesignDict] = None
+    conditions: Optional[List[str]] = None
     ts_data: Optional[Dict[str, List[float]]] = None
     ts_labels: Optional[List[str]] = None
     
@@ -128,6 +129,7 @@ class GiftiVisualizationState:
     
     # task design and timeseries
     task_data: Optional[TaskDesignDict] = None
+    conditions: Optional[List[str]] = None
     ts_data: Optional[Dict[str, List[float]]] = None
     ts_labels: Optional[List[str]] = None
 
@@ -259,6 +261,8 @@ class DataManager:
             logger.error("No state exists")
             return
         
+        # add conditions
+        self._state.conditions = task_data['task_regressors'].keys()
         self._state.task_data = task_data
         self._state.task_enabled = True
     

@@ -3,13 +3,14 @@ Utilities for handling time course and task design uploads
 """
 from enum import Enum
 from pathlib import Path
-from typing import Dict, List, Literal, Optional, Union, TypedDict, Any
+from typing import Dict, List, Literal, Optional, Union, TypedDict, Any, Tuple
 from werkzeug.datastructures import FileStorage
 
 import numpy as np
 import numpy.typing as npt
 
 from flask import request
+from nilearn.glm.first_level import compute_regressor
 
 from findviz.viz import exception
 from findviz.viz.io import validate
@@ -22,15 +23,21 @@ FileInput = Union[FilePath, FileStorage]
 NumericData = Union[int, float, str]  # str included for validation before conversion
 ArrayData = npt.NDArray[np.float64]
 
+
+# task design output fields
+class ConditionDict(TypedDict):
+    block: ArrayData
+    hrf: ArrayData
+
 class TaskDesignDict(TypedDict):
-    onset: List[NumericData]
-    duration: List[NumericData]
-    trial_type: List[str]
+    task_regressors: Dict[str, ConditionDict]
     tr: float
     slicetime_ref: float
 
+# time course output fields
 class TimeCourseDict(TypedDict):
     ts_label: ArrayData
+
 
 # Expected time course file upload inputs
 class TimeCourseFiles(Enum):
@@ -90,6 +97,7 @@ class TaskDesignUpload:
 
     def upload(
         self,
+        fmri_len: int,
         task_file: Optional[Union[str, Path]] = None,
         tr: Optional[float] = None,
         slicetime_ref: Optional[float] = None
@@ -99,6 +107,8 @@ class TaskDesignUpload:
 
         Parameters
         ----------
+        fmri_len : int
+            Length of functional MRI time course
         task_file : Union[str, Path], optional
             Path to task design file
         tr : float, optional
@@ -175,7 +185,7 @@ class TaskDesignUpload:
 
         # read task design file
         try:
-            task_out = read_task_file(
+            task_data = read_task_file(
                 file_uploads[TaskDesignFiles.FILE.value],
                 self.default_trial_label,
                 self.method
@@ -186,9 +196,12 @@ class TaskDesignUpload:
                 exception.ExceptionFileTypes.TASK.value, self.method,
                 [browser_fields[TaskDesignFiles.FILE.value]]
             ) from e
-        
-        task_out[TaskDesignFiles.SLICETIME.value] = task_slicetime
-        task_out[TaskDesignFiles.TR.value] = task_tr
+        task_reg = get_task_regressors(task_data, fmri_len)
+        task_out = {
+            TaskDesignFiles.SLICETIME.value: task_slicetime,
+            TaskDesignFiles.TR.value: task_tr,
+            'task_regressors': task_reg
+        }
 
         return task_out
 
@@ -449,7 +462,7 @@ def read_task_file(
     file: FileInput,
     default_trial_label: str,
     method: Literal['cli', 'browser']
-) -> TaskDesignDict:
+) -> Dict[str, Any]:
     """
     Read task design file based on method of upload.
 
@@ -676,3 +689,68 @@ def read_ts_file(
     ts_array = np.array(ts_array)[:,np.newaxis]
 
     return ts_array
+
+def get_task_regressors(
+    task_events: TaskDesignDict, 
+    fmri_len: int
+) -> Dict[str, Any]:
+    """
+    Get task design regressors from task events dataframe
+
+    Arguments:
+    ----------
+        task_events: task events 
+        fmri_len: length of fmri
+    
+    Returns:
+    --------
+        task_reg: task design regressors
+    """
+    tr = task_events.pop('tr')
+    slicetime_ref = task_events.pop('slicetime_ref')
+    # calculate frame times based on lenght of fmri, slicetime ref and tr
+    frame_times =  tr * (np.arange(fmri_len) + slicetime_ref)
+    # initialize task regressors dict
+    task_reg = {}
+
+    trial_type = task_events['trial_type']
+    onset = task_events['onset']
+    duration = task_events['duration']
+
+    # get conditions
+    conditions = list(set(trial_type))
+
+    # Loop through each condition and create regressors
+    for c in conditions:
+        task_reg[c] = {}
+        # get row indices of condition events
+        condition_idx = [
+            i for i, r in enumerate(trial_type)
+            if r == c
+        ]
+        # Get onset of events in condition
+        c_onsets = [
+            float(onset[i]) for i in condition_idx
+        ]
+        # Get duration of events in condition
+        c_duration = [
+            float(duration[i]) for i in condition_idx
+        ]
+        # generate dummy amplitude values of 1s
+        c_amp = [1 for i in condition_idx]
+        # package condition data into nested list
+        conditions_desc = [c_onsets, c_duration, c_amp]
+
+        # use nilearn to compute task regression w/o convolution
+        cond_reg, _ = compute_regressor(
+            conditions_desc, hrf_model=None, frame_times=frame_times
+        )
+        task_reg[c]['block'] = cond_reg[:,0].tolist()
+
+        # use nilearn to compute task regression w hrf convolution
+        cond_reg, _ = compute_regressor(
+            conditions_desc, hrf_model='glover', frame_times=frame_times
+        )
+        task_reg[c]['hrf'] = cond_reg[:,0].tolist()
+        
+    return task_reg

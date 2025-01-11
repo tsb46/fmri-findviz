@@ -24,7 +24,6 @@ from findviz.viz.io.validate import (
     validate_ts_numeric,
     validate_ts_fmri_length
 )
-from tests.viz.io.conftest import mock_gifti_func
 
 # GIFTI validation tests
 def test_validate_gii_func_ext():

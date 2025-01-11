@@ -5,11 +5,11 @@ import numpy as np
 import nibabel as nib
 
 from findviz.viz.viewer.data_manager import DataManager
-from tests.viz.io.conftest import (
-    mock_nifti_4d, 
-    mock_nifti_3d, 
-    mock_gifti_func, 
-    mock_gifti_mesh
+from tests.viz.conftest import (
+    mock_nifti_4d,
+    mock_nifti_3d,
+    mock_gifti_func,
+    mock_task_data
 )
 
 @pytest.fixture(autouse=True)
@@ -87,15 +87,26 @@ def test_add_task_design(mock_nifti_4d):
     """Test adding task design data."""
     dm = DataManager()
     dm.create_nifti_state(func_img=mock_nifti_4d)
-    
+
     task_data = {
-        'onset': [0, 10, 20],
-        'duration': [5, 5, 5],
-        'trial_type': ['A', 'B', 'A']
+        'tr': 2.0,
+        'slicetime_ref': 0.5,
+        'task_regressors': {
+            'A': {
+                'block': [1, 1, 0, 0],
+                'hrf': [0.1, 0.2, 0.1, 0]
+            },
+            'B': {
+                'block': [0, 0, 1, 1],
+                'hrf': [0, 0.1, 0.2, 0.1]
+            }
+        }
     }
-    
+
     dm.add_task_design(task_data)
-    assert dm.state.task_enabled is True
+    
+    assert dm.state.task_enabled
+    assert set(dm.state.conditions) == {'A', 'B'}
     assert dm.state.task_data == task_data
 
 def test_get_viewer_metadata_nifti(mock_nifti_4d, mock_nifti_3d):

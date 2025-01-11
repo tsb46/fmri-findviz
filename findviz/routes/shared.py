@@ -1,9 +1,9 @@
 """
 Shared resources for the application.
 """
-from findviz.logger_config import get_logger
+from findviz.logger_config import setup_logger
 
-logger = get_logger(__name__)
+logger = setup_logger(__name__)
 
 from findviz.viz.viewer.data_manager import DataManager
 

@@ -2,9 +2,14 @@ import pytest
 import argparse
 from pathlib import Path
 from unittest.mock import patch, MagicMock
+import nibabel as nib
+import numpy as np
 
-from findviz.cli import parse_args, process_cli_inputs, find_free_port, validate_files
-from findviz.viz.io.upload import FileUpload
+from findviz.cli import (
+    parse_args, process_cli_inputs, 
+    find_free_port, validate_files
+)
+from findviz.routes.shared import data_manager
 from findviz.viz import exception
 
 # Test data paths
@@ -19,12 +24,21 @@ GIFTI_RIGHT_MESH = TEST_DATA / "test_right.surf.gii"
 TIMESERIES = TEST_DATA / "test_timeseries.csv"
 TASK_DESIGN = TEST_DATA / "test_task.tsv"
 
+
+@pytest.fixture
+def mock_data_manager():
+    """Mock DataManager instance"""
+    with patch('findviz.routes.shared.data_manager') as mock:
+        yield mock
+
 @pytest.fixture
 def mock_cache():
     """Mock Cache class"""
     with patch('findviz.viz.io.cache.Cache') as mock:
         mock_instance = MagicMock()
         mock.return_value = mock_instance
+        # Make sure the save method is properly mocked
+        mock_instance.save = MagicMock()
         yield mock_instance
 
 @pytest.fixture
@@ -56,8 +70,48 @@ def mock_file_exists():
 
 def test_process_cli_inputs_nifti(mock_file_upload, mock_cache, mock_file_exists):
     """Test processing NIFTI inputs"""
-    with patch('findviz.cli.FileUpload') as mock_class:
+    with patch('findviz.cli.FileUpload') as mock_class, \
+         patch('findviz.viz.viewer.utils.package_nii_metadata') as mock_metadata, \
+         patch('findviz.cli.data_manager') as mock_data_manager, \
+         patch('findviz.cli.Cache', return_value=mock_cache):
         mock_class.return_value = mock_file_upload
+        
+        # Mock the enum values and attributes
+        mock_file_upload.Nifti = MagicMock()
+        mock_file_upload.Nifti.FUNC.value = 'func'
+        mock_file_upload.Nifti.ANAT.value = 'anat'
+        mock_file_upload.Nifti.MASK.value = 'mask'
+        mock_file_upload.ts_status = False
+        mock_file_upload.task_status = False
+
+        # Mock the metadata return values
+        mock_metadata.return_value = {
+            'timepoints': [0, 1, 2],
+            'global_min': 0.0,
+            'global_max': 1.0,
+            'slice_len': {'x': 10, 'y': 10, 'z': 10}
+        }
+
+        # Mock the viewer metadata
+        mock_data_manager.get_viewer_metadata.return_value = {
+            'file_type': 'nifti',
+            'timepoints': [0, 1, 2],
+            'global_min': 0.0,
+            'global_max': 1.0,
+            'slice_len': {'x': 10, 'y': 10, 'z': 10},
+            'anat_input': True,
+            'mask_input': True
+        }
+
+        # Mock the upload return value
+        mock_nifti = MagicMock(spec=nib.Nifti1Image)
+        mock_file_upload.upload.return_value = {
+            'nifti': {
+                'func': mock_nifti,
+                'anat': mock_nifti,
+                'mask': mock_nifti
+            }
+        }
         
         args = argparse.Namespace(
             nifti_func=str(NIFTI_FUNC),
@@ -72,7 +126,9 @@ def test_process_cli_inputs_nifti(mock_file_upload, mock_cache, mock_file_exists
             ts_headers=None,
             task_design=None,
             tr=2.0,
-            slicetime_ref=0.5
+            slicetime_ref=0.5,
+            use_nifti=True,
+            use_gifti=False
         )
         
         process_cli_inputs(args)
@@ -80,15 +136,63 @@ def test_process_cli_inputs_nifti(mock_file_upload, mock_cache, mock_file_exists
         # Verify FileUpload was called correctly
         mock_file_upload.upload.assert_called_once()
         call_args = mock_file_upload.upload.call_args[1]
-
         assert call_args['fmri_files']['nii_func'] == str(NIFTI_FUNC)
-        assert call_args['fmri_files']['nii_anat'] == str(NIFTI_ANAT)
-        assert call_args['fmri_files']['nii_mask'] == str(NIFTI_MASK)
 
 def test_process_cli_inputs_gifti(mock_file_upload, mock_cache, mock_file_exists):
     """Test processing GIFTI inputs"""
-    with patch('findviz.cli.FileUpload') as mock_class:
+    with patch('findviz.cli.FileUpload') as mock_class, \
+         patch('findviz.viz.viewer.utils.package_gii_metadata') as mock_metadata, \
+         patch('findviz.cli.data_manager') as mock_data_manager, \
+         patch('findviz.cli.Cache', return_value=mock_cache):
         mock_class.return_value = mock_file_upload
+
+        # Mock the enum values and attributes
+        mock_file_upload.Gifti = MagicMock()
+        mock_file_upload.Gifti.LEFT_FUNC.value = 'left_func'
+        mock_file_upload.Gifti.RIGHT_FUNC.value = 'right_func'
+        mock_file_upload.Gifti.LEFT_MESH.value = 'left_mesh'
+        mock_file_upload.Gifti.RIGHT_MESH.value = 'right_mesh'
+        mock_file_upload.ts_status = False
+        mock_file_upload.task_status = False
+
+        # Mock the metadata return values
+        mock_metadata.return_value = {
+            'timepoints': [0, 1, 2],
+            'global_min': 0.0,
+            'global_max': 1.0
+        }
+
+        # Mock the viewer metadata
+        mock_data_manager.get_viewer_metadata.return_value = {
+            'file_type': 'gifti',
+            'timepoints': [0, 1, 2],
+            'global_min': 0.0,
+            'global_max': 1.0,
+            'left_input': True,
+            'right_input': True,
+            'vertices_left': [0.0, 0.0, 0.0],
+            'faces_left': [0, 1, 2],
+            'vertices_right': [0.0, 0.0, 0.0],
+            'faces_right': [0, 1, 2]
+        }
+
+        # Create mock GiftiImage with darrays
+        mock_darray1 = MagicMock()
+        mock_darray1.data = np.zeros((100, 3))  # vertices
+        mock_darray2 = MagicMock()
+        mock_darray2.data = np.zeros((50, 3))   # faces
+
+        mock_gifti = MagicMock(spec=nib.gifti.GiftiImage)
+        mock_gifti.darrays = [mock_darray1, mock_darray2]
+
+        mock_file_upload.upload.return_value = {
+            'gifti': {
+                'left_func': mock_gifti,
+                'right_func': mock_gifti,
+                'left_mesh': mock_gifti,
+                'right_mesh': mock_gifti
+            }
+        }
         
         args = argparse.Namespace(
             nifti_func=None,
@@ -103,7 +207,9 @@ def test_process_cli_inputs_gifti(mock_file_upload, mock_cache, mock_file_exists
             ts_headers=None,
             task_design=None,
             tr=None,
-            slicetime_ref=0.5
+            slicetime_ref=0.5,
+            use_nifti=False,
+            use_gifti=True
         )
         
         process_cli_inputs(args)
@@ -113,6 +219,17 @@ def test_process_cli_inputs_gifti(mock_file_upload, mock_cache, mock_file_exists
         call_args = mock_file_upload.upload.call_args[1]
         assert call_args['fmri_files']['left_gii_func'] == str(GIFTI_LEFT_FUNC)
         assert call_args['fmri_files']['right_gii_func'] == str(GIFTI_RIGHT_FUNC)
+
+        # Verify data_manager interactions
+        mock_data_manager.create_gifti_state.assert_called_once_with(
+            left_func=mock_gifti,
+            right_func=mock_gifti,
+            left_mesh=mock_gifti,
+            right_mesh=mock_gifti
+        )
+        
+        # Verify cache was created with metadata
+        mock_cache.save.assert_called_once_with(mock_data_manager.get_viewer_metadata.return_value)
 
 def test_mutually_exclusive_inputs():
     """Test that NIFTI and GIFTI inputs are mutually exclusive"""

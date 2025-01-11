@@ -21,37 +21,6 @@ browser_fields = {
     'ts': timecourse.browser_fields
 }
 
-## define output fields
-# gifti output fields
-class GiftiFields(Enum):
-    LEFT_FUNC = gifti.GiftiFiles.LEFT_FUNC.value
-    RIGHT_FUNC = gifti.GiftiFiles.RIGHT_FUNC.value
-    LEFT_MESH = gifti.GiftiFiles.LEFT_MESH.value
-    RIGHT_MESH = gifti.GiftiFiles.RIGHT_MESH.value
-
-# nifti output fields
-class NiftiFields(Enum):
-    FUNC = nifti.NiftiFiles.FUNC.value
-    ANAT = nifti.NiftiFiles.ANAT.value
-    MASK = nifti.NiftiFiles.MASK.value
-
-# time course output fields
-class TimeCourseFields(Enum):
-    FILE = timecourse.SingleTimeCourseFiles.FILE.value
-    LABEL = timecourse.SingleTimeCourseFiles.FILE.value
-
-# task design output fields
-class TaskFields(Enum):
-    ONSET = timecourse.TaskDesignFields.ONSET
-    DURATION = timecourse.TaskDesignFields.DURATION
-    TRIAL_TYPE = timecourse.TaskDesignFields.TRIAL_TYPE
-
-class FileOutput(TypedDict):
-    gifti: Optional[Dict[str, any]]
-    nifti: Optional[Dict[str, any]]
-    ts: Optional[Dict[str, any]]
-    task: Optional[Dict[str, any]]
-
 
 class FileUpload:
     """
@@ -84,12 +53,6 @@ class FileUpload:
     task_files : Optional[TaskDesignFiles]
         File labels for task design
     """
-
-    # Reference the Enums as class attributes
-    Gifti = GiftiFields
-    Nifti = NiftiFields
-    TimeCourse = TimeCourseFields
-    Task = TaskFields
 
     def __init__(
         self,
@@ -220,7 +183,7 @@ class FileUpload:
         task_file: Optional[Union[str, Path]] = None,
         tr: Optional[float] = None,
         slicetime_ref: Optional[float] = None
-    ) -> Dict[str, Union[str, float, List[Union[str, float]]]]:
+    ) -> Dict:
         """
         Upload and validate files from either browser or CLI.
 
@@ -257,7 +220,7 @@ class FileUpload:
             If files fail validation
         """
         # init output dictionary
-        file_out: FileOutput = {
+        file_out = {
             "gifti": None,
             "nifti": None,
             "ts": None,
@@ -281,16 +244,17 @@ class FileUpload:
             elif self.fmri_file_type == 'nifti':
                 file_out['nifti'] = fmri_files
                 self.upload_status['nifti'] = True
+            
+            # get # of volumes from functional MRI
+            if self.fmri_file_type == 'nifti':
+                fmri_len = file_out['nifti'][nifti.NiftiFiles.FUNC.value].shape[-1]
+            elif self.fmri_file_type == 'gifti':
+                fmri_len = len(
+                    file_out['gifti'][gifti.GiftiFiles.LEFT_FUNC.value].darrays
+                )
 
+            # get time series files
             if self.ts_status:
-                # get # of volumes from functional MRI
-                if self.fmri_file_type == 'nifti':
-                    fmri_len = file_out['nifti'][nifti.NiftiFiles.FUNC.value].shape[-1]
-                elif self.fmri_file_type == 'gifti':
-                    fmri_len = len(
-                        file_out['gifti'][gifti.GiftiFiles.LEFT_FUNC.value].darrays
-                    )
-                    
                 ts_files = self.ts_uploader.upload(
                     fmri_len=fmri_len,
                     ts_files=ts_files,
@@ -300,8 +264,10 @@ class FileUpload:
                 file_out['ts'] = ts_files
                 self.upload_status['ts'] = True
 
+            # get task design files
             if self.task_status:
                 task_files = self.task_uploader.upload(
+                    fmri_len=fmri_len,
                     task_file=task_file,
                     tr=tr,
                     slicetime_ref=slicetime_ref

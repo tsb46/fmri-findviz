@@ -1,14 +1,13 @@
 """
 Viewer routes
 """
-from findviz.logger_config import get_logger
+import decimal
 
 from typing import TypedDict, Literal
 
-import nibabel as nib
-
 from flask import Blueprint, request, make_response
 
+from findviz.logger_config import setup_logger
 from findviz.routes.shared import data_manager
 from findviz.routes.viewer.nifti import (
     get_nifti_timepoint_data, get_timecourse_nifti
@@ -18,12 +17,13 @@ from findviz.routes.viewer.gifti import (
 )
 from findviz.viz.exception import DataRequestError, Routes
 
-logger = get_logger(__name__)
+# Set up a logger for the app
+logger = setup_logger(__name__)
 
 viewer_bp = Blueprint('viewer', __name__)
 
-# Input types for viewer routes
-class NiftiDataInputs(TypedDict):
+# Input types for get_data_update route
+class NiftiDataUpdateInputs(TypedDict):
     view_state: Literal['axial', 'coronal', 'sagittal']
     montage_slice_dir: Literal['x', 'y', 'z']
     x_slice: int
@@ -33,10 +33,11 @@ class NiftiDataInputs(TypedDict):
     use_preprocess: bool
     update_voxel_coord: bool
 
-class GiftiDataInputs(TypedDict):
+class GiftiDataUpdateInputs(TypedDict):
     time_point: int
     use_preprocess: bool
 
+# Input types for get_functional_timecourse route
 class NiftiTimecourseInputs(TypedDict):
     x: int
     y: int
@@ -56,9 +57,9 @@ def get_data_update():
     fmri_file_type = data_manager.get_file_type()
     inputs = request.form
     if fmri_file_type == 'nifti':
-        inputs = NiftiDataInputs(**request.form)
+        inputs = NiftiDataUpdateInputs(**request.form)
     else:
-        inputs = GiftiDataInputs(**request.form)
+        inputs = GiftiDataUpdateInputs(**request.form)
     try:
         # get viewer data from data manager
         viewer_data = data_manager.get_viewer_data(
@@ -174,3 +175,17 @@ def get_functional_timecourse():
     data_manager.update_timecourse(timecourse_data, voxel_label)
 
     return make_response(timecourse_data, 200)
+
+
+# Route to calculate precision of floating point number for UserViz sliders
+@viewer_bp.route('/get_precision', methods=['GET'])
+def get_precision():
+    try:
+        data_range = request.args.get('data_range')
+        data_range_dec = decimal.Decimal(data_range)
+        precision = abs(data_range_dec.as_tuple().exponent)
+        return make_response(precision, 200)
+    except Exception as e:
+        logger.critical("Error in get_precision request: %s", str(e), exc_info=True)
+        error_message = f"Error in get_precision request: {e}"
+        return make_response(error_message, 500)

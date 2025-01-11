@@ -1,11 +1,8 @@
 """
 Routes for file upload and validation
 """
-import logging
-from findviz.logger_config import get_logger
-
+from findviz.logger_config import setup_logger
 from flask import Blueprint, request, make_response, jsonify
-
 from findviz.routes.shared import data_manager
 from findviz.routes.utils import convert_value
 from findviz.viz import exception
@@ -14,7 +11,7 @@ from findviz.viz.io.timecourse import get_ts_header
 from findviz.viz.io.upload import FileUpload
 
 # Get logger instance for this module
-logger = get_logger(__name__)
+logger = setup_logger(__name__)
 
 # create blueprint
 file_bp = Blueprint('file', __name__)
@@ -163,7 +160,7 @@ def upload():
 
     # get viewer metadata
     viewer_metadata = data_manager.get_viewer_metadata()
-    logger.info("Viewer data retrieved successfully")
+    logger.info("Viewer metadata retrieved successfully")
 
     return make_response(
         viewer_metadata,

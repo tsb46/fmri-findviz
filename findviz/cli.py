@@ -7,11 +7,15 @@ import webbrowser
 from threading import Timer
 
 from findviz import create_app
+from findviz.logger_config import setup_logger
+from findviz.routes.shared import data_manager
 from findviz.viz.io import gifti
 from findviz.viz.io import nifti
 from findviz.viz import exception
 from findviz.viz.io.cache import Cache
 from findviz.viz.io.upload import FileUpload
+
+logger = setup_logger(__name__)
 
 def parse_args():
     """Parse command line arguments."""
@@ -73,11 +77,13 @@ def parse_args():
     return args
 
 
-def process_cli_inputs(args):
+def process_cli_inputs(args) -> None:
     """Process and validate CLI inputs using existing validation logic."""
+    logger.info("Processing CLI inputs")
     # Determine file type and create FileUpload instance
     if args.nifti_func:
         fmri_type = 'nifti'
+        logger.info("Nifti file type detected")
         fmri_files = {
             nifti.NiftiFiles.FUNC.value: args.nifti_func,
             nifti.NiftiFiles.ANAT.value: args.nifti_anat,
@@ -85,6 +91,7 @@ def process_cli_inputs(args):
         }
     else:
         fmri_type = 'gifti'
+        logger.info("Gifti file type detected")
         fmri_files = {
             gifti.GiftiFiles.LEFT_FUNC.value: args.gifti_left_func,
             gifti.GiftiFiles.RIGHT_FUNC.value: args.gifti_right_func,
@@ -94,6 +101,7 @@ def process_cli_inputs(args):
     
     # Validate that all files exist
     validate_files(fmri_files)
+    logger.info("FMRI files validated successfully")
 
     # Create additional files dict for validation
     additional_files = {}
@@ -105,6 +113,7 @@ def process_cli_inputs(args):
     
     # Validate additional files
     validate_files(additional_files)
+    logger.info("Additional files validated successfully")
 
     # Create FileUpload instance
     file_upload = FileUpload(
@@ -113,6 +122,7 @@ def process_cli_inputs(args):
         task_status=bool(args.task_design),
         method='cli'
     )
+    logger.info("FileUpload instance initialized")
 
     # Process files using existing validation logic
     uploads = file_upload.upload(
@@ -125,11 +135,40 @@ def process_cli_inputs(args):
         slicetime_ref=args.slicetime_ref
     )
 
+    # pass fmri data to data manager and get viewer data
+    if fmri_type == 'nifti':
+        data_manager.create_nifti_state(
+            func_img = uploads['nifti'][file_upload.Nifti.FUNC.value],
+            anat_img = uploads['nifti'][file_upload.Nifti.ANAT.value],
+            mask_img = uploads['nifti'][file_upload.Nifti.MASK.value]
+        )
+        logger.info("Nifti data manager state created successfully")
+    else:
+        data_manager.create_gifti_state(
+            left_func=uploads['gifti'][file_upload.Gifti.LEFT_FUNC.value],
+            right_func=uploads['gifti'][file_upload.Gifti.RIGHT_FUNC.value],
+            left_mesh=uploads['gifti'][file_upload.Gifti.LEFT_MESH.value],
+            right_mesh=uploads['gifti'][file_upload.Gifti.RIGHT_MESH.value]
+        )
+        logger.info("Gifti data manager state created successfully")
+    # if timecourse data, add to viewer data
+    if file_upload.ts_status:
+        data_manager.add_timeseries(uploads['ts'])
+        logger.info("Time series data added to viewer data")
+
+    # if task data, add to viewer data
+    if file_upload.task_status:
+        data_manager.add_task_design(uploads['task'])
+        logger.info("Task design data added to viewer data")
+
+    # get viewer metadata
+    viewer_metadata = data_manager.get_viewer_metadata()
+    logger.info("Viewer metadata retrieved successfully")
+
     # Create and save cache
     cache = Cache()
-    cache.save(uploads)
-    
-    return uploads
+    cache.save(viewer_metadata)
+
 
 def main():
     args = parse_args()
