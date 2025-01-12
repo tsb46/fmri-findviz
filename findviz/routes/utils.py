@@ -1,11 +1,16 @@
 """Utility Modules for route input handling"""
-
+from enum import Enum
 from typing import Union
 
 import numpy as np
 
 from nilearn import signal
 
+class Routes(Enum):
+    GET_DATA_UPDATE='/get_data_update'
+    GET_FUNCTIONAL_TIMECOURSE='/get_functional_timecourse'
+    GET_PREPROCESSED_FMRI='/get_preprocessed_fmri'
+    GET_PREPROCESSED_TIMECOURSE='/get_preprocessed_timecourse'
 
 # Convert values from json
 def convert_value(value: str) -> Union[str, int, float, None]:

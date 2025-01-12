@@ -10,6 +10,7 @@ from findviz.viz.io.timecourse import TaskDesignDict
 # define outpus from get_metadata() method
 class ViewerMetadataNiftiDict(TypedDict):
     file_type: Literal['nifti']
+    timepoint: int
     anat_input: bool
     mask_input: bool
     x_slice_idx: int
@@ -18,7 +19,8 @@ class ViewerMetadataNiftiDict(TypedDict):
     view_state: Literal['ortho', 'montage']
     montage_slice_dir: Literal['x', 'y', 'z']
     timepoints: List[int]
-    preprocessed: bool
+    fmri_preprocessed: bool
+    ts_preprocessed: bool
     global_min: float
     global_max: float
     slice_len: Dict[str, int]
@@ -28,6 +30,7 @@ class ViewerMetadataNiftiDict(TypedDict):
 
 class ViewerMetadataGiftiDict(TypedDict):
     file_type: Literal['gifti']
+    timepoint: int
     left_input: bool
     right_input: bool
     vertices_left: List[float]
@@ -35,7 +38,8 @@ class ViewerMetadataGiftiDict(TypedDict):
     vertices_right: List[float]
     faces_right: List[float]
     timepoints: List[int]
-    preprocessed: bool
+    fmri_preprocessed: bool
+    ts_preprocessed: bool
     global_min: float
     global_max: float
     ts_enabled: bool
@@ -52,6 +56,8 @@ class ViewerDataNiftiDict(TypedDict):
     ts: Optional[Dict[str, List[float]]]
     ts_labels: Optional[List[str]]
     task: Optional[TaskDesignDict]
+    is_fmri_preprocessed: Optional[bool]
+    is_ts_preprocessed: Optional[bool]
 
 
 class ViewerDataGiftiDict(TypedDict):
@@ -59,10 +65,8 @@ class ViewerDataGiftiDict(TypedDict):
     right_input: Optional[bool]
     left_func_img: Optional[nib.gifti.GiftiImage]
     right_func_img: Optional[nib.gifti.GiftiImage]
-    vertices_left: Optional[List[float]]
-    faces_left: Optional[List[float]]
-    vertices_right: Optional[List[float]]
-    faces_right: Optional[List[float]]
     ts: Optional[Dict[str, List[float]]]
     ts_labels: Optional[List[str]]
     task: Optional[TaskDesignDict]
+    is_fmri_preprocessed: Optional[bool]
+    is_ts_preprocessed: Optional[bool]

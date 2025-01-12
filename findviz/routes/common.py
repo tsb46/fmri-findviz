@@ -262,30 +262,7 @@ def upload_task():
     )
 
 
-# Route to provide colormap data
-@common_bp.route('/get_colormaps', methods=['GET'])
-def get_colormaps():
-    colormaps = [
-        'Greys',
-        'YlGnBu',
-        'Greens',
-        'YlOrRd',
-        'Bluered',
-        'RdBu',
-        'Reds',
-        'Blues',
-        'Picnic',
-        'Rainbow',
-        'Portland',
-        'Jet',
-        'Hot',
-        'Blackbody',
-        'Electric',
-        'Viridis',
-        'Cividis'
-    ]
-    colormap_data = generate_colormap_data(colormaps)
-    return jsonify(colormap_data)
+
 
 
 # Route to calculate precision of floating point number for UserViz sliders

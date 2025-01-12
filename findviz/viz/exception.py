@@ -12,10 +12,6 @@ class ExceptionFileTypes(Enum):
     TASK='task'
     NIFTI_GIFTI='nifti/gifti'
 
-class Routes(Enum):
-    GET_DATA_UPDATE='get_data_update'
-    GET_FUNCTIONAL_TIMECOURSE='get_functional_timecourse'
-    PREPROCESS_FMRI='preprocess_fmri'
 
 class FileInputError(Exception):
     """
@@ -218,7 +214,7 @@ class DataRequestError(Exception):
         self, 
         message: str, 
         fmri_file_type: Literal['nifti', 'gifti'], 
-        route: Routes,
+        route: str,
         input_field: str
     ):
         super().__init__(message)

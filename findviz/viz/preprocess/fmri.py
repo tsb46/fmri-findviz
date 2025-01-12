@@ -34,9 +34,9 @@ def preprocess_fmri(
     inputs: PreprocessFMRIInputs,
     func_img: Optional[nib.Nifti1Image] = None,
     mask_img: Optional[nib.Nifti1Image] = None,
-    left_img: Optional[nib.GiftiImage] = None,
-    right_img: Optional[nib.GiftiImage] = None,
-) -> nib.Nifti1Image | nib.GiftiImage | Tuple[nib.GiftiImage, nib.GiftiImage]:
+    left_func_img: Optional[nib.GiftiImage] = None,
+    right_func_img: Optional[nib.GiftiImage] = None,
+) -> nib.Nifti1Image | Tuple[nib.GiftiImage, nib.GiftiImage]:
     """
     Preprocess functional MRI data
 
@@ -60,14 +60,16 @@ def preprocess_fmri(
         
     Returns:
     --------
-        nib.Nifti1Image | nib.GiftiImage | Tuple[nib.GiftiImage, nib.GiftiImage]
+        nib.Nifti1Image | Tuple[nib.GiftiImage, nib.GiftiImage]
             Preprocessed functional MRI data. Either a single nib.Nifti1Image, 
-            a single nib.GiftiImage, or a tuple of nib.GiftiImage objects.
+            or a tuple of nib.GiftiImage objects (left and right hemispheres).
     """
     if file_type == 'nifti' and func_img is None:
         raise ValueError("func_img is required if file_type is 'nifti'")
-    elif file_type == 'gifti' and (left_img is None or right_img is None):
-        raise ValueError("left_img and right_img are required if file_type is 'gifti'")
+    elif file_type == 'gifti' and (left_func_img is None or right_func_img is None):
+        raise ValueError(
+            "left_func_img or right_func_img are required if file_type is 'gifti'"
+        )
 
     # check if mask is provided for nifti processing
     if file_type == 'nifti' and mask_img is None:
@@ -79,11 +81,13 @@ def preprocess_fmri(
     if file_type == 'nifti':
         func_array = nifti_to_array_masked(func_img, mask_img)
     elif file_type == 'gifti':
-        if left_img is not None and right_img is not None:
+        if left_func_img is not None and right_func_img is not None:
             both_hemispheres = True
         else:
             both_hemispheres = False
-        func_array, split_index = gifti_to_array(left_img, right_img)
+        func_array, split_index = gifti_to_array(
+            left_func_img, right_func_img
+        )
 
     # linear detrend
     if inputs['detrend']:
@@ -117,13 +121,19 @@ def preprocess_fmri(
 
     # convert array back to nifti or gifti
     if file_type == 'nifti':
-        func_img = array_to_nifti_masked(func_array, mask_img)
-        return func_img
+        func_img_prep = array_to_nifti_masked(func_array, mask_img)
+        return func_img_prep
     elif file_type == 'gifti':
-        if both_hemispheres:
-            left_gii, right_gii = array_to_gifti(func_array, both_hemispheres, split_index)
-            return left_gii, right_gii
-        else:
-            func_gii = array_to_gifti(func_array)
-            return func_gii
+        left_func_img_prep = None
+        right_func_img_prep = None
+        # if both hemispheres are provided, split the array
+        left_gii, right_gii = array_to_gifti(func_array, both_hemispheres, split_index)        
+        # if only one hemisphere is provided, assign the array to left or right
+        if left_func_img is not None:
+            left_func_img_prep = left_gii
+        elif right_func_img is not None:
+            right_func_img_prep = right_gii
+
+        return left_func_img_prep, right_func_img_prep
+
 

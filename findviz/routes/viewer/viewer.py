@@ -8,6 +8,7 @@ from typing import TypedDict, Literal
 from flask import Blueprint, request, make_response
 
 from findviz.logger_config import setup_logger
+from findviz.routes.utils import Routes
 from findviz.routes.shared import data_manager
 from findviz.routes.viewer.nifti import (
     get_nifti_timepoint_data, get_timecourse_nifti
@@ -15,7 +16,7 @@ from findviz.routes.viewer.nifti import (
 from findviz.routes.viewer.gifti import (
     get_gifti_timepoint_data, get_timecourse_gifti
 )
-from findviz.viz.exception import DataRequestError, Routes
+from findviz.viz.exception import DataRequestError
 
 # Set up a logger for the app
 logger = setup_logger(__name__)
@@ -30,12 +31,10 @@ class NiftiDataUpdateInputs(TypedDict):
     y_slice: int
     z_slice: int 
     time_point: int
-    use_preprocess: bool
     update_voxel_coord: bool
 
 class GiftiDataUpdateInputs(TypedDict):
     time_point: int
-    use_preprocess: bool
 
 # Input types for get_functional_timecourse route
 class NiftiTimecourseInputs(TypedDict):
@@ -51,7 +50,7 @@ class GiftiTimecourseInputs(TypedDict):
     use_preprocess: bool
 
 
-@viewer_bp.route('/get_data_update', methods=['POST'])
+@viewer_bp.route(Routes.GET_DATA_UPDATE.value, methods=['POST'])
 def get_data_update():
     logger.info("Handling data update request")
     fmri_file_type = data_manager.get_file_type()
@@ -61,17 +60,18 @@ def get_data_update():
     else:
         inputs = GiftiDataUpdateInputs(**request.form)
     try:
+        # update timepoint index
+        data_manager.update_timepoint(inputs['time_point'])
         # get viewer data from data manager
         viewer_data = data_manager.get_viewer_data(
             fmri_data=True,
-            use_preprocess=inputs['use_preprocess'],
             time_course_data=False,
             task_data=False,
         )
         # pass viewer data to get_timepoint_data
         if fmri_file_type == 'nifti':
             timepoint_data = get_nifti_timepoint_data(
-                time_point=inputs['time_point'],
+                time_point=data_manager.timepoint,
                 func_img=viewer_data['func_img'],
                 x_slice=inputs['x_slice'],
                 y_slice=inputs['y_slice'],
@@ -138,7 +138,6 @@ def get_functional_timecourse():
     try:
         viewer_data = data_manager.get_viewer_data(
             fmri_data=True,
-            use_preprocess=inputs['use_preprocess'],
             time_course_data=False,
             task_data=False,
         )

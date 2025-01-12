@@ -52,8 +52,8 @@ def test_create_gifti_state(mock_gifti_func, mock_gifti_mesh):
     """Test creation of GIFTI visualization state."""
     dm = DataManager()
     dm.create_gifti_state(
-        left_func=mock_gifti_func,
-        right_func=mock_gifti_func,
+        left_func_img=mock_gifti_func,
+        right_func_img=mock_gifti_func,
         left_mesh=mock_gifti_mesh,
         right_mesh=mock_gifti_mesh
     )
@@ -137,6 +137,27 @@ def test_get_viewer_metadata_gifti(mock_gifti_func, mock_gifti_mesh):
     assert metadata['vertices_left'] is not None
     assert metadata['faces_left'] is not None
 
+def test_get_viewer_nifti_data_preprocessed(mock_nifti_4d):
+    """Test getting viewer data with preprocessed data."""
+    dm = DataManager()
+    dm.create_nifti_state(func_img=mock_nifti_4d)
+    dm.store_fmri_preprocessed({'func': mock_nifti_4d})
+    viewer_data = dm.get_viewer_data()
+    assert viewer_data['is_fmri_preprocessed'] is True
+    assert viewer_data['func_img'] == mock_nifti_4d
+
+def test_get_viewer_gifti_data_preprocessed(mock_gifti_func, mock_gifti_mesh):
+    """Test getting viewer data with preprocessed data."""
+    dm = DataManager()
+    dm.create_gifti_state(mock_gifti_func, None, mock_gifti_mesh)
+    dm.store_fmri_preprocessed(
+        {'left_func_img': mock_gifti_func, 'right_func_img': None}
+        )
+    viewer_data = dm.get_viewer_data()
+    assert viewer_data['is_fmri_preprocessed'] is True
+    assert viewer_data['left_func_img'] == mock_gifti_func
+    assert viewer_data['right_func_img'] is None
+    
 def test_get_viewer_data_empty():
     """Test getting viewer data with no state."""
     dm = DataManager()
@@ -150,12 +171,29 @@ def test_store_and_clear_preprocessed(mock_nifti_4d):
     
     # Store preprocessed data
     preprocessed_data = {'func': mock_nifti_4d}
-    dm.store_preprocessed(preprocessed_data)
-    assert dm.preprocessed is True
+    dm.store_fmri_preprocessed(preprocessed_data)
+    assert dm.state.fmri_preprocessed is True
     
     # Clear preprocessed data
-    dm.clear_preprocessed()
-    assert dm.preprocessed is False
+    dm.clear_fmri_preprocessed()
+    assert dm.state.fmri_preprocessed is False
+
+def test_store_and_clear_ts_preprocessed(mock_nifti_4d):
+    """Test storing and clearing preprocessed timecourse data."""
+    dm = DataManager()
+    dm.create_nifti_state(func_img=mock_nifti_4d)
+    dm.add_timeseries({'ROI1': [1.0, 2.0, 3.0]})
+    
+    # Store preprocessed data
+    preprocessed_data = {'ROI1': [1.0, 2.0, 3.0]}
+    dm.store_timecourse_preprocessed(preprocessed_data)
+    assert dm.state.ts_preprocessed is True
+    assert dm.state.ts_data_preprocessed == preprocessed_data
+
+    # Clear preprocessed data
+    dm.clear_timecourse_preprocessed()
+    assert dm.state.ts_preprocessed is False
+    assert dm.state.ts_data_preprocessed is None
 
 def test_update_timecourse(mock_nifti_4d):
     """Test updating timecourse data."""

@@ -9,6 +9,7 @@ Classes:
 """
 
 import logging
+
 from dataclasses import dataclass, field
 from typing import Dict, Optional, List, Literal, ClassVar, Any, TypedDict
 
@@ -33,6 +34,7 @@ class NiftiVisualizationState:
         timepoints: Timepoint indices
         global_min: Global minimum value across all timepoints
         global_max: Global maximum value across all timepoints
+        timepoint: Timepoint index
         slice_len: Length of each dimension for NIFTI images
         anat_input: Whether anatomical data was provided
         mask_input: Whether mask data was provided
@@ -52,12 +54,14 @@ class NiftiVisualizationState:
     global_min: float
     global_max: float
     file_type: str = 'nifti'
+    timepoint: int = 0
     slice_len: Optional[Dict[str, int]] = None # {'x': int, 'y': int, 'z': int}
     anat_input: bool = False
     mask_input: bool = False
     ts_enabled: bool = False
     task_enabled: bool = False
-    preprocessed: bool = False
+    fmri_preprocessed: bool = False
+    ts_preprocessed: bool = False
     view_state: Literal['ortho', 'montage'] = 'ortho'
 
     # nifti data
@@ -76,6 +80,7 @@ class NiftiVisualizationState:
     task_data: Optional[TaskDesignDict] = None
     conditions: Optional[List[str]] = None
     ts_data: Optional[Dict[str, List[float]]] = None
+    ts_data_preprocessed: Optional[Dict[str, List[float]]] = None
     ts_labels: Optional[List[str]] = None
     
 
@@ -88,6 +93,7 @@ class GiftiVisualizationState:
         timepoints: Timepoint indices
         global_min: Global minimum value across all timepoints
         global_max: Global maximum value across all timepoints
+        timepoint: Timepoint index
         left_input: Whether left hemisphere data was provided
         right_input: Whether right hemisphere data was provided
         ts_enabled: Whether time course data is enabled
@@ -108,12 +114,14 @@ class GiftiVisualizationState:
     timepoints: List[int]
     global_min: float
     global_max: float
+    timepoint: int = 0
     file_type: str = 'gifti'
     left_input: bool = False
     right_input: bool = False
     ts_enabled: bool = False
     task_enabled: bool = False
-    preprocessed: bool = False
+    fmri_preprocessed: bool = False
+    ts_preprocessed: bool = False
     vertices_left: Optional[List[float]] = None
     faces_left: Optional[List[float]] = None
     vertices_right: Optional[List[float]] = None
@@ -131,6 +139,7 @@ class GiftiVisualizationState:
     task_data: Optional[TaskDesignDict] = None
     conditions: Optional[List[str]] = None
     ts_data: Optional[Dict[str, List[float]]] = None
+    ts_data_preprocessed: Optional[Dict[str, List[float]]] = None
     ts_labels: Optional[List[str]] = None
 
 
@@ -179,8 +188,16 @@ class DataManager:
         return self._state.file_type if self._state else None
     
     @property
-    def preprocessed(self) -> bool:
-        return self._state.preprocessed
+    def timepoint(self) -> Optional[int]:
+        return self._state.timepoint if self._state else None
+    
+    @property
+    def fmri_preprocessed(self) -> bool:
+        return self._state.fmri_preprocessed
+    
+    @property
+    def ts_preprocessed(self) -> bool:
+        return self._state.ts_preprocessed
         
     def create_nifti_state(
         self, 
@@ -201,26 +218,27 @@ class DataManager:
         )  # file_type defaults to 'nifti' in the dataclass
         
         # Store images
-        if func_img:
-            self._state.nifti_data['func'] = func_img
+        self._state.nifti_data['func'] = func_img
+        self._state.nifti_data['anat'] = anat_img
+        self._state.nifti_data['mask'] = mask_img
+        
+        # Store inputs
         if anat_img:
-            self._state.nifti_data['anat'] = anat_img
             self._state.anat_input = True
         if mask_img:
-            self._state.nifti_data['mask'] = mask_img
             self._state.mask_input = True
                 
     def create_gifti_state(
         self,
-        left_func: Optional[nib.gifti.GiftiImage] = None,
-        right_func: Optional[nib.gifti.GiftiImage] = None,
+        left_func_img: Optional[nib.gifti.GiftiImage] = None,
+        right_func_img: Optional[nib.gifti.GiftiImage] = None,
         left_mesh: Optional[nib.gifti.GiftiImage] = None,
         right_mesh: Optional[nib.gifti.GiftiImage] = None
     ) -> None:
         """Create visualization state for GIFTI data"""
         from findviz.viz.viewer.utils import package_gii_metadata
         
-        metadata = package_gii_metadata(left_func, right_func)
+        metadata = package_gii_metadata(left_func_img, right_func_img)
         
         self._state = GiftiVisualizationState(
             timepoints=metadata['timepoints'],
@@ -229,11 +247,13 @@ class DataManager:
         )  # file_type defaults to 'gifti' in the dataclass
         
         # Store functional data
-        if left_func:
-            self._state.gifti_data['left_func'] = left_func
+        self._state.gifti_data['left_func_img'] = left_func_img
+        self._state.gifti_data['right_func_img'] = right_func_img
+        
+        # Store inputs
+        if left_func_img:
             self._state.left_input = True
-        if right_func:
-            self._state.gifti_data['right_func'] = right_func
+        if right_func_img:
             self._state.right_input = True
             
         # Store mesh data
@@ -293,19 +313,22 @@ class DataManager:
         if self._state.file_type == 'nifti':
             data = ViewerMetadataNiftiDict(
                 file_type=self._state.file_type,
+                timepoint=self._state.timepoint,
                 anat_input=self._state.anat_input,
                 mask_input=self._state.mask_input,
                 timepoints=self._state.timepoints,
                 global_min=self._state.global_min,
                 global_max=self._state.global_max,
                 slice_len=self._state.slice_len,
-                preprocessed=self._state.preprocessed,
+                fmri_preprocessed=self._state.fmri_preprocessed,
+                ts_preprocessed=self._state.ts_preprocessed,
                 ts_enabled=self._state.ts_enabled,
                 task_enabled=self._state.task_enabled
             )
         else:
             data = ViewerMetadataGiftiDict(
                 file_type=self._state.file_type,
+                timepoint=self._state.timepoint,
                 left_input=self._state.left_input,
                 right_input=self._state.right_input,
                 vertices_left=self._state.vertices_left,
@@ -315,7 +338,8 @@ class DataManager:
                 timepoints=self._state.timepoints,
                 global_min=self._state.global_min,
                 global_max=self._state.global_max,
-                preprocessed=self._state.preprocessed,
+                fmri_preprocessed=self._state.fmri_preprocessed,
+                ts_preprocessed=self._state.ts_preprocessed,
                 ts_enabled=self._state.ts_enabled,
                 task_enabled=self._state.task_enabled
             )
@@ -325,7 +349,6 @@ class DataManager:
     def get_viewer_data(
         self,
         fmri_data: bool = True,
-        use_preprocess: bool = False,
         time_course_data: bool = True,
         task_data: bool = True
     ) -> ViewerDataNiftiDict | ViewerDataGiftiDict:
@@ -350,16 +373,15 @@ class DataManager:
         # Add file type specific data
         if fmri_data:
             if self._state.file_type == 'nifti':
-                if use_preprocess:
-                    if self._state.preprocessed:
-                        data.update({
-                            'func_img': self._state.nifti_data_preprocessed['func']
-                        })
-                    else:
-                        logger.error("Preprocessed data not found")
+                if self._state.fmri_preprocessed:
+                    data.update({
+                        'func_img': self._state.nifti_data_preprocessed['func'],
+                        'is_fmri_preprocessed': True
+                    })
                 else:
                     data.update({
-                        'func_img': self._state.nifti_data['func']
+                        'func_img': self._state.nifti_data['func'],
+                        'is_fmri_preprocessed': False
                     })
 
                 data.update({
@@ -370,18 +392,17 @@ class DataManager:
                     'func_img': self._state.nifti_data['func'],
                 })
             else:  # gifti
-                if use_preprocess:
-                    if self._state.preprocessed:
-                        data.update({
-                            'left_func_img': self._state.gifti_data_preprocessed['left_func'],
-                            'right_func_img': self._state.gifti_data_preprocessed['right_func']
-                        })
-                    else:
-                        logger.error("Preprocessed data not found")
+                if self._state.fmri_preprocessed:
+                    data.update({
+                        'left_func_img': self._state.gifti_data_preprocessed['left_func_img'],
+                        'right_func_img': self._state.gifti_data_preprocessed['right_func_img'],
+                        'is_fmri_preprocessed': True
+                    })
                 else:
                     data.update({
-                        'left_func_img': self._state.gifti_data['left_func'],
-                        'right_func_img': self._state.gifti_data['right_func']
+                        'left_func_img': self._state.gifti_data['left_func_img'],
+                        'right_func_img': self._state.gifti_data['right_func_img'],
+                        'is_fmri_preprocessed': False
                     })
                 
                 data.update({
@@ -392,10 +413,22 @@ class DataManager:
         # add time series, if passed
         if time_course_data:
             if self._state.ts_enabled:
-                data.update({
-                    'ts': self._state.ts_data,
-                    'ts_labels': self._state.ts_labels 
-                })
+                if self._state.ts_preprocessed:
+                    data.update({
+                        'ts': self._state.ts_data_preprocessed,
+                        'is_ts_preprocessed': True
+                    })
+                else:
+                    data.update({
+                        'ts': self._state.ts_data,
+                        'ts_labels': self._state.ts_labels,
+                        'is_ts_preprocessed': False
+                    })
+            else:
+                logger.warning(
+                    "Time course request received, but no "
+                    "time course data exists"
+                )
         
         # add task data, if passed
         if task_data:
@@ -403,6 +436,11 @@ class DataManager:
                 data.update({
                     'task': self._state.task_data
                 })
+            else:
+                logger.warning(
+                    "Task data request received, but no "
+                    "task data exists"
+                )
         return data
     
     def update_location(self, loc_data: Dict[str, Any]) -> None:
@@ -421,6 +459,14 @@ class DataManager:
         
         logger.info("Updated brain location data")
     
+    def update_timepoint(self, timepoint: int) -> None:
+        """Update timepoint data"""
+        if not self._state:
+            logger.error("No state exists")
+            return
+        self._state.timepoint = timepoint
+        logger.info("Updated timepoint data")
+
     def pop_timecourse(self) -> None:
         """Pop most recent timecourse from state"""
         if not self._state:
@@ -447,24 +493,36 @@ class DataManager:
         self._state.ts_data[label] = timecourse
         self._state.ts_labels = list(self._state.ts_data.keys())
 
-    def store_preprocessed(self, data: Dict) -> None:
-        """Store preprocessed data."""
-        logger.info("Storing preprocessed data")
-        self._state.preprocessed = True
+    def store_fmri_preprocessed(self, data: Dict) -> None:
+        """Store preprocessed fMRI data."""
+        logger.info("Storing preprocessed fMRI data")
+        self._state.fmri_preprocessed = True
         if self._state.file_type == 'nifti':
             self._state.nifti_data_preprocessed.update(data)
         else:
             self._state.gifti_data_preprocessed.update(data)
         
-    def clear_preprocessed(self) -> None:
-        """Clear preprocessed data."""
-        logger.info("Clearing preprocessed data")
-        self._state.preprocessed = False
+    def clear_fmri_preprocessed(self) -> None:
+        """Clear preprocessed fMRI data."""
+        logger.info("Clearing preprocessed fMRI data")
+        self._state.fmri_preprocessed = False
         if self._state.file_type == 'nifti':
             self._state.nifti_data_preprocessed.clear()
         else:
             self._state.gifti_data_preprocessed.clear()
-
+            
+    def store_timecourse_preprocessed(self, data: Dict) -> None:
+        """Store preprocessed timecourse data."""
+        logger.info("Storing preprocessed timecourse data")
+        self._state.ts_preprocessed = True
+        self._state.ts_data_preprocessed = data
+        
+    def clear_timecourse_preprocessed(self) -> None:
+        """Clear preprocessed timecourse data."""
+        logger.info("Clearing preprocessed timecourse data")
+        self._state.ts_preprocessed = False
+        self._state.ts_data_preprocessed = None
+        
     def clear_state(self) -> None:
         """Clear state."""
         logger.info("Clearing data managerstate")
