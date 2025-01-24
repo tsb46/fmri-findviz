@@ -29,6 +29,13 @@ def mock_gifti_func():
     return GiftiImage(darrays=darrays)
 
 @pytest.fixture
+def mock_nifti_mask():
+    """Create binary mock 3D NIFTI mask image"""
+    data = np.zeros((10, 10, 10))  # x, y, z
+    data[2:8, 2:8, 2:8] = 1  # 6x6x6 cube of 1s
+    return nib.Nifti1Image(data, affine=np.eye(4))
+
+@pytest.fixture
 def mock_gifti_mesh():
     """Create a mock mesh GIFTI image"""
     # Create vertices array

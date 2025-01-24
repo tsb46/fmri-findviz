@@ -248,3 +248,36 @@ class NiftiMaskError(Exception):
 
     def __str__(self):
         return f"Nifti mask error: {self.message}"
+
+
+class PreprocessInputError(Exception):
+    """
+    Error in preprocessing input
+
+    Attributes
+    ----------
+    message : str
+        custom error message to display to user
+    preprocess_method: str
+        the preprocessing method that the error occured with
+    """
+    def __init__(
+        self, 
+        message: str, 
+        preprocess_method: Optional[Literal[
+            'normalization', 
+            'filtering', 
+            'detrending', 
+            'smoothing'
+        ]] = None
+    ):
+        super().__init__(message)
+        self.message = message
+        self.preprocess_method = preprocess_method
+
+    def __str__(self):
+        if self.preprocess_method:
+            return (f"Preprocess input error: {self.message} for "
+                   f"{self.preprocess_method}")
+        else:
+            return f"Preprocess input error: {self.message}"

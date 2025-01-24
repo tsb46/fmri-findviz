@@ -383,7 +383,7 @@ export class VisualizationOptions {
     // Trigger custom crosshair click event
     handleCrosshairToggle() {
         // Trigger a custom event using jQuery
-        const customEventCrosshair = $.Event('toggleCrosshairChange');
+        const customEventCrosshair = $.Event(EVENT_TYPES.VISUALIZATION.TOGGLE_CROSSHAIR);
         // Dispatch the custom event
         $(document).trigger(customEventCrosshair);
     }
@@ -479,7 +479,7 @@ export class VisualizationOptions {
             console.error('Error capturing Plotly graphs as images:', error);
         });
     }
-
+    
     // Play movie by cycling through fMRI time points
     handlePlayMovie() {
         this.sliderElement = $('#time_slider');  // Get the time slider element

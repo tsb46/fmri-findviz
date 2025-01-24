@@ -7,7 +7,9 @@ from nibabel.gifti import GiftiImage, GiftiDataArray
 from findviz.viz.viewer.utils import (
     get_minmax,
     package_gii_metadata,
-    package_nii_metadata
+    package_nii_metadata,
+    apply_mask_nifti,
+    get_coord_labels
 )
 
 def test_get_minmax_nifti():
@@ -109,3 +111,52 @@ def test_package_nii_metadata_3d(mock_nifti_3d):
     assert len(metadata['timepoints']) == 1
     assert metadata['timepoints'] == [0]
     assert all(metadata['slice_len'][k] == 10 for k in ['x', 'y', 'z'])
+
+def test_apply_mask_nifti(mock_nifti_3d):
+    """Test applying mask to NIFTI image"""
+    # Create mask (zeros with a block of ones)
+    mask = np.zeros((10, 10, 10))
+    mask[2:8, 2:8, 2:8] = 1
+    mask_img = nib.Nifti1Image(mask, np.eye(4))
+    
+    # Apply mask
+    masked_img = apply_mask_nifti(mock_nifti_3d, mask_img)
+    
+    # Verify output
+    assert isinstance(masked_img, nib.Nifti1Image)
+    assert masked_img.shape == mock_nifti_3d.shape
+    
+    # Check that values outside mask are zero
+    masked_data = masked_img.get_fdata()
+    assert np.all(masked_data[mask == 0] == 0)
+    assert np.any(masked_data[mask == 1] != 0)
+
+def test_apply_mask_nifti_4d(mock_nifti_4d):
+    """Test applying mask to 4D NIFTI image"""
+    # Create mask
+    mask = np.zeros((10, 10, 10))
+    mask[2:8, 2:8, 2:8] = 1
+    mask_img = nib.Nifti1Image(mask, np.eye(4))
+    
+    # Apply mask
+    masked_img = apply_mask_nifti(mock_nifti_4d, mask_img)
+    
+    # Verify output
+    assert isinstance(masked_img, nib.Nifti1Image)
+    assert masked_img.shape == mock_nifti_4d.shape
+    
+    # Check masking for each timepoint
+    masked_data = masked_img.get_fdata()
+    for t in range(mock_nifti_4d.shape[3]):
+        assert np.all(masked_data[..., t][mask == 0] == 0)
+        assert np.any(masked_data[..., t][mask == 1] != 0)
+
+def test_apply_mask_shape_mismatch(mock_nifti_3d):
+    """Test error handling for shape mismatch between image and mask"""
+    # Create mask with different shape
+    mask = np.zeros((8, 8, 8))
+    mask_img = nib.Nifti1Image(mask, np.eye(4))
+    
+    # Should raise ValueError due to shape mismatch
+    with pytest.raises(ValueError):
+        apply_mask_nifti(mock_nifti_3d, mask_img)

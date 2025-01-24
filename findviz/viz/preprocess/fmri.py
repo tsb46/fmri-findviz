@@ -18,14 +18,15 @@ class PreprocessFMRIInputs(TypedDict):
     """
     Inputs for preprocess_fmri
     """
+    normalize: bool
+    filter: bool
+    smooth: bool
     detrend: bool
     mean_center: bool
     zscore: bool
-    filter: bool
-    smooth: bool
     tr: float
-    lowpass: float
-    highpass: float
+    low_cut: float
+    high_cut: float
     fwhm: float
 
 
@@ -100,8 +101,8 @@ def preprocess_fmri(
         func_array = utils.butterworth_filter(
             func_array, 
             tr_hz, 
-            inputs['lowpass'], 
-            inputs['highpass'], 
+            inputs['low_cut'], 
+            inputs['high_cut'], 
         )
 
     # mean center
@@ -127,12 +128,19 @@ def preprocess_fmri(
         left_func_img_prep = None
         right_func_img_prep = None
         # if both hemispheres are provided, split the array
-        left_gii, right_gii = array_to_gifti(func_array, both_hemispheres, split_index)        
-        # if only one hemisphere is provided, assign the array to left or right
-        if left_func_img is not None:
+        if both_hemispheres:
+            left_gii, right_gii = array_to_gifti(
+                func_array, both_hemispheres, split_index
+                )
             left_func_img_prep = left_gii
-        elif right_func_img is not None:
             right_func_img_prep = right_gii
+        # if only one hemisphere is provided, assign the array to left or right
+        else:
+            gii_hemisphere = array_to_gifti(func_array, both_hemispheres=False)
+            if left_func_img is not None:
+                left_func_img_prep = gii_hemisphere
+            elif right_func_img is not None:
+                right_func_img_prep = gii_hemisphere
 
         return left_func_img_prep, right_func_img_prep
 

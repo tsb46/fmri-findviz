@@ -31,22 +31,22 @@ def test_initial_state():
     assert dm.state is None
     assert dm.file_type is None
 
-def test_create_nifti_state(mock_nifti_4d, mock_nifti_3d):
+def test_create_nifti_state(mock_nifti_4d, mock_nifti_3d, mock_nifti_mask):
     """Test creation of NIFTI visualization state."""
     dm = DataManager()
     dm.create_nifti_state(
         func_img=mock_nifti_4d,
         anat_img=mock_nifti_3d,
-        mask_img=mock_nifti_3d
+        mask_img=mock_nifti_mask
     )
     
     assert dm.state is not None
     assert dm.state.file_type == 'nifti'
     assert dm.state.anat_input is True
     assert dm.state.mask_input is True
-    assert 'func' in dm.state.nifti_data
-    assert 'anat' in dm.state.nifti_data
-    assert 'mask' in dm.state.nifti_data
+    assert 'func_img' in dm.state.nifti_data
+    assert 'anat_img' in dm.state.nifti_data
+    assert 'mask_img' in dm.state.nifti_data
 
 def test_create_gifti_state(mock_gifti_func, mock_gifti_mesh):
     """Test creation of GIFTI visualization state."""
@@ -62,9 +62,11 @@ def test_create_gifti_state(mock_gifti_func, mock_gifti_mesh):
     assert dm.state.file_type == 'gifti'
     assert dm.state.left_input is True
     assert dm.state.right_input is True
+    assert dm.state.gifti_data['left_func_img'] is not None
+    assert dm.state.gifti_data['right_func_img'] is not None
     assert dm.state.vertices_left is not None
-    assert dm.state.faces_left is not None
     assert dm.state.vertices_right is not None
+    assert dm.state.faces_left is not None
     assert dm.state.faces_right is not None
 
 def test_add_timeseries(mock_nifti_4d):
@@ -141,7 +143,7 @@ def test_get_viewer_nifti_data_preprocessed(mock_nifti_4d):
     """Test getting viewer data with preprocessed data."""
     dm = DataManager()
     dm.create_nifti_state(func_img=mock_nifti_4d)
-    dm.store_fmri_preprocessed({'func': mock_nifti_4d})
+    dm.store_fmri_preprocessed({'func_img': mock_nifti_4d})
     viewer_data = dm.get_viewer_data()
     assert viewer_data['is_fmri_preprocessed'] is True
     assert viewer_data['func_img'] == mock_nifti_4d
@@ -157,7 +159,7 @@ def test_get_viewer_gifti_data_preprocessed(mock_gifti_func, mock_gifti_mesh):
     assert viewer_data['is_fmri_preprocessed'] is True
     assert viewer_data['left_func_img'] == mock_gifti_func
     assert viewer_data['right_func_img'] is None
-    
+
 def test_get_viewer_data_empty():
     """Test getting viewer data with no state."""
     dm = DataManager()

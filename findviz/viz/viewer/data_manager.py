@@ -11,136 +11,30 @@ Classes:
 import logging
 
 from dataclasses import dataclass, field
-from typing import Dict, Optional, List, Literal, ClassVar, Any, TypedDict
+from typing import Dict, Optional, List, Literal, ClassVar, Any, TypedDict, Tuple
 
 import numpy as np
 import nibabel as nib
 
+from findviz.viz.viewer.state import (
+    NiftiVisualizationState, 
+    GiftiVisualizationState,
+    PlotOptions,
+    TimeCoursePlotOptions
+)
+
 from findviz.viz.io.timecourse import TaskDesignDict
 from findviz.viz.viewer.types import (
     ViewerDataNiftiDict, ViewerDataGiftiDict, 
-    ViewerMetadataNiftiDict, ViewerMetadataGiftiDict
+    ViewerMetadataNiftiDict, ViewerMetadataGiftiDict,
+    PlotOptionsDict, TimeCoursePlotOptionsDict
+)
+from findviz.viz.viewer.utils import (
+    apply_mask_nifti, get_coord_labels,
+    package_nii_metadata, package_gii_metadata
 )
 
 logger = logging.getLogger(__name__)
-
-
-@dataclass
-class NiftiVisualizationState:
-    """Visualization state for NIFTI data.
-    
-    Attributes:
-        file_type: constant 'nifti'
-        timepoints: Timepoint indices
-        global_min: Global minimum value across all timepoints
-        global_max: Global maximum value across all timepoints
-        timepoint: Timepoint index
-        slice_len: Length of each dimension for NIFTI images
-        anat_input: Whether anatomical data was provided
-        mask_input: Whether mask data was provided
-        ts_enabled: Whether time course data is enabled
-        task_enabled: Whether task design data is enabled
-        preprocessed: Whether preprocessed data is available
-        view_state: View state ('ortho' or 'montage')
-        nifti_data: Dictionary of NIFTI images
-        ortho slices: Ortho slice indices for NIFTI data
-        montage slice direction: Direction of montage slice for NIFTI data
-        task_data: Task design information
-        ts_data: Dictionary of timeseries data
-        ts_labels: Labels for timeseries
-    """
-    # metadata
-    timepoints: List[int]
-    global_min: float
-    global_max: float
-    file_type: str = 'nifti'
-    timepoint: int = 0
-    slice_len: Optional[Dict[str, int]] = None # {'x': int, 'y': int, 'z': int}
-    anat_input: bool = False
-    mask_input: bool = False
-    ts_enabled: bool = False
-    task_enabled: bool = False
-    fmri_preprocessed: bool = False
-    ts_preprocessed: bool = False
-    view_state: Literal['ortho', 'montage'] = 'ortho'
-
-    # nifti data
-    nifti_data: Dict[str, nib.Nifti1Image] = field(default_factory=dict)
-    nifti_data_preprocessed: Dict[str, nib.Nifti1Image] = field(default_factory=dict)
-
-    # ortho slice indices
-    x_slice_idx: int = 0
-    y_slice_idx: int = 0
-    z_slice_idx: int = 0
-
-    # montage slice direction
-    montage_slice_dir: Optional[Literal['x', 'y', 'z']] = None
-
-    # task design and timeseries
-    task_data: Optional[TaskDesignDict] = None
-    conditions: Optional[List[str]] = None
-    ts_data: Optional[Dict[str, List[float]]] = None
-    ts_data_preprocessed: Optional[Dict[str, List[float]]] = None
-    ts_labels: Optional[List[str]] = None
-    
-
-@dataclass
-class GiftiVisualizationState:
-    """Visualization state for GIFTI data.
-    
-    Attributes:
-        file_type: constant 'gifti'
-        timepoints: Timepoint indices
-        global_min: Global minimum value across all timepoints
-        global_max: Global maximum value across all timepoints
-        timepoint: Timepoint index
-        left_input: Whether left hemisphere data was provided
-        right_input: Whether right hemisphere data was provided
-        ts_enabled: Whether time course data is enabled
-        task_enabled: Whether task design data is enabled
-        preprocessed: Whether preprocessed data is available
-        gifti_data: Dictionary of GIFTI images
-        vertices_left: Vertex coordinates for left hemisphere
-        faces_left: Face indices for left hemisphere
-        vertices_right: Vertex coordinates for right hemisphere
-        faces_right: Face indices for right hemisphere
-        selected_vertex: Selected vertex index
-        selected_hemi: Selected hemisphere ('left' or 'right')
-        task_data: Task design information
-        ts_data: Dictionary of timeseries data
-        ts_labels: Labels for timeseries
-    """
-    # metadata
-    timepoints: List[int]
-    global_min: float
-    global_max: float
-    timepoint: int = 0
-    file_type: str = 'gifti'
-    left_input: bool = False
-    right_input: bool = False
-    ts_enabled: bool = False
-    task_enabled: bool = False
-    fmri_preprocessed: bool = False
-    ts_preprocessed: bool = False
-    vertices_left: Optional[List[float]] = None
-    faces_left: Optional[List[float]] = None
-    vertices_right: Optional[List[float]] = None
-    faces_right: Optional[List[float]] = None
-    
-    # gifti data
-    gifti_data: Dict[str, nib.gifti.GiftiImage] = field(default_factory=dict)
-    gifti_data_preprocessed: Dict[str, nib.gifti.GiftiImage] = field(default_factory=dict)
-
-    # selected vertex and hemisphere
-    selected_vertex: Optional[int] = None
-    selected_hemi: Optional[Literal['left', 'right']] = None
-    
-    # task design and timeseries
-    task_data: Optional[TaskDesignDict] = None
-    conditions: Optional[List[str]] = None
-    ts_data: Optional[Dict[str, List[float]]] = None
-    ts_data_preprocessed: Optional[Dict[str, List[float]]] = None
-    ts_labels: Optional[List[str]] = None
 
 
 class DataManager:
@@ -155,16 +49,28 @@ class DataManager:
         _state (Optional[VisualizationState]): Current visualization state
     
     Methods:
+        add_annotation_marker(): Add annotation marker
         create_nifti_state(): Initialize state for NIFTI data
         create_gifti_state(): Initialize state for GIFTI data
         add_timeseries(): Add timeseries data to state
         add_task_design(): Add task design data to state
         get_location_data(): Get brain location data
+        get_plot_options(): Get plot options
+        get_timecourse_plot_options(): Get time course plot options for a given label
         get_viewer_metadata(): Get metadata for viewer
         get_viewer_data(): Get formatted data for viewer
         update_location(): Update brain location data
-        store_preprocessed(): Store preprocessed data
-        clear_preprocessed(): Clear preprocessed data
+        update_plot_options(): Update plot options
+        update_timecourse_plot_options(): Update time course plot options for a given label
+        update_timepoint(): Update timepoint data
+        pop_annotation_marker(): Pop most recent annotation marker from state
+        pop_timecourse(): Pop most recent timecourse from state
+        reset_color_options(): Reset color options to original
+        store_fmri_preprocessed(): Store preprocessed fMRI data
+        store_timecourse_preprocessed(): Store preprocessed timecourse data
+        update_timecourse(): Update time course data with new timecourse and label
+        clear_fmri_preprocessed(): Clear preprocessed fMRI data
+        clear_timecourse_preprocessed(): Clear preprocessed timecourse data
         clear_state(): Clear state
     """
     _instance: ClassVar[Optional['DataManager']] = None
@@ -180,11 +86,15 @@ class DataManager:
         return cls._instance
 
     @property
+    def allowed_precision(self) -> int:
+        return self._state.allowed_precision if self._state else 6
+    
+    @property
     def state(self) -> Optional[NiftiVisualizationState | GiftiVisualizationState]:
         return self._state
     
     @property
-    def file_type(self) -> Optional[str]:
+    def file_type(self) -> Literal['nifti', 'gifti']:
         return self._state.file_type if self._state else None
     
     @property
@@ -198,29 +108,107 @@ class DataManager:
     @property
     def ts_preprocessed(self) -> bool:
         return self._state.ts_preprocessed
+    
+    @property
+    def annotation_markers(self) -> List[int]:
+        return self._state.annotation_markers
+    
+    @property
+    def annotation_selection(self) -> Optional[int]:
+        return self._state.annotation_selection
+    
+    def add_annotation_marker(self, marker: int) -> None:
+        """Add annotation marker"""
+        if not self._state:
+            logger.error("No state exists")
+            return
+        self._state.annotation_markers.append(marker)
+        self._state.annotation_selection = marker
+    
+    def add_timeseries(self, timeseries: Dict[str, np.ndarray]) -> None:
+        """Add time series data if not already present"""
+        if not self._state:
+            logger.error("No state exists")
+            return
+        # Initialize time series data
+        self._state.ts_data = timeseries
+        self._state.ts_labels = list(timeseries.keys())
+        self._state.ts_enabled = True
+
+        # Create plot options for each timeseries with unique colors
+        for label in self._state.ts_labels:
+            plot_options = TimeCoursePlotOptions.with_next_color(
+                self._state.used_colors,
+            )
+            self._state.used_colors.add(plot_options.color)
+            self._state.ts_plot_options[label] = plot_options
+
+    
+    def add_task_design(self, task_data: TaskDesignDict) -> None:
+        """Add task design data"""
+        if not self._state:
+            logger.error("No state exists")
+            return
         
+        # add conditions
+        self._state.conditions = task_data['task_regressors'].keys()
+        self._state.task_data = task_data
+        self._state.task_enabled = True
+
+        # Create plot options for each task condition with unique colors
+        for label in self._state.conditions:
+            plot_options = TimeCoursePlotOptions.with_next_color(
+                self._state.used_colors,
+            )
+            self._state.used_colors.add(plot_options.color)
+            self._state.task_plot_options[label] = plot_options
+
     def create_nifti_state(
         self, 
         func_img: nib.Nifti1Image,
         anat_img: Optional[nib.Nifti1Image] = None,
         mask_img: Optional[nib.Nifti1Image] = None
     ) -> None:
-        """Create visualization state for NIFTI data"""
-        from findviz.viz.viewer.utils import package_nii_metadata
-        
+        """Create visualization state for NIFTI data"""        
         metadata = package_nii_metadata(func_img)
         
         self._state = NiftiVisualizationState(
             timepoints=metadata['timepoints'],
             global_min=metadata['global_min'],
             global_max=metadata['global_max'],
-            slice_len=metadata['slice_len']
-        )  # file_type defaults to 'nifti' in the dataclass
-        
-        # Store images
-        self._state.nifti_data['func'] = func_img
-        self._state.nifti_data['anat'] = anat_img
-        self._state.nifti_data['mask'] = mask_img
+            slice_len=metadata['slice_len'],
+            x_slice_idx=metadata['x_slice_idx'],
+            y_slice_idx=metadata['y_slice_idx'],
+            z_slice_idx=metadata['z_slice_idx'],
+            plot_options=PlotOptions(
+                color_min=metadata['color_min'],
+                color_max=metadata['color_max'],
+                color_range=metadata['color_range'],
+                slider_step_size=metadata['slider_step_size'],
+                precision=metadata['precision'],
+                threshold_range=metadata['threshold_range']
+            ),
+            coord_labels=get_coord_labels(func_img)
+        )
+
+        # preserve original color options
+        self._state.color_options_original = {
+            'color_min': self._state.color_options.color_min,
+            'color_max': self._state.color_options.color_max,
+            'color_range': self._state.color_options.color_range,
+            'threshold_min': self._state.color_options.threshold_min,
+            'threshold_max': self._state.color_options.threshold_max,
+            'threshold_range': self._state.color_options.threshold_range,
+            'opacity': self._state.color_options.opacity
+        }
+
+        # apply mask if present
+        if mask_img:
+            func_img = apply_mask_nifti(func_img, mask_img)
+
+        self._state.nifti_data['func_img'] = func_img
+        self._state.nifti_data['anat_img'] = anat_img
+        self._state.nifti_data['mask_img'] = mask_img
         
         # Store inputs
         if anat_img:
@@ -230,22 +218,38 @@ class DataManager:
                 
     def create_gifti_state(
         self,
-        left_func_img: Optional[nib.gifti.GiftiImage] = None,
-        right_func_img: Optional[nib.gifti.GiftiImage] = None,
-        left_mesh: Optional[nib.gifti.GiftiImage] = None,
-        right_mesh: Optional[nib.gifti.GiftiImage] = None
+        left_func_img: Optional[nib.GiftiImage] = None,
+        right_func_img: Optional[nib.GiftiImage] = None,
+        left_mesh: Optional[nib.GiftiImage] = None,
+        right_mesh: Optional[nib.GiftiImage] = None
     ) -> None:
         """Create visualization state for GIFTI data"""
-        from findviz.viz.viewer.utils import package_gii_metadata
-        
         metadata = package_gii_metadata(left_func_img, right_func_img)
         
         self._state = GiftiVisualizationState(
             timepoints=metadata['timepoints'],
             global_min=metadata['global_min'],
-            global_max=metadata['global_max']
-        )  # file_type defaults to 'gifti' in the dataclass
-        
+            global_max=metadata['global_max'],
+            plot_options=PlotOptions(
+                color_min=metadata['color_min'],
+                color_max=metadata['color_max'],
+                color_range=metadata['color_range'],
+                slider_step_size=metadata['slider_step_size'],
+                precision=metadata['precision'],
+                threshold_range=metadata['threshold_range']
+            )
+        )  
+        # preserve original color options
+        self._state.color_options_original = {
+            'color_min': self._state.plot_options.color_min,
+            'color_max': self._state.plot_options.color_max,
+            'color_range': self._state.plot_options.color_range,
+            'threshold_min': self._state.plot_options.threshold_min,
+            'threshold_max': self._state.plot_options.threshold_max,
+            'threshold_range': self._state.plot_options.threshold_range,
+            'opacity': self._state.plot_options.opacity
+        }
+
         # Store functional data
         self._state.gifti_data['left_func_img'] = left_func_img
         self._state.gifti_data['right_func_img'] = right_func_img
@@ -264,27 +268,6 @@ class DataManager:
         if right_mesh:
             self._state.vertices_right = right_mesh.darrays[0].data.tolist()
             self._state.faces_right = right_mesh.darrays[1].data.tolist()
-                
-    def add_timeseries(self, timeseries: Dict[str, np.ndarray]) -> None:
-        """Add time series data if not already present"""
-        if not self._state:
-            logger.error("No state exists")
-            return
-        
-        self._state.ts_data = timeseries
-        self._state.ts_labels = list(timeseries.keys())
-        self._state.ts_enabled = True
-    
-    def add_task_design(self, task_data: TaskDesignDict) -> None:
-        """Add task design data"""
-        if not self._state:
-            logger.error("No state exists")
-            return
-        
-        # add conditions
-        self._state.conditions = task_data['task_regressors'].keys()
-        self._state.task_data = task_data
-        self._state.task_enabled = True
     
     def get_location_data(self) -> Dict[str, Any]:
         """Get brain location data"""
@@ -303,6 +286,35 @@ class DataManager:
                 'selected_hemi': self._state.selected_hemi
             }
         return loc_data
+    
+    def get_plot_options(self) -> PlotOptionsDict:
+        """Get plot options"""
+        if not self._state:
+            logger.error("No state exists")
+            return {}
+        
+        if self._state.fmri_preprocessed:
+            data = self._state.preprocessed_plot_options.to_dict()
+        else:
+            data = self._state.plot_options.to_dict()
+        
+        return data
+    
+    def get_timecourse_plot_options(
+        self, 
+        label: Optional[str] = None
+    ) -> TimeCoursePlotOptionsDict | Dict[str, TimeCoursePlotOptionsDict]:
+        """Get time course plot options for a given label"""
+        if not self._state:
+            logger.error("No state exists")
+            return {}
+        if label:
+            return self._state.ts_plot_options[label].to_dict()
+        else:
+            return {
+                label: plot_options.to_dict()
+                for label, plot_options in self._state.ts_plot_options.items()
+            }
     
     def get_viewer_metadata(self) -> ViewerMetadataNiftiDict | ViewerMetadataGiftiDict:
         """Get metadata for viewer"""
@@ -350,15 +362,16 @@ class DataManager:
         self,
         fmri_data: bool = True,
         time_course_data: bool = True,
-        task_data: bool = True
+        task_data: bool = True,
+        coord_labels: bool = False
     ) -> ViewerDataNiftiDict | ViewerDataGiftiDict:
         """Get data formatted for viewer.
 
         Arguments:
             fmri_data: Whether to include fMRI image data. Defaults to True.
-            use_preprocess: Whether to use preprocessed data if available. Defaults to False.
             time_course_data: Whether to include time course data. Defaults to True.
             task_data: Whether to include task design data. Defaults to True.
+            coord_labels: Whether to include coordinate labels. Defaults to False.
 
         Returns:
             ViewerDataNiftiDict | ViewerDataGiftiDict: Dictionary containing viewer data formatted
@@ -375,22 +388,26 @@ class DataManager:
             if self._state.file_type == 'nifti':
                 if self._state.fmri_preprocessed:
                     data.update({
-                        'func_img': self._state.nifti_data_preprocessed['func'],
+                        'func_img': self._state.nifti_data_preprocessed['func_img'],
                         'is_fmri_preprocessed': True
                     })
                 else:
                     data.update({
-                        'func_img': self._state.nifti_data['func'],
+                        'func_img': self._state.nifti_data['func_img'],
                         'is_fmri_preprocessed': False
                     })
 
                 data.update({
                     'anat_input': self._state.anat_input,
                     'mask_input': self.state.mask_input,
-                    'anat_img': self._state.nifti_data['anat'],
-                    'mask_img': self._state.nifti_data['mask'],
-                    'func_img': self._state.nifti_data['func'],
+                    'anat_img': self._state.nifti_data['anat_img'],
+                    'mask_img': self._state.nifti_data['mask_img'],
+                    'func_img': self._state.nifti_data['func_img'],
                 })
+                if coord_labels:
+                    data.update({
+                        'coord_labels': self._state.coord_labels
+                    })
             else:  # gifti
                 if self._state.fmri_preprocessed:
                     data.update({
@@ -443,6 +460,153 @@ class DataManager:
                 )
         return data
     
+    def pop_annotation_marker(self) -> None:
+        """Pop most recent annotation marker from state"""
+        if not self._state:
+            logger.error("No state exists")
+            return
+        
+        # remove last annotation marker
+        if self._state.annotation_markers:
+            # get index of selected annotation marker
+            selected_idx = self._state.annotation_markers.index(
+                self._state.annotation_selection
+            )
+            # if selected marker is the last one, shift selection to previous
+            if selected_idx == len(self._state.annotation_markers) - 1:
+                logger.warning(
+                    "Selected marker is the last one, "
+                    "shifting to previous"
+                )
+                self._state.annotation_selection = self._state.annotation_markers[
+                    selected_idx - 1
+                ]
+
+            self._state.annotation_markers.pop()
+            logger.info("Popped most recent annotation marker from state")
+        else:
+            logger.warning("No annotation markers to pop")
+
+    def pop_timecourse(self) -> None:
+        """Pop most recent timecourse from state"""
+        if not self._state:
+            logger.error("No state exists")
+            return
+        
+        # remove last timecourse
+        last_label = self._state.ts_labels[-1]
+        self._state.ts_data.pop(last_label)
+        # Remove the color from used colors before removing plot options
+        if last_label in self._state.ts_plot_options:
+            self._state.used_colors.remove(
+                self._state.ts_plot_options[last_label].color
+            )
+        self._state.ts_plot_options.pop(last_label)
+        self._state.ts_labels = list(self._state.ts_data.keys())
+        logger.info("Popped most recent timecourse from state")
+
+    def reset_color_options(self) -> None:
+        """Reset color options to original"""
+        if not self._state:
+            logger.error("No state exists")
+            return
+        
+        # return color options to original state
+        if self._state.fmri_preprocessed:
+            color_options = self._state.preprocessed_color_options_original
+            self._state.preprocessed_plot_options.update_from_dict(
+                {
+                    'color_min': color_options['color_min'],
+                    'color_max': color_options['color_max'],
+                    'threshold_min': color_options['threshold_min'],
+                    'threshold_max': color_options['threshold_max'],
+                    'opacity': color_options['opacity']
+                }
+            )
+        else:
+            color_options = self._state.color_options_original
+            self._state.plot_options.update_from_dict(
+                {
+                    'color_min': color_options['color_min'],
+                    'color_max': color_options['color_max'],
+                    'threshold_min': color_options['threshold_min'],
+                    'threshold_max': color_options['threshold_max'],
+                    'opacity': color_options['opacity']
+                }
+            )
+
+        logger.info("Reset color options to original")
+    
+    def store_fmri_preprocessed(self, data: Dict) -> None:
+        """Store preprocessed fMRI data."""
+        logger.info("Storing preprocessed fMRI data")
+        self._state.fmri_preprocessed = True
+        if self._state.file_type == 'nifti':
+            self._state.nifti_data_preprocessed.update(data)
+        else:
+            self._state.gifti_data_preprocessed.update(data)
+        
+        # create preprocessed plot options
+        if self._state.file_type == 'nifti':
+            metadata = package_nii_metadata(data['func_img'])
+        else:
+            metadata = package_gii_metadata(
+                data['left_func_img'], data['right_func_img']
+            )
+        
+        # create preprocessed plot options, copy some options from raw
+        self._state.preprocessed_plot_options = PlotOptions(
+            color_min=metadata['color_min'],
+            color_max=metadata['color_max'],
+            color_range=metadata['color_range'],
+            threshold_min=metadata['threshold_min'],
+            threshold_max=metadata['threshold_max'],
+            threshold_range=metadata['threshold_range'],
+            precision=metadata['precision'],
+            slider_steps=metadata['slider_step_size'],
+            hover_text_on=self._state.plot_options.hover_text_on,
+            color_map=self._state.plot_options.color_map,
+            opacity=self._state.plot_options.opacity,
+            view_state=self._state.plot_options.view_state,
+            montage_slice_dir=self._state.plot_options.montage_slice_dir,
+            crosshair_on=self._state.plot_options.crosshair_on,
+            direction_marker_on=self._state.plot_options.direction_marker_on,
+            montage_slice_idx=self._state.plot_options.montage_slice_idx
+        )
+        
+        # preserve original color options
+        self._state.preprocessed_color_options_original = {
+            'color_min': self._state.preprocessed_plot_options.color_min,
+            'color_max': self._state.preprocessed_plot_options.color_max,
+            'color_range': self._state.preprocessed_plot_options.color_range,
+            'threshold_min': self._state.preprocessed_plot_options.threshold_min,
+            'threshold_max': self._state.preprocessed_plot_options.threshold_max,
+            'threshold_range': self._state.preprocessed_plot_options.threshold_range,
+            'opacity': self._state.preprocessed_plot_options.opacity
+        }
+    
+    def store_timecourse_preprocessed(self, data: Dict) -> None:
+        """Store preprocessed timecourse data."""
+        logger.info("Storing preprocessed timecourse data")
+        self._state.ts_preprocessed = True
+        self._state.ts_data_preprocessed = data
+
+    def update_annotation_selection(self, marker_value: int) -> None:
+        """Update annotation selection"""
+        if not self._state:
+            logger.error("No state exists")
+            return
+        
+        # check if marker value is in annotation markers
+        if marker_value in self._state.annotation_markers:
+            # get index of marker value
+            marker_idx = self._state.annotation_markers.index(marker_value)
+            # update selection
+            self._state.annotation_selection = marker_idx
+            logger.info("Updated annotation selection")
+        else:
+            logger.warning("Marker value not found in annotation markers")
+
     def update_location(self, loc_data: Dict[str, Any]) -> None:
         """Update brain location data"""
         if not self._state:
@@ -459,22 +623,48 @@ class DataManager:
         
         logger.info("Updated brain location data")
     
+    def update_plot_options(
+        self,
+        display_options: Dict[str, Any]
+    ) -> None:
+        """Update plot options"""
+        if not self._state:
+            logger.error("No state exists")
+            return
+        
+        if self._state.fmri_preprocessed:
+            self._state.preprocessed_plot_options.update_from_dict(display_options)
+        else:
+            self._state.plot_options.update_from_dict(display_options)
+        
+        logger.info("Updated plot options")
+    
+    def update_timecourse_plot_options(
+        self, 
+        label: str, 
+        plot_options: Dict[str, Any]
+    ) -> None:
+        """Update time course plot options"""
+        if not self._state:
+            logger.error("No state exists")
+            return
+        
+        self._state.ts_plot_options[label].update_from_dict(plot_options)
+        logger.info("Updated time course plot options")
+
     def update_timepoint(self, timepoint: int) -> None:
         """Update timepoint data"""
         if not self._state:
             logger.error("No state exists")
             return
-        self._state.timepoint = timepoint
-        logger.info("Updated timepoint data")
-
-    def pop_timecourse(self) -> None:
-        """Pop most recent timecourse from state"""
-        if not self._state:
-            logger.error("No state exists")
+        
+        # check if timepoint is within range
+        if timepoint < 0 or timepoint >= self._state.timepoints:
+            logger.error("Timepoint out of range")
             return
         
-        self._state.ts_data.pop(self._state.ts_labels[-1])
-        self._state.ts_labels = list(self._state.ts_data.keys())
+        self._state.timepoint = timepoint
+        logger.info("Updated timepoint data")
     
     def update_timecourse(
         self, 
@@ -493,15 +683,20 @@ class DataManager:
         self._state.ts_data[label] = timecourse
         self._state.ts_labels = list(self._state.ts_data.keys())
 
-    def store_fmri_preprocessed(self, data: Dict) -> None:
-        """Store preprocessed fMRI data."""
-        logger.info("Storing preprocessed fMRI data")
-        self._state.fmri_preprocessed = True
-        if self._state.file_type == 'nifti':
-            self._state.nifti_data_preprocessed.update(data)
-        else:
-            self._state.gifti_data_preprocessed.update(data)
-        
+        # Create plot options if not already present
+        if label not in self._state.ts_plot_options:
+            plot_options = TimeCoursePlotOptions.with_next_color(
+                self._state.used_colors
+            )
+            self._state.used_colors.add(plot_options.color)
+            self._state.ts_plot_options[label] = plot_options
+    
+    def clear_annotation_markers(self) -> None:
+        """Clear annotation markers"""
+        logger.info("Clearing annotation markers")
+        self._state.annotation_markers = []
+        self._state.annotation_selection = None
+
     def clear_fmri_preprocessed(self) -> None:
         """Clear preprocessed fMRI data."""
         logger.info("Clearing preprocessed fMRI data")
@@ -510,12 +705,9 @@ class DataManager:
             self._state.nifti_data_preprocessed.clear()
         else:
             self._state.gifti_data_preprocessed.clear()
-            
-    def store_timecourse_preprocessed(self, data: Dict) -> None:
-        """Store preprocessed timecourse data."""
-        logger.info("Storing preprocessed timecourse data")
-        self._state.ts_preprocessed = True
-        self._state.ts_data_preprocessed = data
+
+        # clear preprocessed plot options
+        self._state.preprocessed_plot_options = None
         
     def clear_timecourse_preprocessed(self) -> None:
         """Clear preprocessed timecourse data."""

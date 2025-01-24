@@ -11,6 +11,7 @@ export const EVENT_TYPES = {
         THRESHOLD_SLIDER_CHANGE: 'thresholdSliderChange',
         HOVER_TEXT_TOGGLE: 'toggleHoverChange',
         VIEW_TOGGLE: 'toggleViewChange',
+        MONTAGE_POPOVER_SHOW: 'montagePopoverShow',
         MONTAGE_SLICE_DIRECTION_CHANGE: 'montageSliceDirectionChange',
         SLICE_SLIDER: {
             slice1Slider: 'slice1SliderChange',
@@ -22,7 +23,9 @@ export const EVENT_TYPES = {
         TIME_SLIDER_CHANGE: 'timeSliderChange',
     },
     PREPROCESSING: {
-        PREPROCESS_SUBMIT: 'preprocessSubmit',
-        PREPROCESS_RESET: 'preprocessReset',
+        PREPROCESS_FMRI_RESET: 'preprocessFmriReset',
+        PREPROCESS_FMRI_SUCCESS: 'preprocessFmriSuccess',
+        PREPROCESS_TIMECOURSE_RESET: 'preprocessTimecourseReset',
+        PREPROCESS_TIMECOURSE_SUCCESS: 'preprocessTimecourseSuccess',
     }
 };

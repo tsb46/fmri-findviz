@@ -13,16 +13,15 @@ class SliceData(TypedDict):
     y: np.ndarray 
     z: np.ndarray
 
-class VoxelCoords(TypedDict):
-    x: List[List[Tuple[int, int, int]]]
-    y: List[List[Tuple[int, int, int]]]
-    z: List[List[Tuple[int, int, int]]]
+class CoordLabels(TypedDict):
+    x: List[Tuple[int, int, int]]
+    y: List[Tuple[int, int, int]]
+    z: List[Tuple[int, int, int]]
 
 class TimePointData(TypedDict):
     func: SliceData
     anat: SliceData
-    mask: SliceData
-    coords: VoxelCoords
+    coord_labels: CoordLabels
 
 
 def get_timecourse_nifti(
@@ -54,15 +53,16 @@ def get_timecourse_nifti(
 
 def get_nifti_timepoint_data(
     time_point: int,
-    func_img: nib.Nifti1Image, 
+    func_img: nib.Nifti1Image,
+    coord_labels: np.ndarray,
     x_slice: int,
     y_slice: int,
     z_slice: int,
     view_state: Literal['montage', 'ortho'],
     montage_slice_dir: Literal['x', 'y', 'z'],
+    threshold_min: float = 0,
+    threshold_max: float = 0,
     anat_img: Optional[nib.Nifti1Image] = None,
-    mask_img: Optional[nib.Nifti1Image] = None,
-    update_voxel_coord: bool = False
 ) -> TimePointData:
     """Get slice data for a specific timepoint from functional, anatomical and mask images.
 
@@ -72,6 +72,8 @@ def get_nifti_timepoint_data(
         Index of the timepoint to extract from functional image
     func_img : nib.Nifti1Image
         4D functional image
+    coord_labels : np.ndarray
+        Array of voxel coordinates
     x_slice : int 
         Index for sagittal slice
     y_slice : int
@@ -84,29 +86,34 @@ def get_nifti_timepoint_data(
         Slice direction when in montage view
     anat_img : Optional[nib.Nifti1Image], optional
         3D anatomical image, by default None
-    mask_img : Optional[nib.Nifti1Image], optional
-        3D mask image, by default None
-    update_voxel_coord : bool, optional
-        Whether to include voxel coordinates in output, by default False
 
     Returns
     -------
-    Dict[str, Dict[str, Union[np.ndarray, List[List[Tuple[int, int, int]]]]]]
+    Dict[str, Dict[str, np.ndarray]]
         Dictionary containing slice data for each image type and axis:
         {
             'func': {'x': array, 'y': array, 'z': array},
             'anat': {'x': array, 'y': array, 'z': array},
             'mask': {'x': array, 'y': array, 'z': array},
-            'coords': {'x': [[(i,j,k)]], 'y': [[(i,j,k)]], 'z': [[(i,j,k)]]}
+            'coords': List[Tuple[int, int, int]]
         }
     """
     # Select time point
-    func_img_t = index_img(func_img, time_point)
+    func_data = index_img(func_img, time_point).get_fdata()
+    
+    # threshold data if threshold_min or threshold_max are provided
+    if (threshold_min != 0) or (threshold_max != 0):
+        func_data = threshold_nifti_data(
+            func_data, threshold_min, threshold_max
+        )
+
+    # get anatomical data if present
+    anat_data = anat_img.get_fdata() if anat_img else None
+    
     # initialize output
     slice_out = {
         'func': {},
         'anat': {},
-        'mask': {},
         'coords': {}
     }
     # Loop through axes and update
@@ -118,55 +125,83 @@ def get_nifti_timepoint_data(
             nifti_axis = axis
         slice_int = int(slice_i)
         slice_out['func'][axis] = get_slice_data(
-            func_img_t, slice_int, axis=nifti_axis
+            func_data, slice_int, axis=nifti_axis
         )
-        if anat_img:
+        if anat_data:
             slice_out['anat'][axis] = get_slice_data(
-                anat_img, slice_int, axis=nifti_axis
+                anat_data, slice_int, axis=nifti_axis
             )
-        if mask_img:
-            slice_out['mask'][axis] = get_slice_data(
-                mask_img, slice_int, axis=nifti_axis
-            )
-        if update_voxel_coord:
-            slice_out['coords'][axis] = [
-                [(slice_int, j, i)
-                for j in range(slice_out['func'][axis].shape[1])]
-                for i in range(slice_out['func'][axis].shape[0])
-            ]
+        # get coord labels
+        slice_out['coords'][axis] = get_slice_data(
+            coord_labels, slice_int, axis=nifti_axis
+        )
+
     return slice_out
 
 
 # Helper function to generate Plotly slice data
 def get_slice_data(
-    nifti_img: nib.Nifti1Image,
+    nifti_data: np.ndarray,
     slice_index: int, 
     axis: Literal['x', 'y', 'z']
 ) -> List[List[float]]:
     """Extract a 2D slice from a NIfTI image along a specified axis.
 
-    Args:
-        nifti_img: Input NIfTI image object
-        slice_index: Index of the slice to extract
-        axis: Axis along which to take the slice ('x', 'y', or 'z')
+    Parameters
+    ----------
+    nifti_data : np.ndarray
+        Input NIfTI data
+    slice_index : int
+        Index of the slice to extract
+    axis : Literal['x', 'y', 'z']
+        Axis along which to take the slice
 
-    Returns:
-        2D numpy array containing the slice data, transposed for display
+    Returns
+    -------
+    2D numpy array containing the slice data, transposed for display
     """
     # Extract the slice data
     if axis == 'x':
         slice_data = np.squeeze(
-            nifti_img.get_fdata()[slice_index, :, :]
+            nifti_data[slice_index, :, :]
         ).transpose()
     elif axis == 'y':
         slice_data = np.squeeze(
-            nifti_img.get_fdata()[:, slice_index, :]
+            nifti_data[:, slice_index, :]
         ).transpose()
-        # flip for radiological
-        # slice_data = np.flip(slice_data, axis=1)
     elif axis == 'z':
         slice_data = np.squeeze(
-            nifti_img.get_fdata()[:, :, slice_index]
+            nifti_data[:, :, slice_index]
         ).transpose()
 
     return slice_data.tolist()
+
+
+def threshold_nifti_data(
+    nifti_data: np.ndarray,
+    threshold_min: float,
+    threshold_max: float,
+) -> np.ndarray: 
+    """Threshold a NIfTI 3d array
+
+    Parameters
+    ----------
+    nifti_data : np.ndarray
+        Nifti 3d array to threshold
+    threshold_min : float
+        Minimum threshold value
+    threshold_max : float
+        Maximum threshold value
+
+    Returns
+    -------
+    np.ndarray
+        Thresholded array. Voxels with values outside 
+        the threshold range are set to 0.
+    """
+    # create mask
+    mask = (nifti_data > threshold_min) & (nifti_data < threshold_max)
+    # apply mask
+    nifti_data[~mask] = 0
+    return nifti_data
+

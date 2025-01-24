@@ -2,9 +2,10 @@
 Types for viewer
 """
 
-from typing import TypedDict, Optional, List, Dict, Literal
-import nibabel as nib
+from typing import TypedDict, Optional, List, Dict, Literal, Tuple
 
+import nibabel as nib
+import numpy as np
 from findviz.viz.io.timecourse import TaskDesignDict
 
 # define outpus from get_metadata() method
@@ -50,23 +51,40 @@ class ViewerMetadataGiftiDict(TypedDict):
 class ViewerDataNiftiDict(TypedDict):
     anat_input: Optional[bool]
     mask_input: Optional[bool]
-    func_img: Optional[nib.Nifti1Image]
-    anat_img: Optional[nib.Nifti1Image]
-    mask_img: Optional[nib.Nifti1Image]
+    func_data: Optional[np.ndarray]
+    anat_data: Optional[np.ndarray]
+    mask_data: Optional[np.ndarray]
     ts: Optional[Dict[str, List[float]]]
     ts_labels: Optional[List[str]]
     task: Optional[TaskDesignDict]
     is_fmri_preprocessed: Optional[bool]
     is_ts_preprocessed: Optional[bool]
-
+    coord_labels: Optional[List[Tuple[int, int, int]]]
 
 class ViewerDataGiftiDict(TypedDict):
     left_input: Optional[bool]
     right_input: Optional[bool]
-    left_func_img: Optional[nib.gifti.GiftiImage]
-    right_func_img: Optional[nib.gifti.GiftiImage]
+    func_data: Optional[np.ndarray]
     ts: Optional[Dict[str, List[float]]]
     ts_labels: Optional[List[str]]
     task: Optional[TaskDesignDict]
     is_fmri_preprocessed: Optional[bool]
     is_ts_preprocessed: Optional[bool]
+
+
+# define output dicts from get_plot_options() method
+class PlotOptionsDict(TypedDict):
+    color_min: Optional[float]
+    color_max: Optional[float]
+    color_map: Optional[str]
+    opacity: Optional[float]
+    threshold_min: Optional[float]
+    threshold_max: Optional[float]
+
+# define output dicts from get_timecourse_plot_options() method
+class TimeCoursePlotOptionsDict(TypedDict):
+    color: Optional[str]
+    plotType: Optional[Literal['block', 'hrf']]
+    width: Optional[float]
+    opacity: Optional[float]
+    mode: Optional[Literal['lines', 'markers', 'lines+markers']]

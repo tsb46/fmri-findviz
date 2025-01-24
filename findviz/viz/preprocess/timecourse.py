@@ -2,7 +2,7 @@
 Preprocess time course data
 """
 
-from typing import Literal, TypedDict, Tuple
+from typing import Literal, TypedDict, Tuple, List
 
 import numpy as np
 
@@ -16,17 +16,17 @@ class PreprocessTimecourseInputs(TypedDict):
     """
     Inputs for preprocess_timecourse
     """
+    normalize: bool
     detrend: bool
+    filter: bool
     mean_center: bool
     zscore: bool
-    filter: bool
-    smooth: bool
     tr: float
-    lowpass: float
-    highpass: float
+    low_cut: float
+    high_cut: float
     order: int
-    fwhm: float
-
+    ts_labels: List[str]
+    
 
 def preprocess_timecourse(
     timecourse_data: np.ndarray,
@@ -59,8 +59,8 @@ def preprocess_timecourse(
         timecourse_data = utils.butterworth_filter(
             timecourse_data, 
             tr_hz,
-            inputs['lowpass'], 
-            inputs['highpass'], 
+            inputs['low_cut'], 
+            inputs['high_cut'], 
         )
 
     # Mean center the data

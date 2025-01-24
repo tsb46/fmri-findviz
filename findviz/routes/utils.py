@@ -7,10 +7,22 @@ import numpy as np
 from nilearn import signal
 
 class Routes(Enum):
-    GET_DATA_UPDATE='/get_data_update'
+    ADD_ANNOTATION_MARKER='/add_annotation_marker'
+    CLEAR_ANNOTATION_MARKERS='/clear_annotation_markers'
+    GET_ANNOTATION_MARKERS='/get_annotation_markers'
     GET_FUNCTIONAL_TIMECOURSE='/get_functional_timecourse'
+    GET_PLOT_OPTIONS='/get_plot_options'
+    GET_TIMECOURSE_PLOT_OPTIONS='/get_timecourse_plot_options'
     GET_PREPROCESSED_FMRI='/get_preprocessed_fmri'
     GET_PREPROCESSED_TIMECOURSE='/get_preprocessed_timecourse'
+    RESET_COLOR_OPTIONS='/reset_color_options'
+    RESET_FMRI_PREPROCESS='/reset_fmri_preprocess'
+    RESET_TIMECOURSE_PREPROCESS='/reset_timecourse_preprocess'
+    UNDO_ANNOTATION_MARKER='/undo_annotation_marker'
+    UPDATE_TIMEPOINT='/update_timepoint'
+    UPDATE_LOCATION='/update_location'
+    UPDATE_PLOT_OPTIONS='/update_plot_options'
+
 
 # Convert values from json
 def convert_value(value: str) -> Union[str, int, float, None]:

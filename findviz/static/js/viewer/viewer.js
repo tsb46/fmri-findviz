@@ -1,19 +1,22 @@
 // viewer.js
-import { FILE_TYPES, DOM_IDS, CONTAINER_IDS, DEFAULTS, API_ENDPOINTS } from './constants.js';
-import { EVENT_TYPES } from './EventTypes.js';
-import { Types } from './types.js';
-import ColorBar from './colorbar.js';
+import { 
+    FILE_TYPES, DOM_IDS, CONTAINER_IDS, DEFAULTS, 
+    API_ENDPOINTS, FORM_SUBMIT_NAMES 
+} from './constants/constants.js';
+import { EVENT_TYPES } from './constants/EventTypes.js';
+import { Types } from './constants/Types.js';
+import ColorBar from './components/colorbar.js';
 import Distance from '../analytics/distance.js';
-import TimeCourse from './timecourse.js';
-import TimeSlider from './timeslider.js';
+import TimeCourse from './plots/timecourse.js';
+import TimeSlider from './components/TimeSlider.js';
 import { VisualizationOptions, PreprocessingOptions } from './user.js';
-import NiftiViewer from './nifti.js';
-import GiftiViewer from './gifti.js';
-
+import NiftiViewer from './plots/nifti.js';
+import GiftiViewer from './plots/gifti.js';
+import ViewerError from './error.js';
 /**
- * @typedef {import('./types.js').ViewerData} ViewerData
- * @typedef {import('./types.js').VisualizationParams} VisualizationParams
- * @typedef {import('./types.js').TimeCourseData} TimeCourseData
+ * @typedef {import('./constants/Types.js').ViewerData} ViewerData
+ * @typedef {import('./constants/Types.js').VisualizationParams} VisualizationParams
+ * @typedef {import('./constants/Types.js').TimeCourseData} TimeCourseData
  */
 
 
@@ -39,24 +42,16 @@ class MainViewer{
         
         /** @type {number[]} Array of timepoint indices */
         this.timepoints = viewerData.timepoints;
-        
-        /** @type {number} Global minimum value across dataset */
-        this.globalMin = viewerData.global_min;
-        
-        /** @type {number} Global maximum value across dataset */
-        this.globalMax = viewerData.global_max;
-        
-        /** @type {boolean} Whether timeseries visualization is enabled */
-        this.tsEnabled = viewerData.ts_enabled;
-        
-        /** @type {boolean} Whether task design visualization is enabled */
-        this.taskEnabled = viewerData.task_enabled;
 
         // set title of time slider
         document.getElementById(DOM_IDS.TIME_SLIDER_TITLE).textContent = 'Time Point:';
 
+        // initialize viewer error modal
+        this.viewerError = new ViewerError();
+
+        // Initialize viewer
         this.initializeViewer(viewerData);
-        this.initializeVisualizationParams();
+        // Initialize viewer components
         this.initializeComponents(viewerData);
         
         // Set up fmri time course event listeners
@@ -181,26 +176,6 @@ class MainViewer{
     }
 
     /**
-     * Initializes visualization parameters with default values
-     * @private
-     */
-    initializeVisualizationParams() {
-        /** @type {VisualizationParams} */
-        const params = {
-            colormap: DEFAULTS.COLORMAP,
-            timePoint: DEFAULTS.TIME_POINT,
-            colorMin: this.globalMin,
-            colorMax: this.globalMax,
-            thresholdMin: DEFAULTS.THRESHOLD.MIN,
-            thresholdMax: DEFAULTS.THRESHOLD.MAX,
-            opacity: DEFAULTS.OPACITY,
-            hoverTextOn: true
-        };
-
-        Object.assign(this, params);
-    }
-
-    /**
      * Initializes the appropriate viewer based on file type
      * @private
      * @param {ViewerData} viewerData - Viewer initialization data
@@ -252,223 +227,132 @@ class MainViewer{
     }
 
     /**
+     * Creates an event listener for visualization options
+     * @private
+     * @param {string} event - The event type to listen for
+     * @param {string} endPoint - The endpoint to send the data to
+     * @param {function} getDataFunction - A function to get the data from the event
+     * @param {function} plotFunction - A function to plot the brain map
+     */
+    createVizOptionListener(event, endPoint, getDataFunction, plotFunction) {
+        $(document).on(event, async (event) => {
+            try {
+                // pass data to endpoint
+                const data = getDataFunction(event);
+                const response = await fetch(endPoint, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                }); 
+                if (response.status === 200) {
+                    console.log('successful fetch for ', event);
+                    // plot brain map with new data
+                    plotFunction();
+                } else {
+                    const error = await response.json();
+                    this.viewerError.displayError(error.message);
+                }
+              } catch (error) {
+                const errorMessage = 'An unknown error occurred in data update';
+                this.viewerError.displayError(errorMessage);
+              }
+            
+        })
+    }
+    /**
      * Attaches visualization option event listeners
      * @private
      * @returns {Promise<void>}
      */
     attachVizOptionListeners = () => {
         // Listen for colormap change
-        this.colormapChangeListener = (event) => {
-            this.colormap = event.detail.selectedValue;
-            // Plot brain map with new color
-            this.viewer.plot(
-                this.timePoint,
-                this.colormap,
-                this.colorMin,
-                this.colorMax,
-                this.thresholdMin,
-                this.thresholdMax,
-                this.opacity,
-                this.hoverTextOn,
-                this.preprocState,
-                false, // do not update coordinates
-                true // update layout only
-            );
-            // Update colorbar
-            this.colorBar.plotColorbar(this.colormap)
-
-        };
-        document.addEventListener(
-            EVENT_TYPES.VISUALIZATION.COLOR_MAP_CHANGE,  this.colormapChangeListener
+        this.createVizOptionListener(
+            EVENT_TYPES.VISUALIZATION.COLOR_MAP_CHANGE, 
+            API_ENDPOINTS.UPDATE_PLOT_OPTIONS,
+            getColormapData,
+            updateColorbarPlot.bind(this)
         );
         // Listen for color range slider change
-        $(document).on(EVENT_TYPES.VISUALIZATION.COLOR_SLIDER_CHANGE, (event) => {
-            const colorRange = event.detail.newValue
-            this.colorMin = colorRange[0]
-            this.colorMax = colorRange[1]
-            // plot brain map with new color range
-            this.viewer.plot(
-                this.timePoint,
-                this.colormap,
-                this.colorMin,
-                this.colorMax,
-                this.thresholdMin,
-                this.thresholdMax,
-                this.opacity,
-                this.hoverTextOn,
-                this.preprocState,
-                false, // do not update coordinates
-                true // update layout only
-            );
-            // plot colorbar with new color range
-            this.colorBar.plotColorbar(
-                this.colormap, this.colorMin, this.colorMax
-            );
-        });
+        this.createVizOptionListener(
+            EVENT_TYPES.VISUALIZATION.COLOR_SLIDER_CHANGE, 
+            API_ENDPOINTS.UPDATE_PLOT_OPTIONS,
+            getColorRangeData,
+            updateColorbarPlot.bind(this)
+        );
+
         // Listen for threshold slider change
-        $(document).on(EVENT_TYPES.VISUALIZATION.THRESHOLD_SLIDER_CHANGE, (event) => {
-            const thresholdRange = event.detail.newValue;
-            this.thresholdMin = thresholdRange[0];
-            this.thresholdMax = thresholdRange[1];
-            // Plot brain map with new thresholds
-            this.viewer.plot(
-                this.timePoint,
-                this.colormap,
-                this.colorMin,
-                this.colorMax,
-                this.thresholdMin,
-                this.thresholdMax,
-                this.opacity,
-                this.hoverTextOn,
-                this.preprocState
-            );
-        });
+        this.createVizOptionListener(
+            EVENT_TYPES.VISUALIZATION.THRESHOLD_SLIDER_CHANGE,
+            API_ENDPOINTS.UPDATE_PLOT_OPTIONS,
+            getThresholdData,
+            updatePlot.bind(this)
+        );
+
         // Listen for opacity slider change
-        $(document).on(EVENT_TYPES.VISUALIZATION.OPACITY_SLIDER_CHANGE, (event) => {
-            const opacityValue = event.detail.newValue;
-            this.opacity = opacityValue;
-            // Plot brain map with new thresholds
-            this.viewer.plot(
-                this.timePoint,
-                this.colormap,
-                this.colorMin,
-                this.colorMax,
-                this.thresholdMin,
-                this.thresholdMax,
-                this.opacity,
-                this.hoverTextOn,
-                this.preprocState
-            );
-        });
+        this.createVizOptionListener(
+            EVENT_TYPES.VISUALIZATION.OPACITY_SLIDER_CHANGE,
+            API_ENDPOINTS.UPDATE_PLOT_OPTIONS,
+            getOpacityData,
+            updatePlot.bind(this)
+        );
 
         // Listen for hover toggle click
-        $(document).on(EVENT_TYPES.VISUALIZATION.HOVER_TEXT_TOGGLE, (event) => {
-            // if checked
-            this.hoverTextOn = !this.hoverTextOn
-            // plot with or without hover text
-            this.viewer.plot(
-                this.timePoint,
-                this.colormap,
-                this.colorMin,
-                this.colorMax,
-                this.thresholdMin,
-                this.thresholdMax,
-                this.opacity,
-                this.hoverTextOn,
-                this.preprocState
-            );
-        });
-
+        this.createVizOptionListener(
+            EVENT_TYPES.VISUALIZATION.HOVER_TEXT_TOGGLE,
+            API_ENDPOINTS.UPDATE_PLOT_OPTIONS,
+            getHoverTextData,
+            updatePlot.bind(this)
+        );
+        
+        
         // attach nifti specific visualization options
         if (this.plotType == 'nifti') {
             // Listen for view toggle click
-            $(document).on(EVENT_TYPES.VISUALIZATION.VIEW_TOGGLE, (event) => {
-                // Change view state (ortho <-> montage)
-                this.viewer.changeViewState(
-                    true,
-                    event.detail.sliceDirection,
-                    event.detail.sliceIndices,
-                )
-                // plot with new view
-                this.viewer.plot(
-                    this.timePoint,
-                    this.colormap,
-                    this.colorMin,
-                    this.colorMax,
-                    this.thresholdMin,
-                    this.thresholdMax,
-                    this.opacity,
-                    this.hoverTextOn,
-                    this.preprocState
-                );
-            });
+            this.createVizOptionListener(
+                EVENT_TYPES.VISUALIZATION.VIEW_TOGGLE,
+                API_ENDPOINTS.UPDATE_VIEW_STATE,
+                getViewStateData,
+                updatePlot.bind(this)
+            );
 
             // Listen for change to montage direction
-            $(document).on(EVENT_TYPES.VISUALIZATION.MONTAGE_SLICE_DIRECTION_CHANGE, (event) => {
-                // Change view state (ortho <-> montage)
-                this.viewer.changeViewState(
-                    false,
-                    event.detail.sliceDirection,
-                    event.detail.sliceIndices,
-                )
-                if (this.viewer.viewerState == 'montage') {
-                    // plot with new view
-                    this.viewer.plot(
-                        this.timePoint,
-                        this.colormap,
-                        this.colorMin,
-                        this.colorMax,
-                        this.thresholdMin,
-                        this.thresholdMax,
-                        this.opacity,
-                        this.hoverTextOn,
-                        this.preprocState
-                    );
-                };
-            });
+            this.createVizOptionListener(
+                EVENT_TYPES.VISUALIZATION.MONTAGE_SLICE_DIRECTION_CHANGE,
+                API_ENDPOINTS.UPDATE_PLOT_OPTIONS,
+                getMontageSliceDirectionData,
+                updatePlot.bind(this)
+            );  
 
             // Listen for change to slice indices for montage for each slice
             const sliceSliders = ['slice1Slider', 'slice2Slider', 'slice3Slider'];
             sliceSliders.forEach((sliceDiv, index) => {
-                $(document).on(EVENT_TYPES.VISUALIZATION.SLICE_SLIDER[sliceDiv], (event) => {
-                    // Change view state (ortho <-> montage)
-                    this.viewer.changeViewState(
-                        false,
-                        event.detail.sliceDirection,
-                        event.detail.sliceIndices
-                    );
-                    if (this.viewer.viewerState == 'montage') {
-                        // plot with new view
-                        this.viewer.plot(
-                            this.timePoint,
-                            this.colormap,
-                            this.colorMin,
-                            this.colorMax,
-                            this.thresholdMin,
-                            this.thresholdMax,
-                            this.opacity,
-                            this.hoverTextOn,
-                            this.preprocState
-                        );
-                    };
-                });
+                // get slice slider
+                this.createVizOptionListener(
+                    EVENT_TYPES.VISUALIZATION.SLICE_SLIDER[sliceDiv],
+                    API_ENDPOINTS.UPDATE_PLOT_OPTIONS,
+                    getSliceIndicesData,
+                    updatePlot.bind(this)
+                );
             });
 
+            
             // Listen for crosshair toggle click
-            $(document).on(EVENT_TYPES.VISUALIZATION.TOGGLE_CROSSHAIR, (event) => {
-                // if checked
-                this.viewer.crosshairOn = !this.viewer.crosshairOn
-                // plot with or without crosshair
-                this.viewer.plot(
-                    this.timePoint,
-                    this.colormap,
-                    this.colorMin,
-                    this.colorMax,
-                    this.thresholdMin,
-                    this.thresholdMax,
-                    this.opacity,
-                    this.hoverTextOn,
-                    this.preprocState
-                );
-            });
+            this.createVizOptionListener(
+                EVENT_TYPES.VISUALIZATION.TOGGLE_CROSSHAIR,
+                API_ENDPOINTS.UPDATE_PLOT_OPTIONS,
+                () => {return {crosshair_on: true}},
+                updatePlot.bind(this)
+            );
 
-            // Listen for hover toggle click
-            $(document).on(EVENT_TYPES.VISUALIZATION.TOGGLE_DIRECTION_MARKER, (event) => {
-                // if checked
-                this.viewer.directionMarkerOn = !this.viewer.directionMarkerOn
-                // plot with or without direction marker labels
-                this.viewer.plot(
-                    this.timePoint,
-                    this.colormap,
-                    this.colorMin,
-                    this.colorMax,
-                    this.thresholdMin,
-                    this.thresholdMax,
-                    this.opacity,
-                    this.hoverTextOn,
-                    this.preprocState
-                );
-            });
+            // Listen for direction marker toggle click
+            this.createVizOptionListener(
+                EVENT_TYPES.VISUALIZATION.TOGGLE_DIRECTION_MARKER,
+                API_ENDPOINTS.UPDATE_PLOT_OPTIONS,
+                () => {return {direction_marker_on: true}},
+                updatePlot.bind(this)
+            );
         }
     }
 
@@ -480,14 +364,14 @@ class MainViewer{
     attachPreprocListeners = () => {
         // Listen for preprocessing submission
         $(document).on(EVENT_TYPES.PREPROCESSING.PREPROCESS_SUBMIT, (event, data) => {
-            // Set preprocess state to true
-            this.preprocState = true
             // Start spinner to indicate loading of files
             let spinnerOverlayDiv = document.getElementById(
-              'preproc-spinner-overlay'
+              CONSTANTS.SPINNERS.PREPROCESS_OVERLAY
             )
             spinnerOverlayDiv.style.display = 'block'
-            let spinnerDiv = document.getElementById('preproc-load-spinner')
+            let spinnerDiv = document.getElementById(
+              CONSTANTS.SPINNERS.PREPROCESS
+            )
             spinnerDiv.style.display = 'block'
             // fetch preprocessed data
             this.viewer.fetchPreprocessed(
@@ -978,5 +862,104 @@ class MainViewer{
     }
 
 }
+
+// Data extraction methods
+// get colormap
+getColormapData = (event) => {
+    const newColormap = event.detail.newValue
+    return {
+        plot_options: JSON.stringify({
+            colormap: newColormap
+        })
+    }
+};
+
+// get color range
+getColorRangeData = (event) => {
+    const colorRange = event.detail.newValue
+    const colormMin = colorRange[0]
+    const colormMax = colorRange[1]
+    return {
+        plot_options: JSON.stringify({
+            color_min: colormMin,
+            color_max: colormMax
+        })
+    }
+};
+
+// Threshold
+getThresholdData = (event) => {
+    const thresholdRange = event.detail.newValue
+    const thresholdMin = thresholdRange[0]
+    const thresholdMax = thresholdRange[1]
+    return {
+        plot_options: JSON.stringify({
+            threshold_min: thresholdMin,
+            threshold_max: thresholdMax
+        })
+    }
+};
+
+// Opacity
+getOpacityData = (event) => {
+    const opacity = event.detail.newValue
+    return {
+        plot_options: JSON.stringify({
+            opacity: opacity
+        })
+    }
+};
+
+// Hover text
+getHoverTextData = (event) => {
+    const hoverText = event.detail.newValue
+    return {
+        plot_options: JSON.stringify({
+            hover_text_on: hoverText
+        })
+    }
+};
+
+// get view state
+getViewStateData = (event) => {
+    const viewState = event.detail.newValue
+    return {
+        plot_options: JSON.stringify({
+            view_state: viewState,
+        })
+    }
+};
+
+// get montage slice direction
+getMontageSliceDirectionData = (event) => {
+    const sliceDirection = event.detail.newValue
+    return {
+        plot_options: JSON.stringify({
+            montage_slice_direction: sliceDirection,
+        })
+    }
+};
+
+// get slice indices
+getSliceIndicesData = (event) => {
+    const sliceIndices = event.detail.newValue
+    return {
+        plot_options: JSON.stringify({
+            slice_indices: sliceIndices,
+        })
+    }
+};
+
+// Plot Update methods
+// update plot
+updatePlot = () => {
+    this.viewer.plot();
+};
+// update plot and colorbar
+updateColorbarPlot = () => {
+    this.viewer.plot();
+    this.colorBar.plotColorbar();
+};
+
 
 export default MainViewer;

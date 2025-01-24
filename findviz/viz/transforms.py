@@ -131,7 +131,7 @@ def array_to_gifti(
     
     Returns:
     --------
-        gifti_img: nibabel gifti image
+        gifti_img: nibabel gifti image (left or right) or both
     """
     if both_hemispheres and split_index is None:
         raise ValueError("Split index is required for concatenated array")

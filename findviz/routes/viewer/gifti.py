@@ -12,6 +12,8 @@ def get_gifti_timepoint_data(
     time_point: int,
     func_left_img: Optional[nib.GiftiImage],
     func_right_img: Optional[nib.GiftiImage],
+    threshold_min: float = 0,
+    threshold_max: float = 0,
 ) -> Tuple[Optional[List[float]], Optional[List[float]]]:
     """Get functional data for a specific timepoint from left and right hemisphere Gifti images.
     
@@ -31,10 +33,20 @@ def get_gifti_timepoint_data(
     # Handle left hemisphere Gifti file
     if func_left_img is not None:
         func_data_left = func_left_img.darrays[time_point].data.tolist()
+        # threshold data if threshold_min or threshold_max are provided
+        if (threshold_min != 0) or (threshold_max != 0):
+            func_data_left = threshold_gifti_data(
+                func_data_left, threshold_min, threshold_max
+            )
 
-    # Handle right hemisphere GIFti file
+    # Handle right hemisphere Gifti file
     if func_right_img is not None:
         func_data_right = func_right_img.darrays[time_point].data.tolist()
+        # threshold data if threshold_min or threshold_max are provided
+        if (threshold_min != 0) or (threshold_max != 0):
+            func_data_right = threshold_gifti_data(
+                func_data_right, threshold_min, threshold_max
+            )
 
     return func_data_left, func_data_right
 
@@ -75,3 +87,22 @@ def get_timecourse_gifti(
 
     return time_course, time_course_label
 
+
+def threshold_gifti_data(
+    func_data: List[float],
+    threshold_min: float,
+    threshold_max: float,
+) -> List[float]:
+    """Threshold a list of functional data
+    
+    Parameters:
+    -----------
+        func_data: List of functional data
+        threshold_min: Minimum threshold value
+        threshold_max: Maximum threshold value
+    
+    Returns:
+    --------
+        List of thresholded functional data
+    """
+    return [max(min(x, threshold_max), threshold_min) for x in func_data]

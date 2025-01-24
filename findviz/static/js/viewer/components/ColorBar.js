@@ -1,30 +1,35 @@
+// ColorBar.js - Plot colorbar
+
 class ColorBar {
-    constructor(containerId, globalMin, globalMax, colorbarTitle) {
+    /**
+     * Constructor for ColorBar
+     * @param {string} containerId - The ID of the container
+     * @param {string} colorbarTitle - The title of the colorbar
+     */
+    constructor(containerId, colorbarTitle) {
         this.containerId = containerId;
-        this.globalMin = globalMin;
-        this.globalMax = globalMax;
         this.colorbarTitle=colorbarTitle;
     }
 
-    plotColorbar(colorscaleUser='Viridis', globalMin=null, globalMax=null) {
-        // Define minimal data setup to create the colorbar without showing actual data
-        // if global min and global max is passed as parameters update class
-        if ((globalMin !== null) && (globalMax !== null)) {
-            this.globalMin = globalMin
-            this.globalMax = globalMax
-        }
+    /**
+     * Plot colorbar
+     * @param {string} colormap - The colormap
+     * @param {number} colorMin - The global minimum
+     * @param {number} colorMax - The global maximum
+     */
+    plotColorbar(colormap='Viridis', colorMin=null, colorMax=null) {
         const colorbarData = [{
             z: [[1]],  // Small data for colorbar
             type: 'heatmap',
-            colorscale: colorscaleUser,  // Colormap to match the main plots
+            colorscale: colormap,  // Colormap to match the main plots
             showscale: true,  // Enable colorbar
-            zmin: this.globalMin,  // Set minimum of the color scale
-            zmax: this.globalMax,  // Set maximum of the color scale
+            zmin: colorMin,  // Set minimum of the color scale
+            zmax: colorMax,  // Set maximum of the color scale
             colorbar: {
                 title: this.colorbarTitle,  // Title for the colorbar
                 titleside: 'top',
-                tickvals: [this.globalMin, (this.globalMin + this.globalMax) / 2, this.globalMax],  // Custom tick values
-                ticktext: [`${this.globalMin.toFixed(2)}`, `${((this.globalMin + this.globalMax) / 2).toFixed(2)}`, `${this.globalMax.toFixed(2)}`],  // Custom tick labels
+                tickvals: [colorMin, (colorMin + colorMax) / 2, colorMax],  // Custom tick values
+                ticktext: [`${colorMin.toFixed(2)}`, `${((colorMin + colorMax) / 2).toFixed(2)}`, `${colorMax.toFixed(2)}`],  // Custom tick labels
                 len: 1,  // Full height of the plot
                 thickness: 20,  // Thickness of the colorbar
                 outlinewidth: 0,  // No border around the colorbar
@@ -58,12 +63,6 @@ class ColorBar {
         };
         // Plotly to plot just the colorbar
         Plotly.newPlot(this.containerId, colorbarData, layout);
-    }
-
-    // Rescale min and max of colorbar
-    rescaleMinMax(newGlobalMin, newGlobalMax) {
-        this.globalMin = newGlobalMin
-        this.globalMax = newGlobalMax
     }
 }
 
