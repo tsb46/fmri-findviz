@@ -1,25 +1,38 @@
 import { EVENT_TYPES } from '../constants/EventTypes.js';
-import { initializeSingleSlider } from './sliders.js';
+import { initializeSingleSlider } from '../sliders.js';
 import eventBus from '../events/ViewerEvents.js';
 import { updateTimePoint } from '../api/plot.js';
+import { getViewerMetadata } from '../../api/data.js';
 
 class TimeSlider {
     /**
      * Constructor for TimeSlider
-     * @param {Array} timePoints - The time points
      * @param {string} displayText - The display text
      * @param {string} timeSliderId - The ID of the time slider
+     * @param {string} timeSliderTitle - The title of the time slider
+     * @param {string} timeSliderTitleId - The ID of the time slider title
      */
     constructor(
-        timePoints, 
         displayText,
-        timeSliderId
+        timeSliderId,
+        timeSliderTitle,
+        timeSliderTitleId
     ) {
-        this.timePoints = timePoints;
+        // get timepoint array from viewer metadata
+        this.timePoints = getViewerMetadata(
+            (metadata) => {
+                this.timePoints = metadata.timepoints;
+            }
+        );
         this.displayText = displayText;
         this.timeSliderId = timeSliderId;
         this.timeSlider = $(`#${this.timeSliderId}`);
 
+        this.timeSliderTitle = $(`#${timeSliderTitleId}`);
+
+        // display time slider title
+        this.timeSliderTitle.text(timeSliderTitle);
+        
         // Initialize time slider
         this.initializeTimeSlider(this.timePoints)
 
@@ -62,7 +75,10 @@ class TimeSlider {
         await updateTimePoint(timeIndex);
 
         // Trigger a time slider change event
-        eventBus.publish(EVENT_TYPES.VISUALIZATION.TIME_SLIDER_CHANGE, timeIndex);
+        eventBus.publish(
+            EVENT_TYPES.VISUALIZATION.FMRI.TIME_SLIDER_CHANGE, 
+            timeIndex
+        );
     }
 }
 

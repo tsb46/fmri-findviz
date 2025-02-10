@@ -27,8 +27,18 @@ class ViewerEvents {
     }
 
     /**
-     * Emit event to all subscribers
-     * @param {string} eventType - Type of event to emit
+     * Subscribe to multiple event types
+     * @param {Array<string>} eventTypes - Array of event types to subscribe to
+     * @param {Function} callback - Callback function to execute
+     * @returns {Array<Symbol>} Subscription IDs
+     */
+    subscribeMultiple(eventTypes, callback) {
+        return eventTypes.map(eventType => this.subscribe(eventType, callback));
+    }
+
+    /**
+     * Publish event to all subscribers
+     * @param {string} eventType - Type of event to publish
      * @param {any} data - Event data
      */
     publish(eventType, data) {

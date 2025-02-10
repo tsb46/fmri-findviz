@@ -5,47 +5,26 @@ from enum import Enum
 
 import plotly.colors as pc
 
-from flask import Blueprint, make_response
+from flask import Blueprint
  
 from findviz.logger_config import setup_logger
+from findviz.routes.utils import handle_route_errors, Routes
+from findviz.viz.viewer.state import ColorMaps
 
 # Set up a logger for the app
 logger = setup_logger(__name__)
 
 color_bp = Blueprint('color', __name__)
 
-class ColorMaps(Enum):
-    """
-    Enum for color maps
-    """
-    GREYS = 'Greys'
-    YLGNBU = 'YlGnBu'
-    GREENS = 'Greens'
-    YLORRD = 'YlOrRd'
-    BLUERED = 'Bluered'
-    RDBU = 'RdBu'
-    REDS = 'Reds'
-    BLUES = 'Blues'
-    PICNIC = 'Picnic'
-    RAINBOW = 'Rainbow'
-    PORTLAND = 'Portland'
-    JET = 'Jet'
-    HOT = 'Hot'
-    BLACKBODY = 'Blackbody'
-    ELECTRIC = 'Electric'
-    VIRIDIS = 'Viridis'
-    CIVIDIS = 'Cividis'
-
 # Route to provide colormap data
-@color_bp.route('/get_colormaps', methods=['GET'])
-def get_colormaps():
-    try:
-        colormap_data = generate_colormap_data(ColorMaps)
-        return make_response(colormap_data, 200)
-    except Exception as e:
-        logger.critical(f"Error generating colormap data: {e}")
-        error_message = f"Error generating colormap data"
-        return make_response(error_message, 500)
+@color_bp.route(Routes.GET_COLORMAPS.value, methods=['GET'])
+@handle_route_errors(
+    error_msg='Error generating colormap data',
+    log_msg='Generated colormap data successfully'
+)
+def get_colormaps() -> dict:
+    """Get colormap data"""
+    return generate_colormap_data(ColorMaps)
 
 
 def generate_colormap_data(

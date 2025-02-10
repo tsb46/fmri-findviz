@@ -1,7 +1,7 @@
 // PreprocessFmri.js - Preprocessing for FMRI data
-import { EVENT_TYPES } from '../constants/EventTypes';
-import eventBus from '../events/ViewerEvents';
-import { getPreprocessedFMRI, resetFMRIPreprocess } from '../api/preprocess';
+import { EVENT_TYPES } from '../../constants/EventTypes';
+import eventBus from '../../events/ViewerEvents';
+import { getPreprocessedFMRI, resetFMRIPreprocess } from '../../api/preprocess';
 
 class PreprocessFmri {
     /**

@@ -148,15 +148,23 @@ def upload():
             right_mesh=uploads['gifti'][file_upload.Gifti.RIGHT_MESH.value]
         )
         logger.info("Gifti data manager state created successfully")
-    # if timecourse data, add to viewer data
-    if file_upload.ts_status:
-        data_manager.add_timeseries(uploads['ts'])
+    # initialize data manager with or without time series data
+    data_manager.add_timeseries(uploads['ts'])
+    if file_upload['ts'] is not None:
         logger.info("Time series data added to viewer data")
+    else:
+        logger.info("No time series data added to viewer data")
 
     # if task data, add to viewer data
     if file_upload.task_status:
-        data_manager.add_task_design(uploads['task'])
+        data_manager.add_task_design(
+            task_data=uploads['task']['task_regressor'], 
+            tr=uploads['task']['tr'], 
+            slicetime_ref=uploads['task']['slicetime_ref']
+        )
         logger.info("Task design data added to viewer data")
+    else:
+        logger.info("No task design data added to viewer data")
 
     # get viewer metadata
     viewer_metadata = data_manager.get_viewer_metadata()

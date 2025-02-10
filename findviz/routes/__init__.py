@@ -1,6 +1,6 @@
 """Flask routes"""
 from findviz.routes import file
-from findviz.routes.viewer import color, preprocess, data, plot_options
+from findviz.routes.viewer import color, plot, preprocess, data
 from findviz.routes import utils
 
 
@@ -10,5 +10,5 @@ __all__ = [
     'preprocess',
     'utils',
     'data',
-    'plot_options'
+    'plot'
 ]

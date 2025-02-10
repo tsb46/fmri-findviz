@@ -1,31 +1,27 @@
 import numpy as np
 
-from scipy.stats import zscore
-from scipy.spatial.distance import cdist
-
-
-# correlation between fMRI and ts (and lags)
-def correlation(data, ts, lags):
-    # standardize nifti and time course data
-    ts = zscore(ts)
-    data = zscore(data, axis=0)
-
-    # get lag matrix
-    lagmat = lag_mat(ts, lags)
-    # compute correlation map
-    correlation_map = (
-        np.dot(data.T, lagmat) / len(ts)
-    )
-    return correlation_map.T
-
-# calculate distance between time point and rest of time points
-def distance(data, time_point, metric):
-    dist = cdist(data[time_point,:][np.newaxis,:], data, metric=metric)
-    return np.squeeze(dist)
-
 
 # index array with range (w/ NaN padding for out-of-bound indices )
 def extract_range(array, center, left_edge, right_edge):
+    """
+    Extract a range of rows from an array with NaN padding for out-of-bound indices
+
+    Parameters
+    ----------
+    array : np.ndarray
+        array to extract range from
+    center : int
+        center of the range
+    left_edge : int
+        left edge of the range
+    right_edge : int
+        right edge of the range
+
+    Returns
+    -------
+    padded_range : np.ndarray
+        array with NaN padding for out-of-bound indices
+    """
     num_rows, num_cols = array.shape
     range_size = right_edge - left_edge + 1
     # Create a NaN-filled placeholder for the range
@@ -42,11 +38,23 @@ def extract_range(array, center, left_edge, right_edge):
     return padded_range
 
 
-def lag_mat(x, lags):
+def get_lag_mat(x: np.ndarray, lags: list) -> np.ndarray:
     """
     Create array of time-lagged copies of the time course. Modified
     for negative lags from:
     https://github.com/ulf1/lagmat
+
+    Parameters
+    ----------
+    x : np.ndarray
+        time course (n_timepoints)
+    lags : list
+        lags (n_lags)
+
+    Returns
+    -------
+    x_lag : np.ndarray
+        time-lagged copies of the time course (n_timepoints, n_lags * n_timepoints)
     """
     n_rows, n_cols = x.shape
     n_lags = len(lags)
@@ -72,19 +80,3 @@ def lag_mat(x, lags):
             x_lag[:l, j:k] = x[-nl:, :]
     return x_lag
 
-
-# window averaging around time points (markers)
-def window_average(data, markers, left_edge, right_edge):
-    # index windows for each marker
-    windows = []
-    for center in markers:
-        windows.append(
-            extract_range(data, center, left_edge, right_edge)
-        )
-    # convert to 3d array
-    windows = np.stack(windows, axis=0)
-
-    # average all windows
-    w_avg = np.nanmean(windows, axis=0)
-
-    return w_avg

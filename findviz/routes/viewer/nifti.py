@@ -9,9 +9,9 @@ import numpy as np
 from nilearn.image import index_img
 
 class SliceData(TypedDict):
-    x: np.ndarray
-    y: np.ndarray 
-    z: np.ndarray
+    x: List[List[float]]
+    y: List[List[float]]
+    z: List[List[float]]
 
 class CoordLabels(TypedDict):
     x: List[Tuple[int, int, int]]
@@ -20,38 +20,11 @@ class CoordLabels(TypedDict):
 
 class TimePointData(TypedDict):
     func: SliceData
-    anat: SliceData
-    coord_labels: CoordLabels
+    anat: Optional[SliceData]
+    coord_labels: Optional[CoordLabels]
 
 
-def get_timecourse_nifti(
-    func_img: nib.Nifti1Image,
-    x: int,
-    y: int,
-    z: int,
-) -> Tuple[List[float], str]:
-    """
-    Get timecourse data and voxel label for a specific voxel 
-    from a functional NIFTI file.
-
-    Parameters
-    ----------
-    func_img : nib.Nifti1Image
-        Functional NIFTI image
-    x : int
-        X-coordinate of the voxel
-    y : int
-        Y-coordinate of the voxel
-    z : int
-        Z-coordinate of the voxel
-    """
-    # create time course label
-    time_course_label = f'Voxel: (x={x}, y={y}, z={z})'
-    time_course = func_img.get_fdata()[x, y, z, :].tolist()
-    return time_course, time_course_label
-
-
-def get_nifti_timepoint_data(
+def get_nifti_data(
     time_point: int,
     func_img: nib.Nifti1Image,
     coord_labels: np.ndarray,
@@ -89,12 +62,12 @@ def get_nifti_timepoint_data(
 
     Returns
     -------
-    Dict[str, Dict[str, np.ndarray]]
+    Dict[str, Dict[str, List[List[float]]]]
         Dictionary containing slice data for each image type and axis:
         {
-            'func': {'x': array, 'y': array, 'z': array},
-            'anat': {'x': array, 'y': array, 'z': array},
-            'mask': {'x': array, 'y': array, 'z': array},
+            'func': {'x': List[List[float]], 'y': List[List[float]], 'z': List[List[float]]},
+            'anat': {'x': List[List[float]], 'y': List[List[float]], 'z': List[List[float]]},
+            'mask': {'x': List[List[float]], 'y': List[List[float]], 'z': List[List[float]]},
             'coords': List[Tuple[int, int, int]]
         }
     """
@@ -175,6 +148,33 @@ def get_slice_data(
         ).transpose()
 
     return slice_data.tolist()
+
+
+def get_timecourse_nifti(
+    func_img: nib.Nifti1Image,
+    x: int,
+    y: int,
+    z: int,
+) -> Tuple[List[float], str]:
+    """
+    Get timecourse data and voxel label for a specific voxel 
+    from a functional NIFTI file.
+
+    Parameters
+    ----------
+    func_img : nib.Nifti1Image
+        Functional NIFTI image
+    x : int
+        X-coordinate of the voxel
+    y : int
+        Y-coordinate of the voxel
+    z : int
+        Z-coordinate of the voxel
+    """
+    # create time course label
+    time_course_label = f'Voxel: (x={x}, y={y}, z={z})'
+    time_course = func_img.get_fdata()[x, y, z, :].tolist()
+    return time_course, time_course_label
 
 
 def threshold_nifti_data(

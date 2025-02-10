@@ -13,6 +13,40 @@ class ExceptionFileTypes(Enum):
     NIFTI_GIFTI='nifti/gifti'
 
 
+class DataRequestError(Exception):
+    """
+    Missing data in request for data update
+
+    Attributes
+    ----------
+    message : str
+        custom error message to display to user
+    fmri_file_type : str
+        what type of file (e.g. nifti, timecourse) the error occured with
+    route : Routes
+        the route that the error occured in
+    input_field: str
+        the input field that was not available in request.form
+    """
+    def __init__(
+        self, 
+        message: str, 
+        fmri_file_type: Literal['nifti', 'gifti'], 
+        route: str,
+        input_field: str
+    ):
+        super().__init__(message)
+        self.message = message
+        self.input_field = input_field
+        self.fmri_file_type = fmri_file_type
+        self.route = route
+
+    def __str__(self):
+        if self.input_field:    
+            return (f"{self.message} - missing input field: "
+                   f"{self.input_field} for {self.fmri_file_type} "
+                   f"via {self.route.value}")
+
 class FileInputError(Exception):
     """
     Error in file inputs provided by user
@@ -193,41 +227,6 @@ class FileValidationError(Exception):
 
     def __str__(self):
         return f"{self.message} - validation error in {self.func_name} for {self.file_type.value} file"
-
-
-class DataRequestError(Exception):
-    """
-    Missing data in request for data update
-
-    Attributes
-    ----------
-    message : str
-        custom error message to display to user
-    fmri_file_type : str
-        what type of file (e.g. nifti, timecourse) the error occured with
-    route : Routes
-        the route that the error occured in
-    input_field: str
-        the input field that was not available in request.form
-    """
-    def __init__(
-        self, 
-        message: str, 
-        fmri_file_type: Literal['nifti', 'gifti'], 
-        route: str,
-        input_field: str
-    ):
-        super().__init__(message)
-        self.message = message
-        self.input_field = input_field
-        self.fmri_file_type = fmri_file_type
-        self.route = route
-
-    def __str__(self):
-        if self.input_field:    
-            return (f"{self.message} - missing input field: "
-                   f"{self.input_field} for {self.fmri_file_type} "
-                   f"via {self.route.value}")
         
 
 class NiftiMaskError(Exception):
@@ -248,6 +247,29 @@ class NiftiMaskError(Exception):
 
     def __str__(self):
         return f"Nifti mask error: {self.message}"
+
+
+class ParameterInputError(Exception):
+    """
+    Error in parameter input
+
+    Attributes
+    ----------
+    message : str
+        custom error message to display to user
+    parameters: Optional[List[str]]
+        the parameters that the error occured with
+    """
+    def __init__(self, message: str, parameters: Optional[List[str]] = None):
+        super().__init__(message)
+        self.message = message
+        self.parameters = parameters
+
+    def __str__(self):
+        if self.parameters:
+            return f"Parameter input error: {self.message} for parameters: {self.parameters}"
+        else:
+            return f"Parameter input error: {self.message}"
 
 
 class PreprocessInputError(Exception):
@@ -281,3 +303,24 @@ class PreprocessInputError(Exception):
                    f"{self.preprocess_method}")
         else:
             return f"Preprocess input error: {self.message}"
+
+
+class PeakFinderNoPeaksFoundError(Exception):
+    """
+    Error in peak finder when no peaks are found
+
+    Attributes
+    ----------
+    message : str
+        custom error message to display to user
+    """
+    def __init__(
+        self, 
+        message: str = "No peaks found. Please check your input parameters."    
+    ):
+        super().__init__(message)
+        self.message = message
+
+    def __str__(self):
+        return f"Peak finder error: {self.message}"
+        

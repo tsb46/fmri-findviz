@@ -1,9 +1,9 @@
 // Colorsliders.js - used to initialize color sliders
 
-import { initializeRangeSlider, initializeSingleSlider } from '../utils/sliders';
-import { EVENT_TYPES } from '../constants/EventTypes';
-import eventBus from '../events/ViewerEvents';
-import { getPlotOptions, resetColorOptions } from '../api/plot';
+import { initializeRangeSlider, initializeSingleSlider } from '../sliders';
+import { EVENT_TYPES } from '../../constants/EventTypes';
+import eventBus from '../../events/ViewerEvents';
+import { getFmriPlotOptions, updateFmriPlotOptions, resetFmriColorOptions } from '../../api/plot';
 
 class ColorSliders {
     /**
@@ -26,16 +26,16 @@ class ColorSliders {
         this.resetColorSliderId = resetColorSliderId;
 
         // get plot options
-        getPlotOptions((plotOptions) => {
+        getFmriPlotOptions((plotOptions) => {
             this.initializeColorSliders(
-                plotOptions.colorMin,
-                plotOptions.colorMax,
-                plotOptions.colorRange,
-                plotOptions.thresholdMin,
-                plotOptions.thresholdMax,
-                plotOptions.thresholdRange,
-                plotOptions.sliderStepSize,
-                plotOptions.opacityValue,
+                plotOptions.color_min,
+                plotOptions.color_max,
+                plotOptions.color_range,
+                plotOptions.threshold_min,
+                plotOptions.threshold_max,
+                plotOptions.threshold_range,
+                plotOptions.slider_step_size,
+                plotOptions.opacity,
                 this.colorSliderId,
                 this.thresholdSliderId,
                 this.opacitySliderId,
@@ -107,8 +107,12 @@ initializeColorSliders(
     colorRangeSliderListener() {
         const colorSlider = $(`#${this.colorSliderId}`);
         colorSlider.on('change', (event) => {
-            const colorValues = event.value;
-            eventBus.publish(EVENT_TYPES.COLOR_SLIDER_CHANGE, colorValues);
+            const colorValues = event.value.newValue;
+            updateFmriPlotOptions({
+                color_range: colorValues,
+            }, () => {
+                eventBus.publish(EVENT_TYPES.COLOR_SLIDER_CHANGE, colorValues);
+            });
         });
     }
 
@@ -116,8 +120,12 @@ initializeColorSliders(
     thresholdSliderListener() {
         const thresholdSlider = $(`#${this.thresholdSliderId}`);
         thresholdSlider.on('change', (event) => {
-            const thresholdValues = event.value;
-            eventBus.publish(EVENT_TYPES.THRESHOLD_SLIDER_CHANGE, thresholdValues);
+            const thresholdValues = event.value.newValue;
+            updateFmriPlotOptions({
+                threshold_range: thresholdValues,
+            }, () => {
+                eventBus.publish(EVENT_TYPES.THRESHOLD_SLIDER_CHANGE, thresholdValues);
+            });
         });
     }
 
@@ -127,8 +135,12 @@ initializeColorSliders(
     opacitySliderListener() {
         const opacitySlider = $(`#${this.opacitySliderId}`);
         opacitySlider.on('change', (event) => {
-            const opacityValues = event.value;
-            eventBus.publish(EVENT_TYPES.OPACITY_SLIDER_CHANGE, opacityValues);
+            const opacityValues = event.value.newValue;
+            updateFmriPlotOptions({
+                opacity: opacityValues,
+            }, () => {
+                eventBus.publish(EVENT_TYPES.OPACITY_SLIDER_CHANGE, opacityValues);
+            });
         });
     }
 
@@ -146,21 +158,22 @@ initializeColorSliders(
      * Reset color sliders
      */
     async resetColorSliders() {
-        await resetColorOptions();
-        getPlotOptions((plotOptions) => {
+        await resetFmriColorOptions();
+        getFmriPlotOptions((plotOptions) => {
             this.initializeColorSliders(
-                plotOptions.colorMin,
-                plotOptions.colorMax,
-                plotOptions.colorRange,
-                plotOptions.thresholdMin,
-                plotOptions.thresholdMax,
-                plotOptions.thresholdRange,
-                plotOptions.sliderStepSize,
-                plotOptions.opacityValue,
+                plotOptions.color_min,
+                plotOptions.color_max,
+                plotOptions.color_range,
+                plotOptions.threshold_min,
+                plotOptions.threshold_max,
+                plotOptions.threshold_range,
+                plotOptions.slider_step_size,
+                plotOptions.opacity,
                 this.colorSliderId,
                 this.thresholdSliderId,
                 this.opacitySliderId,
             );
+            eventBus.publish(EVENT_TYPES.VISUALIZATION.FMRI.RESET_COLOR_SLIDERS);
         });
     }
 }

@@ -6,7 +6,7 @@
  * @param {number} sliderValue - Value of the slider
  * @param {number[]} sliderRange - min and max range of the slider
  * @param {number} sliderStepSize - step size of the slider
- * @param {function} formatter - formatter function
+ * @param {function | null} formatter - formatter function (optional)
  */
 export function initializeSingleSlider(
     sliderId,

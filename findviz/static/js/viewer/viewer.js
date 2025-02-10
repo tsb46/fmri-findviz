@@ -1,24 +1,46 @@
 // viewer.js
-import { 
-    FILE_TYPES, DOM_IDS, CONTAINER_IDS, DEFAULTS, 
-    API_ENDPOINTS, FORM_SUBMIT_NAMES 
-} from './constants/constants.js';
-import { EVENT_TYPES } from './constants/EventTypes.js';
-import { Types } from './constants/Types.js';
-import ColorBar from './components/colorbar.js';
-import Distance from '../analytics/distance.js';
-import TimeCourse from './plots/timecourse.js';
-import TimeSlider from './components/TimeSlider.js';
-import { VisualizationOptions, PreprocessingOptions } from './user.js';
-import NiftiViewer from './plots/nifti.js';
-import GiftiViewer from './plots/gifti.js';
-import ViewerError from './error.js';
-/**
- * @typedef {import('./constants/Types.js').ViewerData} ViewerData
- * @typedef {import('./constants/Types.js').VisualizationParams} VisualizationParams
- * @typedef {import('./constants/Types.js').TimeCourseData} TimeCourseData
- */
+// Main viewer class for neuroimaging and time course data visualization
 
+// Constants
+import { DOM_IDS } from './constants/DomIds.js';
+import { API_ENDPOINTS } from './constants/APIEndpoints.js';
+// Event Types
+import { EVENT_TYPES } from './constants/EventTypes.js';
+// Components
+// general components
+import ColorMap from './components/ColorMap.js';
+// distance plot components
+import DistanceModal from './components/distance/DistanceModal.js';
+import DistancePopover from './components/distance/DistancePopover.js';
+// FMRI plot components
+import ColorBar from './components/fmri/ColorBar.js';
+import ColorSliders from './components/fmri/ColorSliders.js';
+import Montage from './components/fmri/Montage.js';
+import PreprocessFmri from './components/fmri/PreprocessFmri.js';
+import TimeSlider from './components/fmri/TimeSlider.js';
+import ViewOptionsFmri from './components/fmri/ViewOptionsFmri.js';
+// timecourse plot components
+import Annotate from './components/timecourse/Annotate.js';
+import Average from './components/timecourse/Average.js';
+import Correlate from './components/timecourse/Correlate.js';
+import LinePlotOptions from './components/timecourse/LinePlotOptions.js';
+import PeakFinder from './components/timecourse/PeakFinder.js';
+import PreprocessTimecourse from './components/timecourse/PreprocessTimecourse.js';
+import ViewOptionsTimeCourse from './components/timecourse/ViewOptionsTimeCourse.js';
+// plot components
+import Distance from './plots/Distance.js';
+import GiftiViewer from './plots/GiftiViewer.js';
+import NiftiViewer from './plots/NiftiViewer.js';
+import TimeCourse from './plots/TimeCourse.js';
+// plot options
+import { 
+    getDistancePlotOptions, 
+    getFmriPlotOptions, 
+    updateDistancePlotOptions, 
+    updateFmriPlotOptions 
+} from './api/plot.js';
+// viewer metadata
+import { getViewerMetadata } from './api/data.js';
 
 /**
  * MainViewer class handles the primary visualization logic for neuroimaging data
@@ -27,35 +49,19 @@ import ViewerError from './error.js';
 class MainViewer{
     /**
      * Creates a new MainViewer instance
-     * @param {ViewerData} viewerData - Data object containing visualization parameters and file information
-     * @throws {Error} If viewerData format is invalid
+     * @param {object} viewerData - Data object containing visualization parameters and file information
      */
     constructor(
+        plotType,
         viewerData
       ) {
-        if (!Types.isViewerData(viewerData)) {
-            throw new Error('Invalid viewer data format');
-        }
-        // Set file type and common properties
-        /** @type {string} Type of plot ('nifti' or 'gifti') */
-        this.plotType = viewerData.file_type;
-        
-        /** @type {number[]} Array of timepoint indices */
-        this.timepoints = viewerData.timepoints;
-
-        // set title of time slider
-        document.getElementById(DOM_IDS.TIME_SLIDER_TITLE).textContent = 'Time Point:';
-
-        // initialize viewer error modal
-        this.viewerError = new ViewerError();
+        this.plotType = plotType;
 
         // Initialize viewer
         this.initializeViewer(viewerData);
         // Initialize viewer components
         this.initializeComponents(viewerData);
         
-        // Set up fmri time course event listeners
-        this.timeCourseListeners();
     }
 
     /**
@@ -64,41 +70,227 @@ class MainViewer{
      * @param {ViewerData} viewerData - Data for component initialization
      */
     initializeComponents(viewerData) {
-        /** @type {TimeSlider} Time slider component */
+        // initialize fmri components
+        this.initializeFmriComponents();
+
+        // initialize time course components
+        this.initializeTimecourseComponents();
+
+    }
+
+    /**
+     * Initializes fmri components
+     * @private
+     */
+    initializeFmriComponents() {
+        // Initialize time slider component
         this.timeSlider = new TimeSlider(
-            this.timepoints,
-            'Time Point: '
+            'Time Point: ',
+            DOM_IDS.TIME_SLIDER.TIME_SLIDER,
+            'Time Point: ',
+            DOM_IDS.TIME_SLIDER.TIME_SLIDER_TITLE
+        );
+        // initialize color map component for fmri
+        this.colorMap = new ColorMap(
+            DOM_IDS.VISUALIZATION_OPTIONS.COLORMAP_DROPDOWN,
+            DOM_IDS.VISUALIZATION_OPTIONS.COLORMAP_DROPDOWN_MENU,
+            DOM_IDS.VISUALIZATION_OPTIONS.COLORMAP_DROPDOWN_TOGGLE,
+            getFmriPlotOptions,
+            updateFmriPlotOptions,
+            EVENT_TYPES.VISUALIZATION.FMRI.COLOR_MAP_CHANGE
         );
 
-        /** @type {VisualizationOptions} Visualization options component */
-        this.visualizationOptions = new VisualizationOptions(
-            this.globalMin,
-            this.globalMax,
-            this.plotType,
-            this.sliceLen,
-            this.attachVizOptionListeners
+        // initialize color map component for distance
+        this.distanceColorMap = new ColorMap(
+            DOM_IDS.DISTANCE.COLORMAP_DROPDOWN,
+            DOM_IDS.DISTANCE.COLORMAP_DROPDOWN_MENU,
+            DOM_IDS.DISTANCE.COLORMAP_DROPDOWN_TOGGLE,
+            getDistancePlotOptions,
+            updateDistancePlotOptions,
+            EVENT_TYPES.VISUALIZATION.DISTANCE.COLOR_MAP_CHANGE
         );
 
-        /** @type {PreprocessingOptions} Preprocessing options component */
-        this.preprocessOptions = new PreprocessingOptions(
-            this.plotType,
-            this.attachPreprocListeners,
-            viewerData.mask_input
-        );
-
-         /** @type {ColorBar} Color bar component */
-         this.colorBar = new ColorBar(
-            this.colorbarDiv,
-            this.globalMin,
-            this.globalMax,
+        // initialize colorbar component
+        this.colorBar = new ColorBar(
+            DOM_IDS.FMRI.NIFTI_CONTAINERS.COLORBAR,
             'Intensity'
         );
 
-        // initialize time course
-        this.initializeTimeCourse(viewerData);
+        // initialize color sliders component
+        this.colorSliders = new ColorSliders(
+            DOM_IDS.FMRI.VISUALIZATION_OPTIONS.COLOR_RANGE_SLIDER,
+            DOM_IDS.FMRI.VISUALIZATION_OPTIONS.THRESHOLD_SLIDER,
+            DOM_IDS.FMRI.VISUALIZATION_OPTIONS.OPACITY_SLIDER,
+            DOM_IDS.FMRI.VISUALIZATION_OPTIONS.RESET_SLIDER_BUTTON
+        );
 
-        /** @type {Distance} Distance computation component */
-        this.distance = new Distance(true, this.timeSlider.sliderElement);
+        // initialize montage component
+        this.montage = new Montage(
+            this.plotType,
+            DOM_IDS.FMRI.VISUALIZATION_OPTIONS.MONTAGE_POPOVER,
+            DOM_IDS.FMRI.VISUALIZATION_OPTIONS.MONTAGE_SLICE_SELECT,
+            DOM_IDS.FMRI.VISUALIZATION_OPTIONS.MONTAGE_SLICE_1_SLIDER,
+            DOM_IDS.FMRI.VISUALIZATION_OPTIONS.MONTAGE_SLICE_2_SLIDER,
+            DOM_IDS.FMRI.VISUALIZATION_OPTIONS.MONTAGE_SLICE_3_SLIDER
+        );
+
+        // initialize preprocessing fmri component
+        this.preprocessFmri = new PreprocessFmri(
+            this.plotType,
+            DOM_IDS.FMRI.PREPROCESSING_OPTIONS.ENABLE_NORMALIZATION,
+            DOM_IDS.FMRI.PREPROCESSING_OPTIONS.ENABLE_FILTERING,
+            DOM_IDS.FMRI.PREPROCESSING_OPTIONS.ENABLE_SMOOTHING,
+            DOM_IDS.FMRI.PREPROCESSING_OPTIONS.SUBMIT_PREPROCESS_BUTTON,
+            DOM_IDS.FMRI.PREPROCESSING_OPTIONS.RESET_PREPROCESS_BUTTON,
+            DOM_IDS.FMRI.PREPROCESSING_OPTIONS.SELECT_MEAN_CENTER,
+            DOM_IDS.FMRI.PREPROCESSING_OPTIONS.SELECT_Z_SCORE,
+            DOM_IDS.FMRI.PREPROCESSING_OPTIONS.FILTER_TR,
+            DOM_IDS.FMRI.PREPROCESSING_OPTIONS.FILTER_LOW_CUT,
+            DOM_IDS.FMRI.PREPROCESSING_OPTIONS.FILTER_HIGH_CUT,
+            DOM_IDS.FMRI.PREPROCESSING_OPTIONS.SMOOTHING_FWHM,
+            DOM_IDS.FMRI.PREPROCESSING_OPTIONS.ERROR_MESSAGE_PREPROCESS,
+            DOM_IDS.FMRI.PREPROCESSING_OPTIONS.PREPROCESS_ALERT
+        );
+
+        // initialize fmri viewer options component
+        if (this.plotType === 'nifti') {
+            const plotlyDivIds = [
+                DOM_IDS.FMRI.NIFTI_CONTAINERS.SLICE_1_CONTAINER,
+                DOM_IDS.FMRI.NIFTI_CONTAINERS.SLICE_2_CONTAINER,
+                DOM_IDS.FMRI.NIFTI_CONTAINERS.SLICE_3_CONTAINER
+            ];
+            const captureDivId = DOM_IDS.FMRI.NIFTI_CONTAINERS.SLICE_CONTAINER;
+        }
+        else if (this.plotType === 'gifti') {
+            const plotlyDivIds = [
+                DOM_IDS.FMRI.GIFTI_CONTAINERS.SURFACE_CONTAINER
+            ];
+            const captureDivId = DOM_IDS.FMRI.GIFTI_CONTAINERS.SURFACE_CONTAINER;
+        }
+        this.fmriViewerOptions = new ViewOptionsFmri(
+            this.plotType,
+            plotlyDivIds,
+            captureDivId,
+            DOM_IDS.TIME_SLIDER.TIME_SLIDER,
+            DOM_IDS.FMRI.VISUALIZATION_OPTIONS.COLORMAP_DROPDOWN,
+            DOM_IDS.FMRI.VISUALIZATION_OPTIONS.COLORMAP_DROPDOWN_MENU,
+            DOM_IDS.FMRI.VISUALIZATION_OPTIONS.COLORMAP_DROPDOWN_TOGGLE,
+            DOM_IDS.FMRI.VISUALIZATION_OPTIONS.PLAY_MOVIE_BUTTON,
+            DOM_IDS.FMRI.VISUALIZATION_OPTIONS.TOGGLE_VIEW_BUTTON,
+            DOM_IDS.FMRI.VISUALIZATION_OPTIONS.CROSSHAIR_TOGGLE,
+            DOM_IDS.FMRI.VISUALIZATION_OPTIONS.HOVER_TOGGLE,
+            DOM_IDS.FMRI.VISUALIZATION_OPTIONS.DIRECTION_LABELS_TOGGLE,
+            DOM_IDS.FMRI.VISUALIZATION_OPTIONS.SCREENSHOT_BUTTON,
+            DOM_IDS.FMRI.VISUALIZATION_OPTIONS.PLAY_MOVIE_BUTTON
+        );
+
+        // initialize distance modal component
+        this.distanceModal = new DistanceModal(
+            DOM_IDS.MODALS.DISTANCE,
+            DOM_IDS.DISTANCE.DISTANCE_FORM,
+            DOM_IDS.DISTANCE.METRIC_SELECT,
+            DOM_IDS.DISTANCE.TIME_POINT_MESSAGE,
+            DOM_IDS.DISTANCE.REMOVE_DISTANCE_BUTTON,
+            DOM_IDS.DISTANCE.PREPROCESS_ALERT,
+            DOM_IDS.DISTANCE.PREPROCESS_ALERT
+        );
+
+        // initialize distance popover component
+        this.distancePopover = new DistancePopover(
+            DOM_IDS.DISTANCE.POPOVER,
+            DOM_IDS.DISTANCE.COLORMAP_DROPDOWN,
+            DOM_IDS.DISTANCE.COLORMAP_DROPDOWN_MENU,
+            DOM_IDS.DISTANCE.COLORMAP_DROPDOWN_TOGGLE,
+            DOM_IDS.DISTANCE.COLOR_RANGE_SLIDER,
+            DOM_IDS.DISTANCE.TIME_MARKER_WIDTH_SLIDER,
+            DOM_IDS.DISTANCE.TIME_MARKER_OPACITY_SLIDER,
+        );
+
+        // initialize distance plot component
+        this.distancePlot = new Distance(
+            DOM_IDS.DISTANCE.PLOT,
+            DOM_IDS.DISTANCE.CONTAINER
+        );
+    }
+
+
+    // initialize timecourse components
+    initializeTimecourseComponents() {
+        // initialize annotate component
+        this.annotate = new Annotate(
+            DOM_IDS.TIMECOURSE.TIME_COURSE_PLOT,
+            DOM_IDS.TIMECOURSE.ANNOTATE.ENABLE_ANNOTATE,
+            DOM_IDS.TIMECOURSE.ANNOTATE.HIGHLIGHT_ANNOTATE,
+            DOM_IDS.TIMECOURSE.ANNOTATE.RIGHT_MOVE_ANNOTATE,
+            DOM_IDS.TIMECOURSE.ANNOTATE.LEFT_MOVE_ANNOTATE,
+            DOM_IDS.TIMECOURSE.ANNOTATE.UNDO_ANNOTATE,
+            DOM_IDS.TIMECOURSE.ANNOTATE.REMOVE_ANNOTATE
+        );
+
+        // initialize window average component
+        this.average = new Average(
+            DOM_IDS.MODALS.AVERAGE,
+            DOM_IDS.AVERAGE.LEFT_EDGE,
+            DOM_IDS.AVERAGE.RIGHT_EDGE,
+            DOM_IDS.AVERAGE.SUBMIT_AVERAGE,
+            DOM_IDS.AVERAGE.AVERAGE_FORM,
+            DOM_IDS.AVERAGE.ANNOTATION_WARNING
+        );
+
+        // initialize correlation component
+        this.correlate = new Correlate(
+            DOM_IDS.MODALS.CORRELATION,
+            DOM_IDS.CORRELATE.NEGATIVE_LAG,
+            DOM_IDS.CORRELATE.POSITIVE_LAG,
+            DOM_IDS.CORRELATE.TIMECOURSE_SELECT,
+            DOM_IDS.CORRELATE.SUBMIT_CORRELATE,
+            DOM_IDS.CORRELATE.CORRELATE_FORM
+        );
+
+        // initialize line plot components
+        this.linePlotOptions = new LinePlotOptions(
+            DOM_IDS.TIMECOURSE.LINE_PLOT_OPTIONS.SELECT_TIMECOURSE,
+            DOM_IDS.TIMECOURSE.LINE_PLOT_OPTIONS.OPACITY_SLIDER,
+            DOM_IDS.TIMECOURSE.LINE_PLOT_OPTIONS.WIDTH_SLIDER,
+            DOM_IDS.TIMECOURSE.LINE_PLOT_OPTIONS.COLOR_SELECT,
+            DOM_IDS.TIMECOURSE.LINE_PLOT_OPTIONS.MARKER_SELECT,
+            DOM_IDS.TIMECOURSE.MARKER_PLOT_OPTIONS.WIDTH_SLIDER,
+            DOM_IDS.TIMECOURSE.MARKER_PLOT_OPTIONS.OPACITY_SLIDER,
+            DOM_IDS.TIMECOURSE.MARKER_PLOT_OPTIONS.MARKER_SELECT,
+            DOM_IDS.TIMECOURSE.MARKER_PLOT_OPTIONS.COLOR_SELECT,  
+        );
+
+        // initialize peak finder component
+        this.peakFinder = new PeakFinder(
+            DOM_IDS.TIMECOURSE.PEAK_FINDER.POPOVER,
+            DOM_IDS.TIMECOURSE.PEAK_FINDER.SELECT_TIMECOURSE,
+            DOM_IDS.TIMECOURSE.PEAK_FINDER.SUBMIT_PEAK_FINDER,
+            DOM_IDS.TIMECOURSE.PEAK_FINDER.PEAK_FORM
+        );
+
+        // initialize preprocessing timecourse component
+        this.preprocessTimecourse = new PreprocessTimecourse(
+            DOM_IDS.TIMECOURSE.PREPROCESSING_OPTIONS.ENABLE_NORMALIZATION,
+            DOM_IDS.TIMECOURSE.PREPROCESSING_OPTIONS.ENABLE_FILTERING,
+            DOM_IDS.TIMECOURSE.PREPROCESSING_OPTIONS.SUBMIT_PREPROCESS_BUTTON,
+            DOM_IDS.TIMECOURSE.PREPROCESSING_OPTIONS.RESET_PREPROCESS_BUTTON,
+            DOM_IDS.TIMECOURSE.PREPROCESSING_OPTIONS.SELECT_MEAN_CENTER,
+            DOM_IDS.TIMECOURSE.PREPROCESSING_OPTIONS.SELECT_Z_SCORE,
+            DOM_IDS.TIMECOURSE.PREPROCESSING_OPTIONS.FILTER_TR,
+            DOM_IDS.TIMECOURSE.PREPROCESSING_OPTIONS.FILTER_LOW_CUT,
+            DOM_IDS.TIMECOURSE.PREPROCESSING_OPTIONS.FILTER_HIGH_CUT,
+            DOM_IDS.TIMECOURSE.PREPROCESSING_OPTIONS.ERROR_MESSAGE_PREPROCESS,
+            DOM_IDS.TIMECOURSE.PREPROCESS_ALERT
+        );
+
+        // initialize timecourse viewer options component
+        this.timecourseViewerOptions = new ViewOptionsTimeCourse(
+            DOM_IDS.TIMECOURSE.VISUALIZATION_OPTIONS.TOGGLE_GRID,
+            DOM_IDS.TIMECOURSE.VISUALIZATION_OPTIONS.TOGGLE_TS_HOVER,
+            DOM_IDS.TIMECOURSE.VISUALIZATION_OPTIONS.TOGGLE_TIME_MARKER,
+            DOM_IDS.TIMECOURSE.VISUALIZATION_OPTIONS.TOGGLE_CONVOLUTION
+        );
+
     }
 
     /**
@@ -109,98 +301,48 @@ class MainViewer{
     initializePlot() {
         // change DOM elements of upload after successful upload
         this.afterUpload();
-        // Plot brain image
-        this.viewer.plot(
-            this.timePoint,
-            this.colormap,
-            this.colorMin,
-            this.colorMax,
-            this.thresholdMin,
-            this.thresholdMax,
-            this.opacity,
-            this.hoverTextOn,
-            this.preprocState,
-            true // update voxel coordinate labels (only for nifti)
-        ).then(() => {
-            // Weird layout of first plot for niftis, initiate resize to fix
-            if (this.plotType === FILE_TYPES.NIFTI) {
-                this.viewer.onWindowResize();
-            }
-            // Plot colorbar
-            this.colorBar.plotColorbar(this.colormap);
-            // set listener for time slider change
-            this.listenForTimeSliderChange();
-            // Plot time courses, if any
-            this.timeCourse.plotTimeCourses(this.timePoint);
-            // Register click handlers
-            this.registerClickHandlers();
-            // Listen for distance computation submit event
-            // Listen for correlation submit event
-            $(document).on(EVENT_TYPES.ANALYSIS.DISTANCE, (event) => {
-                this.initiateDistanceCompute(event)
-            });
-            // Listen for correlation submit event
-            $(document).on(EVENT_TYPES.ANALYSIS.CORRELATION, (event, data) => {
-                this.initiateCorrelation(event, data)
-            });
-            // Listen for window average submit event
-            $(document).on(EVENT_TYPES.ANALYSIS.AVERAGE, (event, data) => {
-                this.initiateAverage(event, data)
-            });
-        }).catch(error => {
-            console.error('Error during initialization:', error);
-        });
-    }
-
-    /**
-     * Initializes time course visualization
-     * @private
-     * @param {ViewerData} viewerData - Viewer data containing time course information
-     */
-    initializeTimeCourse(viewerData) {
-        /** @type {TimeCourseData} */
-        const timeCourseData = {
-            timeseries: viewerData.ts,
-            labels: viewerData.ts_labels,
-            task: viewerData.task
-        };
-
-        /** @type {TimeCourse} Time course visualization component */
-        this.timeCourse = new TimeCourse(
-            this.timepoints.length,
-            timeCourseData.timeseries,
-            timeCourseData.labels,
-            timeCourseData.task,
-            this.timeSlider.sliderElement
-        );
+        // plot fmri data
+        this.viewer.initPlot();
+        // plot time course data
+        this.timecourse.initPlot();
     }
 
     /**
      * Initializes the appropriate viewer based on file type
      * @private
-     * @param {ViewerData} viewerData - Viewer initialization data
      */
-    initializeViewer(viewerData) {
+    async initializeViewer() {
         if (this.plotType === FILE_TYPES.NIFTI) {
-            /** @type {NiftiViewer} NIFTI-specific viewer instance */
             this.viewer = new NiftiViewer(
-                viewerData.anat_input,
-                viewerData.mask_input,
-                viewerData.slice_len
+                DOM_IDS.FMRI.NIFTI_CONTAINERS.SLICE_CONTAINER,
+                DOM_IDS.FMRI.NIFTI_CONTAINERS.SLICE_1_CONTAINER,
+                DOM_IDS.FMRI.NIFTI_CONTAINERS.SLICE_2_CONTAINER,
+                DOM_IDS.FMRI.NIFTI_CONTAINERS.SLICE_3_CONTAINER,
+                DOM_IDS.FMRI.NIFTI_CONTAINERS.COLORBAR
             );
-            this.colorbarDiv = CONTAINER_IDS.COLORBAR.NIFTI;
         } else if (this.plotType === FILE_TYPES.GIFTI) {
-            /** @type {GiftiViewer} GIFTI-specific viewer instance */
             this.viewer = new GiftiViewer(
-                viewerData.left_input,
-                viewerData.right_input,
-                viewerData.vertices_left,
-                viewerData.faces_left,
-                viewerData.vertices_right,
-                viewerData.faces_right
+                DOM_IDS.FMRI.GIFTI_CONTAINERS.SURFACE_CONTAINER,
+                DOM_IDS.FMRI.GIFTI_CONTAINERS.SURFACE_CONTAINER,
+                DOM_IDS.FMRI.GIFTI_CONTAINERS.SURFACE_CONTAINER,
+                DOM_IDS.FMRI.GIFTI_CONTAINERS.SURFACE_CONTAINER,
             );
-            this.colorbarDiv = CONTAINER_IDS.COLORBAR.GIFTI;
         }
+
+        // check for time course or task design input
+        const viewerMetadata = await getViewerMetadata();
+        if (viewerMetadata.ts_enabled) {
+            this.timeCourseInput = true;
+        }
+        if (viewerMetadata.task_enabled) {
+            this.taskDesignInput = true;
+        }
+        // initialize time course viewer
+        this.timecourse = new TimeCourse(
+            DOM_IDS.TIMECOURSE.TIME_COURSE_PLOT,
+            this.timeCourseInput,
+            this.taskDesignInput
+        );
     }
 
    /**
@@ -226,740 +368,6 @@ class MainViewer{
         saveSceneDisplay.style.display = 'block';
     }
 
-    /**
-     * Creates an event listener for visualization options
-     * @private
-     * @param {string} event - The event type to listen for
-     * @param {string} endPoint - The endpoint to send the data to
-     * @param {function} getDataFunction - A function to get the data from the event
-     * @param {function} plotFunction - A function to plot the brain map
-     */
-    createVizOptionListener(event, endPoint, getDataFunction, plotFunction) {
-        $(document).on(event, async (event) => {
-            try {
-                // pass data to endpoint
-                const data = getDataFunction(event);
-                const response = await fetch(endPoint, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(data)
-                }); 
-                if (response.status === 200) {
-                    console.log('successful fetch for ', event);
-                    // plot brain map with new data
-                    plotFunction();
-                } else {
-                    const error = await response.json();
-                    this.viewerError.displayError(error.message);
-                }
-              } catch (error) {
-                const errorMessage = 'An unknown error occurred in data update';
-                this.viewerError.displayError(errorMessage);
-              }
-            
-        })
-    }
-    /**
-     * Attaches visualization option event listeners
-     * @private
-     * @returns {Promise<void>}
-     */
-    attachVizOptionListeners = () => {
-        // Listen for colormap change
-        this.createVizOptionListener(
-            EVENT_TYPES.VISUALIZATION.COLOR_MAP_CHANGE, 
-            API_ENDPOINTS.UPDATE_PLOT_OPTIONS,
-            getColormapData,
-            updateColorbarPlot.bind(this)
-        );
-        // Listen for color range slider change
-        this.createVizOptionListener(
-            EVENT_TYPES.VISUALIZATION.COLOR_SLIDER_CHANGE, 
-            API_ENDPOINTS.UPDATE_PLOT_OPTIONS,
-            getColorRangeData,
-            updateColorbarPlot.bind(this)
-        );
-
-        // Listen for threshold slider change
-        this.createVizOptionListener(
-            EVENT_TYPES.VISUALIZATION.THRESHOLD_SLIDER_CHANGE,
-            API_ENDPOINTS.UPDATE_PLOT_OPTIONS,
-            getThresholdData,
-            updatePlot.bind(this)
-        );
-
-        // Listen for opacity slider change
-        this.createVizOptionListener(
-            EVENT_TYPES.VISUALIZATION.OPACITY_SLIDER_CHANGE,
-            API_ENDPOINTS.UPDATE_PLOT_OPTIONS,
-            getOpacityData,
-            updatePlot.bind(this)
-        );
-
-        // Listen for hover toggle click
-        this.createVizOptionListener(
-            EVENT_TYPES.VISUALIZATION.HOVER_TEXT_TOGGLE,
-            API_ENDPOINTS.UPDATE_PLOT_OPTIONS,
-            getHoverTextData,
-            updatePlot.bind(this)
-        );
-        
-        
-        // attach nifti specific visualization options
-        if (this.plotType == 'nifti') {
-            // Listen for view toggle click
-            this.createVizOptionListener(
-                EVENT_TYPES.VISUALIZATION.VIEW_TOGGLE,
-                API_ENDPOINTS.UPDATE_VIEW_STATE,
-                getViewStateData,
-                updatePlot.bind(this)
-            );
-
-            // Listen for change to montage direction
-            this.createVizOptionListener(
-                EVENT_TYPES.VISUALIZATION.MONTAGE_SLICE_DIRECTION_CHANGE,
-                API_ENDPOINTS.UPDATE_PLOT_OPTIONS,
-                getMontageSliceDirectionData,
-                updatePlot.bind(this)
-            );  
-
-            // Listen for change to slice indices for montage for each slice
-            const sliceSliders = ['slice1Slider', 'slice2Slider', 'slice3Slider'];
-            sliceSliders.forEach((sliceDiv, index) => {
-                // get slice slider
-                this.createVizOptionListener(
-                    EVENT_TYPES.VISUALIZATION.SLICE_SLIDER[sliceDiv],
-                    API_ENDPOINTS.UPDATE_PLOT_OPTIONS,
-                    getSliceIndicesData,
-                    updatePlot.bind(this)
-                );
-            });
-
-            
-            // Listen for crosshair toggle click
-            this.createVizOptionListener(
-                EVENT_TYPES.VISUALIZATION.TOGGLE_CROSSHAIR,
-                API_ENDPOINTS.UPDATE_PLOT_OPTIONS,
-                () => {return {crosshair_on: true}},
-                updatePlot.bind(this)
-            );
-
-            // Listen for direction marker toggle click
-            this.createVizOptionListener(
-                EVENT_TYPES.VISUALIZATION.TOGGLE_DIRECTION_MARKER,
-                API_ENDPOINTS.UPDATE_PLOT_OPTIONS,
-                () => {return {direction_marker_on: true}},
-                updatePlot.bind(this)
-            );
-        }
-    }
-
-    /**
-     * Attaches preprocessing option event listeners
-     * @private
-     * @returns {Promise<void>}
-     */
-    attachPreprocListeners = () => {
-        // Listen for preprocessing submission
-        $(document).on(EVENT_TYPES.PREPROCESSING.PREPROCESS_SUBMIT, (event, data) => {
-            // Start spinner to indicate loading of files
-            let spinnerOverlayDiv = document.getElementById(
-              CONSTANTS.SPINNERS.PREPROCESS_OVERLAY
-            )
-            spinnerOverlayDiv.style.display = 'block'
-            let spinnerDiv = document.getElementById(
-              CONSTANTS.SPINNERS.PREPROCESS
-            )
-            spinnerDiv.style.display = 'block'
-            // fetch preprocessed data
-            this.viewer.fetchPreprocessed(
-                data.detail,
-                this.preprocessOptions.normSwitchEnabled,
-                this.preprocessOptions.filterSwitchEnabled,
-                this.preprocessOptions.smoothSwitchEnabled,
-            ).then(data => {
-                // Revised global min and global max
-                this.globalMin = data.global_min;
-                this.globalMax = data.global_max;
-                this.colorMin = data.global_min;
-                this.colorMax = data.global_max;
-                // reset threshold to zero
-                this.thresholdMin = 0;
-                this.thresholdMax = 0;
-
-                // Plot colorbar with new data and update color min and max
-                this.colorBar.plotColorbar(
-                    this.colormap, this.globalMin, this.globalMax
-                );
-                // modify visualization option sliders
-                this.visualizationOptions.modifyVizOptions(
-                    this.globalMin, this.globalMax
-                )
-                // Replot slices with preprocessed data
-                this.viewer.plot(
-                    this.timePoint,
-                    this.colormap,
-                    this.colorMin,
-                    this.colorMax,
-                    this.thresholdMin,
-                    this.thresholdMax,
-                    this.opacity,
-                    this.hoverTextOn,
-                    this.preprocState
-                );
-
-                // turn off spinner
-                let spinnerOverlayDiv = document.getElementById(
-                    'preproc-spinner-overlay'
-                )
-                let spinnerDiv = document.getElementById('preproc-load-spinner')
-                // end spinner to indicate loading of files
-                spinnerOverlayDiv.style.display = 'none'
-                spinnerDiv.style.display = 'none'
-            })
-
-        });
-
-        // Listen for preprocessing reset
-        $(document).on(EVENT_TYPES.PREPROCESSING.PREPROCESS_RESET, () => {
-            // set preprocess state to false
-            this.preprocState = false;
-            // fetch original data
-            this.viewer.fetchPreprocessed(null, null, null, null, true)
-                .then(data => {
-                    // Revised global min and global max
-                    this.globalMin = data.global_min;
-                    this.globalMax = data.global_max;
-                    this.colorMin = data.global_min;
-                    this.colorMax = data.global_max;
-                    // reset threshold to zero
-                    this.thresholdMin = 0;
-                    this.thresholdMax = 0;
-
-                    // Plot colorbar with new data and update color min and max
-                    this.colorBar.plotColorbar(
-                        this.colormap, this.globalMin, this.globalMax
-                    );
-                    // modify visualization option sliders
-                    this.visualizationOptions.modifyVizOptions(
-                        this.globalMin, this.globalMax
-                    )
-                    // Replot slices with preprocessed data
-                    this.viewer.plot(
-                        this.timePoint,
-                        this.colormap,
-                        this.colorMin,
-                        this.colorMax,
-                        this.thresholdMin,
-                        this.thresholdMax,
-                        this.opacity,
-                        this.hoverTextOn,
-                        this.preprocState
-                    );
-
-                })
-        });
-    }
-
-    /**
-     * Sets up time slider change event listener
-     * @private
-     * @returns {void}
-     */    
-    listenForTimeSliderChange() {
-        $(document).on(EVENT_TYPES.VISUALIZATION.TIME_SLIDER_CHANGE, (event) => {
-            // Access the timeIndex from event.detail and update viewer
-            this.timePoint = event.detail.timeIndex;
-            // update brain plot and time course plot
-            this.viewer.plot(
-                this.timePoint,
-                this.colormap,
-                this.colorMin,
-                this.colorMax,
-                this.thresholdMin,
-                this.thresholdMax,
-                this.opacity,
-                this.hoverTextOn,
-                this.preprocState
-            );
-
-            // update time course plot
-            this.timeCourse.plotTimeCourses(this.timePoint);
-        });
-    }
-
-    /**
-     * Sets up time course related event listeners
-     * @private
-     * @returns {void}
-     */
-    timeCourseListeners() {
-        // Initialize the button to enable/disable time course plotting
-        const enableSwitch = document.getElementById(DOM_IDS.ENABLE_TIME_COURSE);
-        const freezeButton = document.getElementById(DOM_IDS.FREEZE_TIME_COURSE);
-        const undoButton = document.getElementById(DOM_IDS.UNDO_TIME_COURSE);
-        const removeButton = document.getElementById(DOM_IDS.REMOVE_TIME_COURSE);
-
-        // enable fmri time course plotting
-        enableSwitch.addEventListener('click', () => {
-            this.timeCourseEnabled = !this.timeCourseEnabled;
-            // If there is no user input time courses, hide the time point container
-            if (!this.timeCourse.userInput) {
-                this.timeCourse.timeCourseContainer.style.visibility = this.timeCourseEnabled ? 'visible' : 'hidden';
-            }
-
-            // enable time course buttons
-            if (this.timeCourseEnabled) {
-                freezeButton.disabled = false;
-                undoButton.disabled = false;
-                removeButton.disabled = false;
-            } else {
-                freezeButton.disabled = true;
-                undoButton.disabled = true;
-                removeButton.disabled = true;
-            }
-        });
-
-        // freeze fmri time course
-        freezeButton.on('click', () => {
-            this.timeCourseFreeze = this.timeCourseFreeze ? false : true;
-            // get icon
-            const timeCourseFreezeIcon = document.getElementById(DOM_IDS.FREEZE_ICON);
-            // change icon based on time course freeze state
-            if (this.timeCourseFreeze) {
-                timeCourseFreezeIcon.removeClass('fa-unlock').addClass('fa-lock');
-            } else {
-                timeCourseFreezeIcon.removeClass('fa-lock').addClass('fa-unlock');
-            }
-
-        });
-
-        // remove most recently added fmri time course
-        undoButton.on('click', () => {
-            this.timeCourse.removefMRITimeCourse();
-            // plot time courses
-            this.timeCourse.plotTimeCourses(this.timePoint);
-        })
-
-        // remove all fmri time courses
-        removeButton.on('click', () => {
-            this.timeCourse.removefMRITimeCourse(true);
-            // plot time courses
-            this.timeCourse.plotTimeCourses(this.timePoint);
-        })
-
-    }
-
-    // Register click handlers that update views based on click
-    registerClickHandlers() {
-        // bind context to master class for updating brain map on click
-        const boundClickCallBack = this.clickHandlerCallBack.bind(this);
-        this.viewer.plotlyClickHandler(boundClickCallBack);
-    }
-
-
-    // method passed as callback to viewer click handlers
-    clickHandlerCallBack() {
-        // only update nifti (due to slice index change)
-        if (this.plotType == FILE_TYPES.NIFTI) {
-            // Plot the updated data from the server
-            this.viewer.plot(
-                this.timePoint,
-                this.colormap,
-                this.colorMin,
-                this.colorMax,
-                this.thresholdMin,
-                this.thresholdMax,
-                this.opacity,
-                this.hoverTextOn,
-                this.preprocState,
-                true, // update coordinate labels (only for nifti)
-            )
-        }
-        // Update time course, if fmri time course plotting enabled
-        if (this.timeCourseEnabled) {
-            this.viewer.fetchTimeCourse(this.preprocState)
-            .then(({ label, timeCourse }) => {
-                // update fmri time course in the TimeCourse class
-                this.timeCourse.updatefMRITimeCourse(timeCourse, label, this.timeCourseFreeze);
-            });
-        }
-    }
-
-    /**
-     * Initiates distance computation between time courses
-     * @param {Event} event - Form submission event
-     * @returns {Promise<void>}
-     */
-    initiateDistanceCompute(event) {
-        // get error placeholder
-        const errorDiv = document.getElementById(
-            DOM_IDS.ERROR_MESSAGES.DISTANCE
-        );
-        let errorMessage
-        // raise error if mask is not provided for nifti file
-        if (!this.viewer.maskKey && this.plotType == 'nifti') {
-            errorMessage = 'a brain mask must be supplied (in file upload) to calculate time point distance';
-            this.raiseError(errorDiv, errorMessage);
-            return
-        }
-
-        // initialize form data to pass in POST route
-        let formData = new FormData();
-        // Add parameters and input to formData
-        formData.append('dist_metric', event.detail.distMetric);
-        formData.append('time_point', event.detail.timeIndex);
-        formData.append('use_preprocess', this.preprocState);
-        let fetchURL
-        if (this.plotType == FILE_TYPES.NIFTI) {
-            formData.append('file_key', this.viewer.fileKey);
-            formData.append('mask_key', this.viewer.maskKey);
-            fetchURL = API_ENDPOINTS.COMPUTE.DISTANCE_NIFTI
-        } else if (this.plotType == FILE_TYPES.GIFTI) {
-            formData.append('left_key', this.viewer.leftKey);
-            formData.append('right_key', this.viewer.rightKey);
-            fetchURL = API_ENDPOINTS.COMPUTE.DISTANCE_GIFTI
-        }
-        // initiate spinner
-        let spinnerOverlayDiv = document.getElementById(
-            CONSTANTS.SPINNERS.DISTANCE_OVERLAY
-        )
-        spinnerOverlayDiv.style.display = 'block'
-        let spinnerDiv = document.getElementById(
-            CONSTANTS.SPINNERS.DISTANCE_OVERLAY
-        )
-        spinnerDiv.style.display = 'block'
-
-        fetch(fetchURL, {
-            method: 'POST',
-            body: formData
-        })
-        .then(response => response.json())
-        .then(data => {
-            // plot time distance vector
-            this.distance.plotDistance(data.dist_vec, data.time_point);
-            // turn off spinner
-            let spinnerOverlayDiv = document.getElementById(
-                CONSTANTS.SPINNERS.DISTANCE_OVERLAY
-            )
-            let spinnerDiv = document.getElementById(
-                CONSTANTS.SPINNERS.DISTANCE
-            )
-            // end spinner to indicate loading of files
-            spinnerOverlayDiv.style.display = 'none'
-            spinnerDiv.style.display = 'none'
-            // close modal
-            $(`#${DOM_IDS.MODALS.DISTANCE}`).modal('hide');
-        }).catch(error => {
-            console.error('Error during time point distance analysis:', error);
-        });
-
-    }
-
-    /**
-     * Initiates average analysis
-     * @param {Event} event - Form submission event
-     * @param {Object} data - Average analysis parameters
-     * @returns {Promise<void>}
-     */
-    initiateAverage(event, data) {
-        // get error placeholder
-        const errorDiv = document.getElementById(
-            DOM_IDS.ERROR_MESSAGES.AVERAGE
-        );
-        let errorMessage
-        // raise error if mask is not provided for nifti file
-        if (!this.viewer.maskKey && this.plotType == FILE_TYPES.NIFTI) {
-            errorMessage = 'a brain mask must be supplied (in file upload) to perform windowed average analysis';
-            this.raiseError(errorDiv, errorMessage);
-            return
-        }
-        // get lag inputs
-        const leftEdge = document.getElementById(DOM_IDS.AVERAGE_LEFT_EDGE).value;
-        const rightEdge = document.getElementById(DOM_IDS.AVERAGE_RIGHT_EDGE).value;
-        // get half of time length for checking lag bounds
-        const timeLengthMid = Math.floor(this.timeCourse.timeLength / 2);
-        // check lags do not exceed zero
-        if (leftEdge > 0) {
-            errorMessage = 'left edge must be less than or equal to zero';
-            this.raiseError(errorDiv, errorMessage);
-        }
-        if (rightEdge < 0) {
-            errorMessage = 'right edge must be greater than or equal to zero';
-            this.raiseError(errorDiv, errorMessage);
-        }
-        // check lags do not exceed half of time legnth
-        if (leftEdge < -timeLengthMid) {
-            errorMessage = `left edge must not be less than ${timeLengthMid} (half the length of time course) `;
-            this.raiseError(errorDiv, errorMessage);
-        }
-        if (rightEdge > timeLengthMid) {
-            errorMessage = `right edge must not be greater than ${timeLengthMid} (half the length of time course) `;
-            this.raiseError(errorDiv, errorMessage);
-        }
-        // initialize form data to pass in POST route
-        let formData = new FormData();
-        // Add parameters and input to formData
-        formData.append('markers', JSON.stringify(data['markers']))
-        formData.append('left_edge', leftEdge);
-        formData.append('right_edge', rightEdge);
-        formData.append('use_preprocess', this.preprocState);
-        let fetchURL
-        if (this.plotType == FILE_TYPES.NIFTI) {
-            formData.append('file_key', this.viewer.fileKey);
-            formData.append('mask_key', this.viewer.maskKey);
-            formData.append('anat_key', this.viewer.anatKey);
-            formData.append('slice_len', this.sliceLen);
-            fetchURL = API_ENDPOINTS.COMPUTE.AVERAGE_NIFTI
-        } else if (this.plotType == FILE_TYPES.GIFTI) {
-            formData.append('left_key', this.viewer.leftKey);
-            formData.append('right_key', this.viewer.rightKey);
-            fetchURL = API_ENDPOINTS.COMPUTE.AVERAGE_GIFTI
-        }
-        // initiate spinner
-        let spinnerOverlayDiv = document.getElementById(
-            CONSTANTS.SPINNERS.AVERAGE_OVERLAY
-        )
-        spinnerOverlayDiv.style.display = 'block'
-        let spinnerDiv = document.getElementById(CONSTANTS.SPINNERS.AVERAGE)
-        spinnerDiv.style.display = 'block'
-
-        fetch(fetchURL, {
-            method: 'POST',
-            body: formData
-        })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Error in response from server during window average analysis')
-            }
-            // open average results window
-            window.open('/results_view/average', '_blank');
-            // turn off spinner
-            let spinnerOverlayDiv = document.getElementById(
-                CONSTANTS.SPINNERS.AVERAGE_OVERLAY
-            )
-            let spinnerDiv = document.getElementById(
-                CONSTANTS.SPINNERS.AVERAGE
-            )
-            // end spinner to indicate loading of files
-            spinnerOverlayDiv.style.display = 'none'
-            spinnerDiv.style.display = 'none'
-            // close modal
-            $(`#${DOM_IDS.MODALS.AVERAGE}`).modal('hide');
-        }).catch(error => {
-            console.error('Error during window average analysis:', error);
-        });
-    }
-
-
-    /**
-     * Initiates correlation analysis
-     * @param {Event} event - Form submission event
-     * @param {Object} data - Correlation parameters
-     * @returns {Promise<void>}
-     */
-    initiateCorrelation(event, data) {
-        // get error placeholder
-        const errorDiv = document.getElementById(
-            DOM_IDS.ERROR_MESSAGES.CORRELATION
-        );
-        let errorMessage
-        // raise error if mask is not provided for nifti file
-        if (!this.viewer.maskKey && this.plotType == FILE_TYPES.NIFTI) {
-            errorMessage = 'a brain mask must be supplied (in file upload) to perform correlation analysis';
-            this.raiseError(errorDiv, errorMessage);
-            return
-        }
-        // get lag inputs
-        const negativeLag = document.getElementById(DOM_IDS.CORRELATION_LAGS.NEGATIVE).value;
-        const positiveLag = document.getElementById(DOM_IDS.CORRELATION_LAGS.POSITIVE).value;
-        // get half of time length for checking lag bounds
-        const timeLengthMid = Math.floor(this.timeCourse.timeLength / 2);
-        // check lags do not exceed zero
-        if (negativeLag > 0) {
-            errorMessage = 'negative lag must be less than or equal to zero';
-            this.raiseError(errorDiv, errorMessage);
-        }
-        if (positiveLag < 0) {
-            errorMessage = 'positive lag must be greater than or equal to zero';
-            this.raiseError(errorDiv, errorMessage);
-        }
-        // check lags do not exceed half of time legnth
-        if (negativeLag < -timeLengthMid) {
-            errorMessage = `negative lag must not be less than ${timeLengthMid} (half the length of time course) `;
-            this.raiseError(errorDiv, errorMessage);
-        }
-        if (positiveLag > timeLengthMid) {
-            errorMessage = `positive lag must not be greater than ${timeLengthMid} (half the length of time course) `;
-            this.raiseError(errorDiv, errorMessage);
-        }
-        // initialize form data to pass in POST route
-        let formData = new FormData();
-        // Add parameters and input to formData
-        formData.append('ts', JSON.stringify(data['ts']))
-        formData.append('negative_lag', negativeLag);
-        formData.append('positive_lag', positiveLag);
-        formData.append('label', data['label']);
-        formData.append('use_preprocess', this.preprocState);
-        let fetchURL
-        if (this.plotType == FILE_TYPES.NIFTI) {
-            formData.append('file_key', this.viewer.fileKey);
-            formData.append('mask_key', this.viewer.maskKey);
-            formData.append('anat_key', this.viewer.anatKey);
-            fetchURL = API_ENDPOINTS.COMPUTE.CORRELATION_NIFTI
-        } else if (this.plotType == FILE_TYPES.GIFTI) {
-            formData.append('left_key', this.viewer.leftKey);
-            formData.append('right_key', this.viewer.rightKey);
-            fetchURL = API_ENDPOINTS.COMPUTE.CORRELATION_GIFTI
-        }
-        // initiate spinner
-        let spinnerOverlayDiv = document.getElementById(
-            CONSTANTS.SPINNERS.CORRELATE_OVERLAY
-        )
-        spinnerOverlayDiv.style.display = 'block'
-        let spinnerDiv = document.getElementById(
-            CONSTANTS.SPINNERS.CORRELATE
-        )
-        spinnerDiv.style.display = 'block'
-
-        fetch(fetchURL, {
-            method: 'POST',
-            body: formData
-        })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Error in response from server during correlation analysis')
-            }
-            // open correlation results window
-            window.open('/results_view/correlate', '_blank');
-            // turn off spinner
-            let spinnerOverlayDiv = document.getElementById(
-                CONSTANTS.SPINNERS.CORRELATE_OVERLAY
-            )
-            let spinnerDiv = document.getElementById(
-                CONSTANTS.SPINNERS.CORRELATE
-            )
-            // end spinner to indicate loading of files
-            spinnerOverlayDiv.style.display = 'none'
-            spinnerDiv.style.display = 'none'
-            // close modal
-            $(`#${DOM_IDS.MODALS.CORRELATION}`).modal('hide');
-        }).catch(error => {
-            console.error('Error during correlation analysis:', error);
-        });
-    }
-
-    // utility function to temporarily display error message
-    raiseError(errorDiv, errorMessage) {
-        errorDiv.textContent = errorMessage;
-        errorDiv.style.display = 'block';
-        // Clear error message after 5 seconds
-        setTimeout(function() {
-            errorDiv.style.display = 'none';
-        }, 5000);
-    }
-
 }
-
-// Data extraction methods
-// get colormap
-getColormapData = (event) => {
-    const newColormap = event.detail.newValue
-    return {
-        plot_options: JSON.stringify({
-            colormap: newColormap
-        })
-    }
-};
-
-// get color range
-getColorRangeData = (event) => {
-    const colorRange = event.detail.newValue
-    const colormMin = colorRange[0]
-    const colormMax = colorRange[1]
-    return {
-        plot_options: JSON.stringify({
-            color_min: colormMin,
-            color_max: colormMax
-        })
-    }
-};
-
-// Threshold
-getThresholdData = (event) => {
-    const thresholdRange = event.detail.newValue
-    const thresholdMin = thresholdRange[0]
-    const thresholdMax = thresholdRange[1]
-    return {
-        plot_options: JSON.stringify({
-            threshold_min: thresholdMin,
-            threshold_max: thresholdMax
-        })
-    }
-};
-
-// Opacity
-getOpacityData = (event) => {
-    const opacity = event.detail.newValue
-    return {
-        plot_options: JSON.stringify({
-            opacity: opacity
-        })
-    }
-};
-
-// Hover text
-getHoverTextData = (event) => {
-    const hoverText = event.detail.newValue
-    return {
-        plot_options: JSON.stringify({
-            hover_text_on: hoverText
-        })
-    }
-};
-
-// get view state
-getViewStateData = (event) => {
-    const viewState = event.detail.newValue
-    return {
-        plot_options: JSON.stringify({
-            view_state: viewState,
-        })
-    }
-};
-
-// get montage slice direction
-getMontageSliceDirectionData = (event) => {
-    const sliceDirection = event.detail.newValue
-    return {
-        plot_options: JSON.stringify({
-            montage_slice_direction: sliceDirection,
-        })
-    }
-};
-
-// get slice indices
-getSliceIndicesData = (event) => {
-    const sliceIndices = event.detail.newValue
-    return {
-        plot_options: JSON.stringify({
-            slice_indices: sliceIndices,
-        })
-    }
-};
-
-// Plot Update methods
-// update plot
-updatePlot = () => {
-    this.viewer.plot();
-};
-// update plot and colorbar
-updateColorbarPlot = () => {
-    this.viewer.plot();
-    this.colorBar.plotColorbar();
-};
-
 
 export default MainViewer;

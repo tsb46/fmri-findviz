@@ -1,7 +1,8 @@
 // PreprocessTimeCourse.js - Preprocessing for timecourse data
-import { EVENT_TYPES } from '../constants/EventTypes';
-import eventBus from '../events/ViewerEvents';
-import { getPreprocessedTimeCourse, resetTimeCoursePreprocess } from '../api/preprocess';
+import { EVENT_TYPES } from '../../constants/EventTypes';
+import eventBus from '../../events/ViewerEvents';
+import { getPreprocessedTimeCourse, resetTimeCoursePreprocess } from '../../api/preprocess';
+import { getTimeCourseLabels } from '../../api/data';
 
 class PreprocessTimeCourse {
     /**
@@ -9,7 +10,6 @@ class PreprocessTimeCourse {
      * @param {string} timeCoursePrepMenuId - ID of time course prep menu
      * @param {string} normSwitchId - ID of normalization switch
      * @param {string} filterSwitchId - ID of filtering switch
-     * @param {string} smoothSwitchId - ID of smoothing switch
      * @param {string} prepSubmitId - ID of preprocessing submit button
      * @param {string} prepResetId - ID of preprocessing reset button
      * @param {string} meanCenterId - ID of mean center checkbox
@@ -58,6 +58,12 @@ class PreprocessTimeCourse {
         this.filterSwitchEnabled = false;
         // initialize preprocessing switches
         this.initializeSwitches();
+        // initialize preprocessing submit button event
+        this.prepSubmit.on('click', (event) => this.handlePreprocessSubmit(event));
+        // initialize preprocessing reset button event
+        this.prepReset.on('click', (event) => this.handlePreprocessReset(event));
+        // initialize time course preprocessing selection menu
+        this.initializeTimeCoursePrepSelect();
     }
 
     initializeSwitches() {
@@ -81,23 +87,44 @@ class PreprocessTimeCourse {
     }
 
     /**
+     * Initialize time course preprocessing selection menu
+     */
+    initializeTimeCoursePrepSelect() {
+        // get time course labels
+        getTimeCourseLabels((response) => {
+            // Loop through time courses and append label to select dropdown menu
+            for (let ts of response) {
+                const label = ts;
+                let newOption = $('<option>', { value: label, text: label });
+                this.timeCoursePrepMenu.append(newOption);
+            };
+            // hack to remove duplicates due to bug
+            //https://github.com/snapappointments/bootstrap-select/issues/2738
+            this.timeCoursePrepMenu.selectpicker('destroy');
+            this.timeCoursePrepMenu.selectpicker();
+        });
+    }
+
+    /**
      * Handle preprocessing submit button event
      * @param {Event} event - event object
      */
     handlePreprocessSubmit(event) {
         event.preventDefault();
         console.log('preprocess submit button clicked');
+        // get selected time courses
+        const selectedTimeCourses = this.timeCoursePrepMenu.val();
         // get preprocess params
         const preprocessParams = {
             normalize: this.normSwitchEnabled,
             filter: this.filterSwitchEnabled,
-            smooth: this.smoothSwitchEnabled,
             detrend: false,
             mean_center: this.meanCenter.val(),
             zscore: this.zScore.val(),
             tr: this.TR.val(),
             low_cut: this.lowCut.val(),
             high_cut: this.highCut.val(),
+            ts_labels: selectedTimeCourses
         }
         // preprocess timecourse
         getPreprocessedTimeCourse(preprocessParams, this.errorInlineId, (response) => {

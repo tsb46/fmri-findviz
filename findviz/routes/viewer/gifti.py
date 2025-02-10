@@ -8,7 +8,7 @@ import nibabel as nib
 import numpy as np
 
 
-def get_gifti_timepoint_data(
+def get_gifti_data(
     time_point: int,
     func_left_img: Optional[nib.GiftiImage],
     func_right_img: Optional[nib.GiftiImage],
