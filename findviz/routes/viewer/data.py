@@ -9,7 +9,6 @@ Routes:
     GET_FMRI_DATA: Get FMRI data
     GET_FUNCTIONAL_TIMECOURSE: Get functional timecourse
     GET_MONTAGE_DATA: Get montage data
-    GET_SELECTED_TIME_POINT: Get selected time point
     GET_SLICE_LENGTHS: Get slice lengths
     GET_TASK_CONDITIONS: Get task conditions
     GET_TIMECOURSE_DATA: Get timecourse data
@@ -25,12 +24,13 @@ Routes:
     UPDATE_MONTAGE_SLICE_IDX: Update montage slice indices
     UPDATE_TIMEPOINT: Update timepoint
 """
+import json
 
 from typing import List, Tuple
 from flask import Blueprint, request
 
 from findviz.logger_config import setup_logger
-from findviz.routes.utils import Routes, handle_route_errors
+from findviz.routes.utils import Routes, handle_route_errors, convert_value
 from findviz.routes.shared import data_manager
 from findviz.routes.viewer.nifti import (
     get_nifti_data, get_timecourse_nifti
@@ -48,15 +48,16 @@ data_bp = Blueprint('data', __name__)
 @handle_route_errors(
     error_msg='Unknown error in timecourse scale change request',
     log_msg='Timecourse scale change request successful',
-    route=Routes.CHANGE_TIMECOURSE_SCALE
+    route=Routes.CHANGE_TIMECOURSE_SCALE,
+    route_parameters=['label', 'scale_change', 'scale_change_unit']
 )
-def change_timecourse_scale() -> int:
+def change_timecourse_scale() -> dict:
     """Change timecourse scale"""
     label = request.form['label']
     scale_change = request.form['scale_change']
     scale_change_unit = request.form['scale_change_unit']
     data_manager.change_timecourse_scale(label, scale_change, scale_change_unit)
-    return 200
+    return {'status': 'success'}
 
 
 @data_bp.route(Routes.GET_CLICK_COORDS.value, methods=['GET'])
@@ -98,7 +99,7 @@ def get_direction_label_coords() -> dict:
     log_msg='Distance data request successful',
     route=Routes.GET_DISTANCE_DATA
 )
-def get_distance_data() -> dict:
+def get_distance_data() -> list[float]:
     """Get distance data"""
     return data_manager.distance_data.tolist()
 
@@ -108,13 +109,13 @@ def get_distance_data() -> dict:
     error_msg='Unknown error in data update request',
     log_msg='Data update request successful',
     fmri_file_type=data_manager.fmri_file_type,
-    route=Routes.GET_DATA_UPDATE
+    route=Routes.GET_FMRI_DATA
 )
 def get_fmri_data() -> dict:
     """Get FMRI data for the current timepoint and location."""
     # get plot options data from data manager
     plot_options = data_manager.get_fmri_plot_options()
-    
+
     # get viewer data from data manager
     viewer_data = data_manager.get_viewer_data(
         fmri_data=True,
@@ -128,9 +129,8 @@ def get_fmri_data() -> dict:
         timepoint_data = get_nifti_data(
             time_point=data_manager.timepoint,
             func_img=viewer_data['func_img'],
-            x_slice=slice_idx['x'],
-            y_slice=slice_idx['y'],
-            z_slice=slice_idx['z'],
+            coord_labels=data_manager.coord_labels,
+            slice_idx=slice_idx,
             view_state=data_manager.view_state,
             montage_slice_dir=data_manager.montage_slice_dir,
             threshold_min=plot_options['threshold_min'],
@@ -162,21 +162,10 @@ def get_montage_data() -> dict:
     """Get montage data for the current location."""
     montage_data = {
         'montage_slice_dir': data_manager.montage_slice_dir,
-        'montage_slice_idx': data_manager.get_slice_idx(),
+        'montage_slice_idx': data_manager._state.montage_slice_idx,
         'montage_slice_len': data_manager.slice_len
     }
     return montage_data
-
-
-@data_bp.route(Routes.GET_SELECTED_TIME_POINT.value, methods=['GET'])
-@handle_route_errors(
-    error_msg='Unknown error in selected time point request',
-    log_msg='Selected time point request successful',
-    route=Routes.GET_SELECTED_TIME_POINT
-)
-def get_selected_time_point() -> int:
-    """Get current selected time point"""
-    return data_manager.timepoint
 
 
 @data_bp.route(Routes.GET_SLICE_LENGTHS.value, methods=['GET'])
@@ -185,7 +174,7 @@ def get_selected_time_point() -> int:
     log_msg='Slice lengths request successful',
     route=Routes.GET_SLICE_LENGTHS
 )
-def get_slice_lengths() -> dict:
+def get_slice_lengths() -> list[float]:
     """Get slice lengths"""
     return data_manager.slice_len
 
@@ -239,7 +228,7 @@ def get_timecourse_data() -> dict:
 )
 def get_timecourse_source() -> dict:
     """Get timecourse source"""
-    return data_manager.timecourse_source
+    return {'timecourse_source': data_manager.timecourse_source}
 
 
 @data_bp.route(Routes.GET_TIMEPOINT.value, methods=['GET'])
@@ -248,9 +237,9 @@ def get_timecourse_source() -> dict:
     log_msg='Timepoint request successful',
     route=Routes.GET_TIMEPOINT
 )
-def get_timepoint() -> int:
+def get_timepoint() -> dict:
     """Get current timepoint"""
-    return data_manager.timepoint
+    return {'timepoint': data_manager.timepoint}
 
 
 @data_bp.route(Routes.GET_VIEWER_METADATA.value, methods=['GET'])
@@ -270,10 +259,10 @@ def get_viewer_metadata() -> dict:
     log_msg='Fmri timecourse pop request successful',
     route=Routes.POP_FMRI_TIMECOURSE
 )
-def pop_fmri_timecourse() -> int:
+def pop_fmri_timecourse() -> dict:
     """Pop fmri timecourse"""
     data_manager.pop_fmri_timecourse()
-    return 200
+    return {'status': 'success'}
 
 
 @data_bp.route(Routes.REMOVE_FMRI_TIMECOURSES.value, methods=['POST'])
@@ -282,10 +271,10 @@ def pop_fmri_timecourse() -> int:
     log_msg='Fmri timecourse remove request successful',
     route=Routes.REMOVE_FMRI_TIMECOURSES
 )
-def remove_fmri_timecourses() -> int:
+def remove_fmri_timecourses() -> dict:
     """Remove all fmri timecourses"""
     data_manager.remove_fmri_timecourses()
-    return 200
+    return {'status': 'success'}
 
 
 @data_bp.route(Routes.UPDATE_LOCATION.value, methods=['POST'])
@@ -293,14 +282,15 @@ def remove_fmri_timecourses() -> int:
     error_msg='Unknown error in location update request',
     log_msg='Location update successful',
     fmri_file_type=data_manager.fmri_file_type,
-    route=Routes.UPDATE_LOCATION
+    route=Routes.UPDATE_LOCATION,
+    route_parameters=['click_coords', 'slice_name']
 )
-def update_location() -> int:
+def update_location() -> dict:
     """Update current location based on form data."""
-    click_coords = request.form['click_coords']
+    click_coords = json.loads(request.form['click_coords'])
     slice_name = request.form['slice_name']
     data_manager.update_location(click_coords, slice_name)
-    return 200
+    return {'status': 'success'}
 
 
 @data_bp.route(Routes.UPDATE_FUNCTIONAL_TIMECOURSE.value, methods=['POST'])
@@ -336,47 +326,50 @@ def update_functional_timecourse() -> dict:
         )
 
     data_manager.update_timecourse(timecourse_data, voxel_label)
-    return 200
+    return {'status': 'success'}
 
 
 @data_bp.route(Routes.UPDATE_MONTAGE_SLICE_DIR.value, methods=['POST'])
 @handle_route_errors(
     error_msg='Unknown error in montage slice direction update request',
     log_msg='Montage slice direction update successful',
-    route=Routes.UPDATE_MONTAGE_SLICE_DIR
+    route=Routes.UPDATE_MONTAGE_SLICE_DIR,
+    route_parameters=['montage_slice_dir']
 )
-def update_montage_slice_dir() -> int:
+def update_montage_slice_dir() -> dict:
     """Update montage slice direction"""
     montage_slice_dir = request.form['montage_slice_dir']
     data_manager.update_montage_slice_dir(montage_slice_dir)
-    return 200
+    return {'status': 'success'}
 
 
 @data_bp.route(Routes.UPDATE_MONTAGE_SLICE_IDX.value, methods=['POST'])
 @handle_route_errors(
     error_msg='Unknown error in montage slice indices update request',
     log_msg='Montage slice indices update successful',
-    route=Routes.UPDATE_MONTAGE_SLICE_IDX
+    route=Routes.UPDATE_MONTAGE_SLICE_IDX,
+    route_parameters=['slice_name', 'slice_idx']
 )
-def update_montage_slice_idx() -> int:
+def update_montage_slice_idx() -> dict:
     """Update montage slice indices from slider changes"""
-    slice_name = request.form['slice_name']
-    slice_idx = request.form['slice_idx']
+    slice_name = convert_value(request.form['slice_name'])
+    slice_idx = convert_value(request.form['slice_idx'])
     data_manager.update_montage_slice_idx(slice_name, slice_idx)
-    return 200
+    return {'status': 'success'}
 
 
 @data_bp.route(Routes.UPDATE_TIMEPOINT.value, methods=['POST'])
 @handle_route_errors(
     error_msg='Unknown error in timepoint update request',
     log_msg='Timepoint update successful',
-    fmri_file_type=data_manager.get_file_type(),
-    route=Routes.UPDATE_TIMEPOINT
+    fmri_file_type=data_manager.fmri_file_type,
+    route=Routes.UPDATE_TIMEPOINT,
+    route_parameters=['time_point']
 )
-def update_timepoint() -> int:
+def update_timepoint() -> dict:
     """Update current timepoint based on form data."""
-    timepoint = int(request.form['time_point'])
+    timepoint = convert_value(request.form['time_point'])
     data_manager.update_timepoint(timepoint)
-    return 200
+    return {'status': 'success'}
 
 

@@ -43,12 +43,11 @@ class Montage {
         this.sliceSliderIds = [slice1SliderId, slice2SliderId, slice3SliderId];
         // define id to montage slice names converter 
         this.sliceSliderId2Names = {
-            slice1SliderId: 'slice1',
-            slice2SliderId: 'slice2',
-            slice3SliderId: 'slice3',
+            [slice1SliderId]: 'slice_1',
+            [slice2SliderId]: 'slice_2',
+            [slice3SliderId]: 'slice_3',
         };
 
-        this.popoverShown = false;
         if (this.fmriFileType === 'gifti') {
             // remove popover for gifti
             $(`#${this.montagePopoverId}`).popover('disable');
@@ -56,38 +55,27 @@ class Montage {
             $(`#${this.montagePopoverId}`).prop('disabled', true);
         } else {
             // initialize montage options
-            // get plot options
-            getMontageData((montageData) => {
-                this.fmriSliceLen = montageData.fmri_slice_len;
-                this.initializeMontageOptions(
-                    montageData.montage_slice_dir,
-                    montageData.montage_slice_idx,
-                );
-            });
+            this.initializeMontageOptions()
         }
     }
 
     /**
      * Initialize montage options
-     * @param {string} montageSliceDir - The selected montage slice direction ['x', 'y', 'z']
-     * @param {Object} montageSliceIndices - The montage slice indices
      */
-    initializeMontageOptions(
-        montageSliceDir,
-        montageSliceIndices,
-    ) {
-        // if montage is not shown, attach listener for popover show
-        if (!this.popoverShown) {
-            // Event listener for when the popover is shown
-            $(`#${this.montagePopoverId}`).on('shown.bs.popover', () => {
-                this.popoverShown = true;
+    initializeMontageOptions() {
+        // Event listener for when the popover is shown
+        $(`#${this.montagePopoverId}`).on('shown.bs.popover', () => {
+            // get plot options
+            getMontageData((montageData) => {
+                const montageSliceDir = montageData.montage_slice_dir;
+                const montageSliceIndices = montageData.montage_slice_idx;
                 // set selection in drop down menu
                 $(`#${this.montageSliceDirSelectId}`).val(montageSliceDir);
-                // loop through slider divs and set sliders with index
+                // loop through slider divs and initialize sliders 
                 this.sliceSliderIds.forEach((sliceSliderId, index) => {
                     initializeSingleSlider(
                         sliceSliderId,
-                        montageSliceIndices[montageSliceDir][this.sliceSliderId2Names[sliceSliderId]],
+                        montageSliceIndices[montageSliceDir][this.sliceSliderId2Names[sliceSliderId]][montageSliceDir],
                         [0, this.fmriSliceLen[montageSliceDir] - 1],
                         1
                     )
@@ -95,31 +83,19 @@ class Montage {
                     $(`#${sliceSliderId}`).slider('refresh');
                 });
                 // Hide popover when clicking outside
+                // Store reference to this
+                const self = this;
                 $(document).on('click', function (e) {
-                    this.popoverShown = false;
                     // Check if the click is outside the popover and the button
-                    if (!$(e.target).closest(`.popover, #${this.montagePopoverId}`).length) {
-                      $(`#${this.montagePopoverId}`).popover('hide');
+                    if (!$(e.target).closest(`.popover, #${self.montagePopoverId}`).length) {
+                        $(`#${self.montagePopoverId}`).popover('hide');
                     }
                 });
                 // attach montage listeners
                 this.sliceSelectionListener();
                 this.sliderChangeListener();
             });
-        // if already shown, revise sliders
-        } else {
-            this.sliceSliderIds.forEach((sliceSliderId, index) => {
-                // re-initialize slider
-                initializeSingleSlider(
-                    sliceSliderId,
-                    montageSliceIndices[montageSliceDir][this.sliceSliderId2Names[sliceSliderId]],
-                    [0, this.fmriSliceLen[montageSliceDir] - 1],
-                    1
-                )
-                // refresh slider
-                $(`#${sliceSliderId}`).slider('refresh');
-            });
-        }
+        });
     }
 
     /**
@@ -163,8 +139,8 @@ class Montage {
         // Listen for slider changes and update slice index
         this.sliceSliderIds.forEach((sliceSliderId, index) => {
             $(`#${sliceSliderId}`).on('change', (event) => {
-                sliceName = this.sliceSliderId2Names[sliceSliderId];
-                sliceIdx = event.value.newValue;
+                const sliceName = this.sliceSliderId2Names[sliceSliderId];
+                const sliceIdx = event.value.newValue;
                 this.handleMontageSliceChange(sliceName, sliceIdx);
             });
         });

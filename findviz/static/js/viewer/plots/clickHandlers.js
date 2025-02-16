@@ -15,21 +15,23 @@ export class NiftiClickHandler {
         slice2ContainerId,
         slice3ContainerId,
     ) {
-        this.slice1Container = $(`#${slice1ContainerId}`);
-        this.slice2Container = $(`#${slice2ContainerId}`);
-        this.slice3Container = $(`#${slice3ContainerId}`);
+        this.slice1Container = document.getElementById(slice1ContainerId);
+        this.slice2Container = document.getElementById(slice2ContainerId);
+        this.slice3Container = document.getElementById(slice3ContainerId);
 
-        // Attach click listeners to the slice containers
-        this.attachClickListeners();
+        // Attach click listeners after initialization of viewer is complete
+        eventBus.subscribe(EVENT_TYPES.VISUALIZATION.FMRI.INIT_NIFTI_VIEWER, () => {
+            this.attachClickListeners();
+        });
     }
 
     /**
      * Attach click listeners to the slice containers
      */
     attachClickListeners() {
-        this.slice1Container.on('plotly_click', (event) => this.clickHandler(event, 'slice1'));
-        this.slice2Container.on('plotly_click', (event) => this.clickHandler(event, 'slice2'));
-        this.slice3Container.on('plotly_click', (event) => this.clickHandler(event, 'slice3'));
+        this.slice1Container.on('plotly_click', (event) => this.clickHandler(event, 'slice_1'));
+        this.slice2Container.on('plotly_click', (event) => this.clickHandler(event, 'slice_2'));
+        this.slice3Container.on('plotly_click', (event) => this.clickHandler(event, 'slice_3'));
     }
 
     /**
@@ -40,7 +42,7 @@ export class NiftiClickHandler {
     clickHandler(eventData, sliceName) {
         const x = Math.round(eventData.points[0].x);
         const y = Math.round(eventData.points[0].y);
-        updateLocation({ click_coords: { x, y }}, { sliceName }, () => {
+        updateLocation({ x, y }, sliceName, () => {
             eventBus.publish(EVENT_TYPES.VISUALIZATION.FMRI.NIFTIVIEWER_CLICK, { x, y, sliceName });
         });
     }
@@ -57,13 +59,21 @@ export class GiftiClickHandler {
         rightSurfaceId = null,
     ) {
         if (leftSurfaceId) {
-            this.leftSurface = $(`#${leftSurfaceId}`);
+            this.leftSurface = document.getElementById(leftSurfaceId);
         }
         if (rightSurfaceId) {
-            this.rightSurface = $(`#${rightSurfaceId}`);
+            this.rightSurface = document.getElementById(rightSurfaceId);
         }
+
+        // Attach click listeners after initialization of viewer is complete
+        eventBus.subscribe(EVENT_TYPES.VISUALIZATION.FMRI.INIT_GIFTIVIEWER, () => {
+            this.attachClickListeners();
+        });
     }
 
+    /**
+     * Attach click listeners to the left and right surfaces
+     */
     attachClickListeners() {
         if (this.leftSurface) {
             this.leftSurface.on('plotly_click', (event) => this.clickHandler(event, 'left'));

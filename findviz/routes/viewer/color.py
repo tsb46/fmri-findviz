@@ -10,6 +10,7 @@ from flask import Blueprint
 from findviz.logger_config import setup_logger
 from findviz.routes.utils import handle_route_errors, Routes
 from findviz.viz.viewer.state import ColorMaps
+from findviz.routes.shared import data_manager
 
 # Set up a logger for the app
 logger = setup_logger(__name__)
@@ -20,7 +21,9 @@ color_bp = Blueprint('color', __name__)
 @color_bp.route(Routes.GET_COLORMAPS.value, methods=['GET'])
 @handle_route_errors(
     error_msg='Error generating colormap data',
-    log_msg='Generated colormap data successfully'
+    log_msg='Generated colormap data successfully',
+    fmri_file_type=data_manager.fmri_file_type,
+    route=Routes.GET_COLORMAPS
 )
 def get_colormaps() -> dict:
     """Get colormap data"""

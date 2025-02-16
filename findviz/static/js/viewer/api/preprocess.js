@@ -1,8 +1,8 @@
 // preprocess.js
 // API calls for preprocessing data
 
-import { makeRequest, createFormData } from './utils';
-import { API_ENDPOINTS } from '../constants/APIEndpoints';
+import { makeRequest, createFormData } from './utils.js';
+import { API_ENDPOINTS } from '../constants/APIEndpoints.js';
 
 
 /**
@@ -14,7 +14,7 @@ import { API_ENDPOINTS } from '../constants/APIEndpoints';
  */
 export const getPreprocessedFMRI = async (preprocessParams, errorInlineId, callback) => {
     return makeRequest(
-        API_ENDPOINTS.GET_PREPROCESSED_FMRI,
+        API_ENDPOINTS.PREPROCESS.GET_PREPROCESSED_FMRI,
         {
             method: 'POST',
             body: createFormData(preprocessParams)
@@ -35,9 +35,9 @@ export const getPreprocessedFMRI = async (preprocessParams, errorInlineId, callb
  * @param {Function} callback - Callback function to handle successful response
  * @returns {Promise} Promise object representing the API call
  */
-export const getPreprocessedTimecourse = async (preprocessParams, errorInlineId, callback) => {
+export const getPreprocessedTimeCourse = async (preprocessParams, errorInlineId, callback) => {
     return makeRequest(
-        API_ENDPOINTS.GET_PREPROCESSED_TIMECOURSE,
+        API_ENDPOINTS.PREPROCESS.GET_PREPROCESSED_TIMECOURSE,
         {
             method: 'POST',
             body: createFormData(preprocessParams)
@@ -59,7 +59,7 @@ export const getPreprocessedTimecourse = async (preprocessParams, errorInlineId,
  */
 export const resetFMRIPreprocess = async (errorInlineId, callback) => {
     return makeRequest(
-        API_ENDPOINTS.RESET_FMRI_PREPROCESS,
+        API_ENDPOINTS.PREPROCESS.RESET_FMRI_PREPROCESS,
         { method: 'POST' },
         {
             errorPrefix: 'Error resetting FMRI preprocessing'
@@ -74,9 +74,9 @@ export const resetFMRIPreprocess = async (errorInlineId, callback) => {
  * @param {Function} callback - Callback function to handle successful response
  * @returns {Promise} Promise object representing the API call
  */
-export const resetTimecoursePreprocess = async (errorInlineId, callback) => {
+export const resetTimeCoursePreprocess = async (errorInlineId, callback) => {
     return makeRequest(
-        API_ENDPOINTS.RESET_TIMECOURSE_PREPROCESS,
+        API_ENDPOINTS.PREPROCESS.RESET_TIMECOURSE_PREPROCESS,
         { method: 'POST' },
         {
             errorPrefix: 'Error resetting timecourse preprocessing'

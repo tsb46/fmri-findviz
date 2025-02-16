@@ -5,6 +5,7 @@ including metadata extraction and value range calculations.
 """
 import decimal
 
+from functools import wraps
 from typing import Dict, Tuple, Union, Optional, List, Literal
 
 import numpy as np
@@ -14,13 +15,12 @@ from nibabel.gifti import GiftiImage
 from nibabel.nifti1 import Nifti1Image
 from nilearn.masking import apply_mask, unmask
 
-from findviz.viz.viewer.types import SliceIndexDict
 from findviz.logger_config import setup_logger
 
 logger = setup_logger(__name__)
 
 # define slice containers for nifti visualization
-slices_containers = ['slice1', 'slice2', 'slice3']
+slices_containers = ['slice_1', 'slice_2', 'slice_3']
 
 def apply_mask_nifti(
     nifti_img: nib.Nifti1Image,
@@ -70,14 +70,46 @@ def extend_color_range(
 def get_coord_labels(
     nii_img: Nifti1Image
 ) -> np.ndarray:
-    """Get coordinate labels for NIFTI data"""
+    """Get coordinate labels for NIFTI data as a 3D array
+    
+    Parameters
+    ----------
+    nii_img : Nifti1Image
+        Input NIFTI image
+        
+    Returns
+    -------
+    np.ndarray
+        3D array of shape (X, Y, Z, 3) containing the coordinate indices
+        for each voxel position
+    """
     data = nii_img.get_fdata()
-    coord_labels = []
-    for i in range(data.shape[0]):
-        for j in range(data.shape[1]):
-            for k in range(data.shape[2]):
-                coord_labels.append((i, j, k))
-    return np.array(coord_labels)
+    shape = data.shape[:3]  # Get first 3 dimensions (X, Y, Z)
+    
+    # Create coordinate arrays for each dimension
+    x_coords = np.arange(shape[0])[:, np.newaxis, np.newaxis]
+    y_coords = np.arange(shape[1])[np.newaxis, :, np.newaxis]
+    z_coords = np.arange(shape[2])[np.newaxis, np.newaxis, :]
+    
+    # Broadcast to full 3D arrays
+    X = np.broadcast_to(x_coords, shape)
+    Y = np.broadcast_to(y_coords, shape)
+    Z = np.broadcast_to(z_coords, shape)
+    
+    # Stack the coordinates into a single array with shape (X, Y, Z, 3)
+    coord_labels = np.stack([X, Y, Z], axis=-1)
+
+    # Vectorize the string formatting function
+    format_coord = np.vectorize(lambda x, y, z: f"Voxel: {x}, {y}, {z}")
+
+    # Apply the formatting function to each coordinate
+    coord_labels = format_coord(
+        coord_labels[..., 0], 
+        coord_labels[..., 1], 
+        coord_labels[..., 2]
+    )
+    
+    return coord_labels
 
 
 def get_minmax(
@@ -132,21 +164,22 @@ def get_ortho_slice_coords(
     Dictionary containing x,y,z slice coordinates
     """
     ortho_slice_coords = {}
+
     for slice in slices_containers:
         # saggital slice
-        if slice == 'slice1':
+        if slice == 'slice_1':
             ortho_slice_coords[slice] = {
-                'x': ortho_slice_idx['z'],
-                'y': ortho_slice_idx['x'],
+                'x': ortho_slice_idx['y'],
+                'y': ortho_slice_idx['z'],
             }
         # coronal slice
-        elif slice == 'slice2':
+        elif slice == 'slice_2':
             ortho_slice_coords[slice] = {
                 'x': ortho_slice_idx['x'],
                 'y': ortho_slice_idx['z']
             }
         # axial slice
-        elif slice == 'slice3':
+        elif slice == 'slice_3':
             ortho_slice_coords[slice] = {
                 'x': ortho_slice_idx['x'],
                 'y': ortho_slice_idx['y']
@@ -188,19 +221,20 @@ def get_montage_slice_coords(
     Dictionary containing x, y click coordinates for montage view
     """
     if montage_slice_dir == 'x':
-        montage_slice_coords = {
-            'x': ortho_slice_coords['slice1']['x'],
-            'y': ortho_slice_coords['slice1']['y'],
-        }
+        x = ortho_slice_coords['slice_1']['x']
+        y = ortho_slice_coords['slice_2']['y']
     elif montage_slice_dir == 'y':
-        montage_slice_coords = {
-            'x': ortho_slice_coords['slice2']['x'],
-            'y': ortho_slice_coords['slice2']['y'],
-        }
+        x = ortho_slice_coords['slice_2']['x']
+        y = ortho_slice_coords['slice_3']['y']
     elif montage_slice_dir == 'z':
-        montage_slice_coords = {
-            'x': ortho_slice_coords['slice3']['x'],
-            'y': ortho_slice_coords['slice3']['y'],
+        x = ortho_slice_coords['slice_3']['x']
+        y = ortho_slice_coords['slice_1']['y']
+
+    montage_slice_coords = {}
+    for slice in slices_containers:
+        montage_slice_coords[slice] = {
+            'x': x,
+            'y': y,
         }
     return montage_slice_coords
 
@@ -208,7 +242,7 @@ def get_montage_slice_idx(
     slice_len: Dict[str, int],
     montage_slice_dir: Literal['x', 'y', 'z'],
     ortho_slice_idx: Dict[str, int]
-) -> SliceIndexDict:
+) -> Dict[str, Dict[str, int]]:
     """Get initial montage slice indices for NIFTI data as 
     equally distributed across the slice direction (montage_slice_dir). 
     The montage slice indices are initialized with the slice indices
@@ -479,10 +513,24 @@ def requires_state(func):
     Checks if self._state has been initialized before executing the decorated method.
     If no state exists, logs an error and returns None.
     """
-    def wrapper(self, *args, **kwargs):
-        if not self._state:
-            logger.error(f"No state exists. Must call create_nifti_state or create_gifti_state before {func.__name__}")
-            return None
-        return func(self, *args, **kwargs)
-    return wrapper
+    # For regular methods
+    if not isinstance(func, property):
+        @wraps(func)
+        def wrapper(self, *args, **kwargs):
+            if not self._state:
+                logger.error(f"No state exists. Must call create_nifti_state or create_gifti_state before {func.__name__}")
+                return None
+            return func(self, *args, **kwargs)
+        return wrapper
+    
+    # For properties
+    else:
+        @property
+        @wraps(func)
+        def wrapper(self):
+            if not self._state:
+                logger.error(f"No state exists. Must call create_nifti_state or create_gifti_state before {func.fget.__name__}")
+                return None
+            return func.fget(self)
+        return wrapper
 

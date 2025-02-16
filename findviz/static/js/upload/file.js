@@ -25,7 +25,7 @@ class FileUploader {
   /**
    * Construct a FileUpload class with a callback function (uploadComplete)
    * to be executed on successful upload
-   * @param {{ (data: object, plotType: string)  }} onUploadComplete 
+   * @param {{ (fileType: string)  }} onUploadComplete 
    */
   constructor(onUploadComplete) {
     // counter variable to generate unique ids for time series switches
@@ -81,7 +81,7 @@ class FileUploader {
         if (response.ok) {
             const data = await response.json();
             document.getElementById('fmri-visualization-container').style.display = 'block';
-            this.onUploadComplete(data, fmriFileType);
+            this.onUploadComplete(data.file_type);
             $('#upload-modal').modal('hide');
         } else {
           if (response.status == 400) {
@@ -138,7 +138,7 @@ class FileUploader {
         } else {
           Object.assign(data, {taskConditions: null})
         }
-        this.onUploadComplete(data, data.file_type);
+        this.onUploadComplete(data.file_type);
         $('#upload-modal').modal('hide');
     } catch (error) {
         console.error('Error during scene file upload:', error);
@@ -443,7 +443,7 @@ class FileUploader {
     });
 
     // Add event listener for bootstrap model close to clear error message
-    $('#uploadModal').on('hidden.bs.modal', function (e) {
+    $('#upload-modal').on('hidden.bs.modal', function (e) {
         document.getElementById('error-message-upload').style.display = 'none';
     });
 

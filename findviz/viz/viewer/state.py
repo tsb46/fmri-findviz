@@ -12,7 +12,7 @@ import numpy as np
 from findviz.viz.viewer.types import (
     DistancePlotOptionsDict, NiftiDataDict, NiftiDataPreprocessedDict,
     GiftiDataDict, GiftiDataPreprocessedDict, ColorOptions,
-    SliceCoordsDict, SliceIndexDict, 
+    SliceCoordsDict, OrthoSliceIndexDict, 
     MontageSliceIndexDict, MontageSliceCoordsDict
 )
 class ColorMaps(Enum):
@@ -73,10 +73,10 @@ class TimeCourseColor(Enum):
 @dataclass
 class DistancePlotOptions:
     """Distance plot options."""
-    color_min: float
-    color_max: float
+    color_min: Optional[float] = None
+    color_max: Optional[float] = None
+    color_range: Optional[Tuple[float, float]] = None
     color_map: ColorMaps = ColorMaps.RDBU
-    color_range: Tuple[float, float]
     precision: int = 6
     slider_step_size: float = 1.0
     allowed_precision: int = 6
@@ -96,7 +96,7 @@ class DistancePlotOptions:
             'allowed_precision': self.allowed_precision,
             'slider_step_size': self.slider_step_size,
             'time_marker_on': self.time_marker_on,
-            'time_marker_color': self.time_marker_color,
+            'time_marker_color': self.time_marker_color.value,
             'time_marker_width': self.time_marker_width,
             'time_marker_opacity': self.time_marker_opacity
         }
@@ -104,7 +104,13 @@ class DistancePlotOptions:
     def update_from_dict(self, data: DistancePlotOptionsDict) -> None:
         """Update from dictionary."""
         for key, value in data.items():
-            setattr(self, key, value)
+            # handle enum values
+            if key == 'color_map':
+                setattr(self, key, ColorMaps(value))
+            elif key == 'time_marker_color':
+                setattr(self, key, TimeCourseColor(value))
+            else:
+                setattr(self, key, value)
 
 @dataclass
 class FmriPlotOptions:
@@ -121,7 +127,7 @@ class FmriPlotOptions:
         color_map: Color map for color mapping. Default is 'Viridis'
         hover_text_on: Whether hover text is enabled. Default is True
         precision: Precision of the color mapping. Default is 6
-        slider_steps: Stepsize of the sliders. Default is 100
+        slider_step_size: Stepsize of the sliders. Default is 100
         allowed_precision: Allowed precision of the sliders. Default is 6
         view_state: View state ('ortho' or 'montage') for NIFTI data. 
             Default is 'ortho'
@@ -141,7 +147,7 @@ class FmriPlotOptions:
     color_map: ColorMaps = ColorMaps.VIRIDIS
     hover_text_on: bool = True
     precision: int = 6
-    slider_steps: int = 100
+    slider_step_size: int = 100
     allowed_precision: int = 6
     crosshair_on: bool = True
     direction_marker_on: bool = False
@@ -149,7 +155,7 @@ class FmriPlotOptions:
     def to_dict(self) -> Dict[str, float]:
         """Convert to dictionary."""
         return {
-            'color_map': self.color_map,
+            'color_map': self.color_map.value,
             'color_min': self.color_min,
             'color_max': self.color_max,
             'color_range': self.color_range,
@@ -159,16 +165,21 @@ class FmriPlotOptions:
             'opacity': self.opacity,
             'hover_text_on': self.hover_text_on,
             'precision': self.precision,
-            'slider_steps': self.slider_steps,
+            'slider_step_size': self.slider_step_size,
             'allowed_precision': self.allowed_precision,
             'crosshair_on': self.crosshair_on,
             'direction_marker_on': self.direction_marker_on
         }
     
+
     def update_from_dict(self, data: Dict[str, float]) -> None:
         """Update from dictionary."""
         for key, value in data.items():
-            setattr(self, key, value)
+            # handle enum values
+            if key == 'color_map':
+                setattr(self, key, ColorMaps(value))
+            else:
+                setattr(self, key, value)
 
 
 @dataclass
@@ -201,11 +212,12 @@ class TimeCoursePlotOptions:
         visibility: whether the time course is visible in the plot. Default is True.
         color: Color of the time course. Default is RED
         width: Width of the time course. Default is 2.0
+        scale: Scale of the time course. Default is 1.0
         opacity: Opacity of the time course. Default is 1.0
         mode: Mode of the time course. Default is 'lines'
     """
     visibility: bool = True
-    color: TimeCourseColor = field(default_factory=lambda: TimeCourseColor.RED)
+    color: TimeCourseColor = TimeCourseColor.RED
     width: float = 2.0
     scale: float = 1.0
     opacity: float = 1.0
@@ -238,7 +250,7 @@ class TimeCoursePlotOptions:
     def to_dict(self) -> Dict[str, float]:
         """Convert to dictionary."""
         return {
-            'color': self.color,
+            'color': self.color.value,
             'width': self.width,
             'scale': self.scale,
             'opacity': self.opacity,
@@ -248,7 +260,11 @@ class TimeCoursePlotOptions:
     def update_from_dict(self, data: Dict[str, float]) -> None:
         """Update from dictionary."""
         for key, value in data.items():
-            setattr(self, key, value)
+            # handle enum values
+            if key == 'color':
+                setattr(self, key, TimeCourseColor(value))
+            else:
+                setattr(self, key, value)
 
 @dataclass
 class TimeMarkerPlotOptions:
@@ -256,7 +272,7 @@ class TimeMarkerPlotOptions:
     opacity: float = 0.5
     width: float = 1.0
     shape: Literal['solid', 'dashed', 'dotted'] = 'solid'
-    color: TimeCourseColor = field(default_factory=lambda: TimeCourseColor.GREY)
+    color: TimeCourseColor = TimeCourseColor.GREY
 
     def to_dict(self) -> Dict[str, float]:
         """Convert to dictionary."""
@@ -264,13 +280,17 @@ class TimeMarkerPlotOptions:
             'opacity': self.opacity,
             'width': self.width,
             'shape': self.shape,
-            'color': self.color
+            'color': self.color.value
         }
     
     def update_from_dict(self, data: Dict[str, float]) -> None:
         """Update from dictionary."""
         for key, value in data.items():
-            setattr(self, key, value)
+            # handle enum values
+            if key == 'color':
+                setattr(self, key, TimeCourseColor(value))
+            else:
+                setattr(self, key, value)
 
 
 @dataclass
@@ -287,7 +307,7 @@ class TaskDesignPlotOptions:
     """
     convolution: bool = True
     scale: float = 1.0
-    color: TimeCourseColor = field(default_factory=lambda: TimeCourseColor.RED)
+    color: TimeCourseColor = TimeCourseColor.RED
     width: float = 2.0
     opacity: float = 1.0
     mode: Literal['lines', 'markers', 'lines+markers'] = 'lines'
@@ -330,7 +350,11 @@ class TaskDesignPlotOptions:
     def update_from_dict(self, data: Dict[str, float]) -> None:
         """Update from dictionary."""
         for key, value in data.items():
-            setattr(self, key, value)
+            # handle enum values
+            if key == 'color':
+                setattr(self, key, TimeCourseColor(value))
+            else:
+                setattr(self, key, value)
 
 @dataclass
 class VisualizationState:
@@ -378,10 +402,10 @@ class VisualizationState:
     # metadata
     tr: Optional[float] = None
     slicetime_ref: Optional[float] = None
-    timepoints: List[int]
-    global_min: float
-    global_max: float
-    file_type: Literal['nifti', 'gifti']
+    timepoints: Optional[List[int]] = None
+    global_min: Optional[float] = None
+    global_max: Optional[float] = None
+    file_type: Optional[Literal['nifti', 'gifti']] = None
     timepoint: int = 0
 
     # plot state
@@ -470,7 +494,7 @@ class NiftiVisualizationState(VisualizationState):
     view_state: Literal['ortho', 'montage'] = 'ortho'
 
     # orthogonal view slice indices
-    ortho_slice_idx: SliceIndexDict = field(default_factory=dict)
+    ortho_slice_idx: OrthoSliceIndexDict = field(default_factory=dict)
     # montage view slice indices
     montage_slice_idx: MontageSliceIndexDict = field(default_factory=dict)
 

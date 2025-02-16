@@ -62,7 +62,7 @@ def correlate():
         return make_response(e.message, 400)
     
     correlation_map = correlate.correlate(fmri_data, time_course)
-    return 200
+    return {'status': 'success'}
 
 
 @analysis_bp.route(Routes.DISTANCE.value, methods=['POST'])
@@ -96,7 +96,7 @@ def distance():
     distance_map = distance.calculate_distance(data_manager.timepoint, fmri_data)
     # create distance plot state in data manager
     data_manager.create_distance_plot_state(distance_map)
-    return 200
+    return {'status': 'success'}
 
 
 
@@ -145,7 +145,7 @@ def find_peaks():
     # update annotation markers in data manager
     data_manager.add_annotation_markers(peaks)
 
-    return 200
+    return {'status': 'success'}
 
 
 @analysis_bp.route(Routes.AVERAGE.value, methods=['POST'])
@@ -188,6 +188,6 @@ def average():
     # create window average
     window_average_map = window_average.average(fmri_data, annotation_markers)
     
-    return 200
+    return {'status': 'success'}
 
 

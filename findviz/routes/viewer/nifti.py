@@ -8,6 +8,9 @@ import numpy as np
 
 from nilearn.image import index_img
 
+from findviz.routes.utils import sanitize_array_for_json
+from findviz.viz.viewer.types import OrthoSliceIndexDict, MontageSliceDirectionIndexDict
+
 class SliceData(TypedDict):
     x: List[List[float]]
     y: List[List[float]]
@@ -28,9 +31,7 @@ def get_nifti_data(
     time_point: int,
     func_img: nib.Nifti1Image,
     coord_labels: np.ndarray,
-    x_slice: int,
-    y_slice: int,
-    z_slice: int,
+    slice_idx: OrthoSliceIndexDict | MontageSliceDirectionIndexDict,
     view_state: Literal['montage', 'ortho'],
     montage_slice_dir: Literal['x', 'y', 'z'],
     threshold_min: float = 0,
@@ -47,12 +48,8 @@ def get_nifti_data(
         4D functional image
     coord_labels : np.ndarray
         Array of voxel coordinates
-    x_slice : int 
-        Index for sagittal slice
-    y_slice : int
-        Index for coronal slice 
-    z_slice : int
-        Index for axial slice
+    slice_idx : OrthoSliceIndexDict | MontageSliceDirectionIndexDict
+        Slice indices for the current view state
     view_state : Literal['montage', 'ortho']
         Current view state of the viewer
     montage_slice_dir : Literal['x', 'y', 'z']
@@ -90,23 +87,30 @@ def get_nifti_data(
         'coords': {}
     }
     # Loop through axes and update
-    for axis, slice_i in zip(['x', 'y', 'z'], [x_slice, y_slice, z_slice]):
+    for axis, slice_container in zip(
+        ['x', 'y', 'z'], 
+        ['slice_1', 'slice_2', 'slice_3']
+    ):
         # set axis to all same direction, if montage
         if view_state == 'montage':
             nifti_axis = montage_slice_dir
+            # get slice idx
+            slice_i = slice_idx[slice_container][montage_slice_dir]
         else:
             nifti_axis = axis
-        slice_int = int(slice_i)
-        slice_out['func'][axis] = get_slice_data(
-            func_data, slice_int, axis=nifti_axis
+            # get slice idx
+            slice_i = slice_idx[axis]
+
+        slice_out['func'][slice_container] = get_slice_data(
+            func_data, slice_i, axis=nifti_axis
         )
         if anat_data:
-            slice_out['anat'][axis] = get_slice_data(
-                anat_data, slice_int, axis=nifti_axis
+            slice_out['anat'][slice_container] = get_slice_data(
+                anat_data, slice_i, axis=nifti_axis
             )
         # get coord labels
-        slice_out['coords'][axis] = get_slice_data(
-            coord_labels, slice_int, axis=nifti_axis
+        slice_out['coords'][slice_container] = get_slice_data(
+            coord_labels, slice_i, axis=nifti_axis, array_type='string'
         )
 
     return slice_out
@@ -116,7 +120,8 @@ def get_nifti_data(
 def get_slice_data(
     nifti_data: np.ndarray,
     slice_index: int, 
-    axis: Literal['x', 'y', 'z']
+    axis: Literal['x', 'y', 'z'],
+    array_type: Literal['number', 'string'] = 'number'
 ) -> List[List[float]]:
     """Extract a 2D slice from a NIfTI image along a specified axis.
 
@@ -128,7 +133,8 @@ def get_slice_data(
         Index of the slice to extract
     axis : Literal['x', 'y', 'z']
         Axis along which to take the slice
-
+    array_type : Literal['number', 'string']
+        The type of elements in the input array
     Returns
     -------
     2D numpy array containing the slice data, transposed for display
@@ -147,7 +153,12 @@ def get_slice_data(
             nifti_data[:, :, slice_index]
         ).transpose()
 
-    return slice_data.tolist()
+    # convert to list if string
+    if array_type == 'string':
+        return slice_data.tolist()
+    # otherwise sanitize for json (e.g. handle NaN values)
+    else:
+        return sanitize_array_for_json(slice_data)
 
 
 def get_timecourse_nifti(
@@ -197,11 +208,11 @@ def threshold_nifti_data(
     -------
     np.ndarray
         Thresholded array. Voxels with values outside 
-        the threshold range are set to 0.
+        the threshold range are set to None.
     """
     # create mask
-    mask = (nifti_data > threshold_min) & (nifti_data < threshold_max)
+    mask = (nifti_data >= threshold_min) & (nifti_data <= threshold_max)
     # apply mask
-    nifti_data[~mask] = 0
+    nifti_data[mask] = None
     return nifti_data
 

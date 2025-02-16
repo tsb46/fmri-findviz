@@ -8,8 +8,6 @@ Classes:
     DataManager: Singleton manager for visualization state
 """
 
-import logging
-
 from typing import Dict, Optional, List, Literal, ClassVar, Any
 
 import numpy as np
@@ -30,12 +28,15 @@ from findviz.viz.viewer.types import (
     FmriPlotOptionsDict, TimeCourseGlobalPlotOptionsDict,
     TimeCoursePlotOptionsDict, TimeMarkerPlotOptionsDict, 
     TaskDesignPlotOptionsDict, DistancePlotOptionsDict,
-    SliceIndexDict, CrosshairCoordsDict, DirectionLabelCoordsDict
+    OrthoSliceIndexDict, MontageSliceDirectionIndexDict, 
+    MontageSliceCoordsDict, CrosshairCoordsDict, 
+    DirectionLabelCoordsDict
 )
 from findviz.viz.viewer.utils import (
     apply_mask_nifti, get_coord_labels,
-    package_nii_metadata, package_gii_metadata,
-    package_distance_metadata, requires_state
+    get_ortho_slice_coords, package_nii_metadata, 
+    package_gii_metadata, package_distance_metadata, 
+    requires_state
 )
 
 logger = setup_logger(__name__)
@@ -102,6 +103,7 @@ class DataManager:
             cls._instance = super().__new__(cls)
             # Initialize instance attributes 
             cls._instance._state = None
+            logger.info("Data manager initialized")
 
         return cls._instance
 
@@ -124,6 +126,11 @@ class DataManager:
     @property
     def annotation_selection(self) -> int:
         return self._state.annotation_selection
+    
+    @requires_state
+    @property
+    def coord_labels(self) -> np.ndarray:
+        return self._state.coord_labels
     
     @requires_state
     @property
@@ -154,7 +161,7 @@ class DataManager:
 
     @requires_state
     @property
-    def montage_slice_coords(self) -> Optional[SliceIndexDict]:
+    def montage_slice_coords(self) -> Optional[MontageSliceCoordsDict]:
         if self._state.file_type == 'nifti':
             montage_slice_dir = self._state.montage_slice_dir
             return self._state.montage_slice_coords[montage_slice_dir]
@@ -522,53 +529,65 @@ class DataManager:
     
     @requires_state
     def get_crosshair_coords(self) -> CrosshairCoordsDict:
-        """Get coordinates for crosshair shape
-          for nifti plot from slice length and coordinates"""
+        """Get x,y coordinates for crosshair shape
+          for nifti plot from slice length and indices"""
         if self._state.file_type == 'nifti':
             if self._state.view_state == 'ortho':
                 crosshair_data = {
-                    'slice1': {
-                        'len_x': self._state.slice_len['y'],
-                        'len_y': self._state.slice_len['z'],
-                        'x': self._state.ortho_slice_coords['slice1']['x'],
-                        'y': self._state.ortho_slice_coords['slice1']['y']
+                    'slice_1': {
+                        'len_x': self._state.slice_len['y'] - 1,
+                        'len_y': self._state.slice_len['z'] - 1,
+                        'x': self._state.ortho_slice_coords['slice_1']['x'],
+                        'y': self._state.ortho_slice_coords['slice_1']['y']
                     },
-                    'slice2': {
-                        'len_x': self._state.slice_len['x'],
-                        'len_y': self._state.slice_len['z'],
-                        'x': self._state.ortho_slice_coords['slice2']['x'],
-                        'y': self._state.ortho_slice_coords['slice2']['y']
+                    'slice_2': {
+                        'len_x': self._state.slice_len['x'] - 1,
+                        'len_y': self._state.slice_len['z'] - 1,
+                        'x': self._state.ortho_slice_coords['slice_2']['x'],
+                        'y': self._state.ortho_slice_coords['slice_2']['y']
                     },
-                    'slice3': {
-                        'len_x': self._state.slice_len['x'],
-                        'len_y': self._state.slice_len['y'],
-                        'x': self._state.ortho_slice_coords['slice3']['x'],
-                        'y': self._state.ortho_slice_coords['slice3']['y']
+                    'slice_3': {
+                        'len_x': self._state.slice_len['x'] - 1,
+                        'len_y': self._state.slice_len['y'] - 1,
+                        'x': self._state.ortho_slice_coords['slice_3']['x'],
+                        'y': self._state.ortho_slice_coords['slice_3']['y']
                     }
                 }
             else:
                 slice_dir = self._state.montage_slice_dir
+                if slice_dir == 'x':
+                    len_x = self._state.slice_len['y'] - 1
+                    len_y = self._state.slice_len['z'] - 1
+                elif slice_dir == 'y':
+                    len_x = self._state.slice_len['x'] - 1
+                    len_y = self._state.slice_len['z'] - 1
+                elif slice_dir == 'z':
+                    len_x = self._state.slice_len['x'] - 1
+                    len_y = self._state.slice_len['y'] - 1
+                else:
+                    logger.error(f"Invalid slice direction: {slice_dir}")
+                    return {}
+                
                 crosshair_data = {
-                    'slice1': {
-                        'len_x': self._state.slice_len['y'],
-                        'len_y': self._state.slice_len['z'],
-                        'x': self._state.montage_slice_coords[slice_dir]['slice1']['x'],
-                        'y': self._state.montage_slice_coords[slice_dir]['slice1']['y']
+                    'slice_1': {
+                        'len_x': len_x,
+                        'len_y': len_y,
+                        'x': self._state.montage_slice_coords[slice_dir]['slice_1']['x'],
+                        'y': self._state.montage_slice_coords[slice_dir]['slice_1']['y']
                     },
-                    'slice2': {
-                        'len_x': self._state.slice_len['x'],
-                        'len_y': self._state.slice_len['z'],
-                        'x': self._state.montage_slice_coords[slice_dir]['slice2']['x'],
-                        'y': self._state.montage_slice_coords[slice_dir]['slice2']['y']
+                    'slice_2': {
+                        'len_x': len_x,
+                        'len_y': len_y,
+                        'x': self._state.montage_slice_coords[slice_dir]['slice_2']['x'],
+                        'y': self._state.montage_slice_coords[slice_dir]['slice_2']['y']
                     },
-                    'slice3': {
-                        'len_x': self._state.slice_len['x'],
-                        'len_y': self._state.slice_len['y'],
-                        'x': self._state.montage_slice_coords[slice_dir]['slice3']['x'],
-                        'y': self._state.montage_slice_coords[slice_dir]['slice3']['y']
+                    'slice_3': {
+                        'len_x': len_x,
+                        'len_y': len_y,
+                        'x': self._state.montage_slice_coords[slice_dir]['slice_3']['x'],
+                        'y': self._state.montage_slice_coords[slice_dir]['slice_3']['y']
                     }
                 }
-            
             return crosshair_data
         
         else:
@@ -581,16 +600,16 @@ class DataManager:
         if self._state.file_type == 'nifti':
             if self._state.view_state == 'ortho':
                 return {
-                    'slice1': self._get_slice_direction_label_coords('x'),
-                    'slice2': self._get_slice_direction_label_coords('y'),
-                    'slice3': self._get_slice_direction_label_coords('z')
+                    'slice_1': self._get_slice_direction_label_coords('x'),
+                    'slice_2': self._get_slice_direction_label_coords('y'),
+                    'slice_3': self._get_slice_direction_label_coords('z')
                 }
             else:
                 slice_dir = self._state.montage_slice_dir
                 return {
-                    'slice1': self._get_slice_direction_label_coords(slice_dir),
-                    'slice2': self._get_slice_direction_label_coords(slice_dir),
-                    'slice3': self._get_slice_direction_label_coords(slice_dir)
+                    'slice_1': self._get_slice_direction_label_coords(slice_dir),
+                    'slice_2': self._get_slice_direction_label_coords(slice_dir),
+                    'slice_3': self._get_slice_direction_label_coords(slice_dir)
                 }
         else:
             logger.error("Direction labels not supported for GIFTI data")
@@ -616,7 +635,7 @@ class DataManager:
         return data
     
     @requires_state
-    def get_slice_idx(self) -> SliceIndexDict:
+    def get_slice_idx(self) -> OrthoSliceIndexDict | MontageSliceDirectionIndexDict:
         """Get slice indices"""
         if self._state.view_state == 'ortho':
             return self._state.ortho_slice_idx
@@ -1015,7 +1034,7 @@ class DataManager:
     def update_location(
         self, 
         click_coords: Dict[Literal['x', 'y'], int] | Dict[Literal['selected_vertex', 'selected_hemi'], int | str], 
-        slice_name: Optional[Literal['slice1', 'slice2', 'slice3']] = None
+        slice_name: Optional[Literal['slice_1', 'slice_2', 'slice_3']] = None
     ) -> None:
         """Update brain location data
         
@@ -1028,12 +1047,17 @@ class DataManager:
             self._update_slice_indices(click_coords, slice_name)
             # update click coordinates for nifti data
             if self._state.view_state == 'ortho':
-                self._state.ortho_slice_coords[slice_name] = click_coords
+                # update ortho slice coordinates
+                self._state.ortho_slice_coords = get_ortho_slice_coords(
+                    self._state.ortho_slice_idx
+                )
             elif self._state.view_state == 'montage':
-                # get montage slice direction
+                # get montage slice directions
                 montage_slice_dir = self._state.montage_slice_dir
                 # update click coordinates for montage slice direction
-                self._state.montage_slice_coords[montage_slice_dir][slice_name] = click_coords
+                self._state.montage_slice_coords[montage_slice_dir]['slice_1'] = click_coords
+                self._state.montage_slice_coords[montage_slice_dir]['slice_2'] = click_coords
+                self._state.montage_slice_coords[montage_slice_dir]['slice_3'] = click_coords
         else:
             self._state.selected_vertex = click_coords['selected_vertex']
             self._state.selected_hemi = click_coords['selected_hemi']
@@ -1063,6 +1087,7 @@ class DataManager:
     def update_montage_slice_idx(self, slice_name: str, slice_idx: int) -> None:
         """Update individual montage slice index from slider changes"""
         montage_slice_dir = self._state.montage_slice_dir
+        # update montage slice index
         self._state.montage_slice_idx[montage_slice_dir][slice_name][montage_slice_dir] = slice_idx
         logger.info("Updated montage slice index for slice %s", slice_name)
 
@@ -1108,7 +1133,7 @@ class DataManager:
     def update_timepoint(self, timepoint: int) -> None:
         """Update timepoint data"""
         # check if timepoint is within range
-        if timepoint < 0 or timepoint >= self._state.timepoints:
+        if timepoint < 0 or timepoint >= len(self._state.timepoints):
             logger.error("Timepoint out of range")
             return
         
@@ -1214,7 +1239,7 @@ class DataManager:
     def _update_slice_indices(
         self, 
         click_coords: Dict[str, Literal['x', 'y']], 
-        slice_name: Literal['slice1', 'slice2', 'slice3']
+        slice_name: Literal['slice_1', 'slice_2', 'slice_3']
     ) -> None:
         """Update slice indices for nifti data from click coordinates in the ortho
         or montage view
@@ -1223,23 +1248,23 @@ class DataManager:
             click_coords: Coordinate (x, y) where the click occurred.
             slice_name: Slice where the click occurred.
         """
-        if self._state.fmri_plot_options.view_state == 'ortho':
+        if self._state.view_state == 'ortho':
             # Convert click coordinates to slice indices based on which slice was clicked
-            # slice1 is axial, slice2 is coronal, slice3 is sagittal
-            if slice_name == 'slice1':
-                self._state.ortho_slice_idx['x'] = click_coords['x']
-                self._state.ortho_slice_idx['y'] = click_coords['y']
-                self._state.ortho_slice_idx['z'] = self._state.ortho_slice_idx['z']
-            elif slice_name == 'slice2':
+            # slice_1 is axial, slice_2 is coronal, slice_3 is sagittal
+            if slice_name == 'slice_1':
+                self._state.ortho_slice_idx['x'] = self._state.ortho_slice_idx['x']
+                self._state.ortho_slice_idx['y'] = click_coords['x']
+                self._state.ortho_slice_idx['z'] = click_coords['y']
+            elif slice_name == 'slice_2':
                 self._state.ortho_slice_idx['x'] = click_coords['x']
                 self._state.ortho_slice_idx['y'] = self._state.ortho_slice_idx['y']
                 self._state.ortho_slice_idx['z'] = click_coords['y']
-            elif slice_name == 'slice3':
+            elif slice_name == 'slice_3':
                 self._state.ortho_slice_idx['x'] = click_coords['x']
                 self._state.ortho_slice_idx['y'] = click_coords['y']
                 self._state.ortho_slice_idx['z'] = self._state.ortho_slice_idx['z']
 
-        elif self._state.fmri_plot_options.view_state == 'montage':
+        elif self._state.view_state == 'montage':
             montage_slice_idx = self._state.montage_slice_idx
             for montage_slice in montage_slice_idx:
                 if self._state.montage_slice_dir == 'x':

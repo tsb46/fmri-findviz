@@ -1,8 +1,8 @@
 // PreprocessTimeCourse.js - Preprocessing for timecourse data
-import { EVENT_TYPES } from '../../constants/EventTypes';
-import eventBus from '../../events/ViewerEvents';
-import { getPreprocessedTimeCourse, resetTimeCoursePreprocess } from '../../api/preprocess';
-import { getTimeCourseLabels } from '../../api/data';
+import { EVENT_TYPES } from '../../constants/EventTypes.js';
+import eventBus from '../../events/ViewerEvents.js';
+import { getPreprocessedTimeCourse, resetTimeCoursePreprocess } from '../../api/preprocess.js';
+import { getTimeCourseLabels } from '../../api/data.js';
 
 class PreprocessTimeCourse {
     /**

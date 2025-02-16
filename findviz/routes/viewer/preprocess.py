@@ -28,10 +28,11 @@ preprocess_bp = Blueprint('preprocess', __name__)
 @handle_route_errors(
     error_msg='Unknown error in preprocess FMRI request',
     log_msg='FMRI preprocessing successful',
-    fmri_file_type=data_manager.get_file_type(),
-    route=Routes.GET_PREPROCESSED_FMRI
+    fmri_file_type=data_manager.fmri_file_type,
+    route=Routes.GET_PREPROCESSED_FMRI,
+    route_parameters=list(PreprocessFMRIInputs.__annotations__.keys())
 )
-def get_preprocessed_fmri() -> str:
+def get_preprocessed_fmri() -> dict:
     """Get preprocessed FMRI data"""
     if data_manager.fmri_preprocessed:
         logger.info("FMRI data already preprocessed, clearing it")
@@ -42,7 +43,7 @@ def get_preprocessed_fmri() -> str:
 
     # Validate inputs
     try:
-        fmri_input_validator = FMRIPreprocessInputValidator(data_manager.get_file_type())
+        fmri_input_validator = FMRIPreprocessInputValidator(data_manager.fmri_file_type)
         fmri_input_validator.validate_preprocess_input(inputs)
     except PreprocessInputError as e:
         logger.error(e)
@@ -56,7 +57,7 @@ def get_preprocessed_fmri() -> str:
     )
     try:
         func_proc = preprocess_fmri(
-            file_type=data_manager.get_file_type(),
+            file_type=data_manager.fmri_file_type,
             inputs=inputs,
             func_data=viewer_data['func_data'],
             mask_data=viewer_data['mask_data'],
@@ -65,7 +66,7 @@ def get_preprocessed_fmri() -> str:
         logger.error(e)
         return make_response(e.message, 400)
 
-    if data_manager.get_file_type() == 'nifti':
+    if data_manager.fmri_file_type == 'nifti':
         data_manager.store_fmri_preprocessed({'func_img': func_proc})
     else:
         data_manager.store_fmri_preprocessed({
@@ -73,15 +74,16 @@ def get_preprocessed_fmri() -> str:
             'right_func_img': func_proc[1]
         })
     
-    return "FMRI preprocessing successful"
+    return {'status': 'success'}
 
 @preprocess_bp.route(Routes.GET_PREPROCESSED_TIMECOURSE.value, methods=['POST'])
 @handle_route_errors(
     error_msg='Unknown error in preprocess timecourse request',
     log_msg='Timecourse preprocessing successful',
-    route=Routes.GET_PREPROCESSED_TIMECOURSE
+    route=Routes.GET_PREPROCESSED_TIMECOURSE,
+    route_parameters=list(PreprocessTimecourseInputs.__annotations__.keys())
 )
-def get_preprocessed_timecourse() -> str:
+def get_preprocessed_timecourse() -> dict:
     """Get preprocessed timecourse data"""
     if data_manager.ts_preprocessed:
         logger.info("Timecourse data already preprocessed, clearing it")
@@ -114,24 +116,28 @@ def get_preprocessed_timecourse() -> str:
         ts_data[ts_label] = ts_proc
 
     data_manager.store_timecourse_preprocessed(ts_data)
-    return "Timecourse preprocessing successful"
+    return {'status': 'success'}
 
 @preprocess_bp.route(Routes.RESET_FMRI_PREPROCESS.value, methods=['POST'])
 @handle_route_errors(
     error_msg='Unknown error in reset FMRI preprocessing request',
-    log_msg='FMRI preprocessing reset successful'
+    log_msg='FMRI preprocessing reset successful',
+    fmri_file_type=data_manager.fmri_file_type,
+    route=Routes.RESET_FMRI_PREPROCESS
 )
-def reset_fmri_preprocess() -> str:
+def reset_fmri_preprocess() -> dict:
     """Reset FMRI preprocessing"""
     data_manager.clear_fmri_preprocessed()
-    return "FMRI preprocessing reset"
+    return {'status': 'success'}
 
 @preprocess_bp.route(Routes.RESET_TIMECOURSE_PREPROCESS.value, methods=['POST'])
 @handle_route_errors(
     error_msg='Unknown error in reset timecourse preprocessing request',
-    log_msg='Timecourse preprocessing reset successful'
+    log_msg='Timecourse preprocessing reset successful',
+    fmri_file_type=data_manager.fmri_file_type,
+    route=Routes.RESET_TIMECOURSE_PREPROCESS
 )
-def reset_timecourse_preprocess() -> str:
+def reset_timecourse_preprocess() -> dict:
     """Reset timecourse preprocessing"""
     data_manager.clear_timecourse_preprocessed()
-    return "Timecourse preprocessing reset"
+    return {'status': 'success'}

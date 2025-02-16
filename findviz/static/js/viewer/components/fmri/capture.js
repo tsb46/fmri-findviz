@@ -98,13 +98,7 @@ export function playMovie(timeSlider, playMovieButton, intervalTime = 500) {
 
             if (currentValue < maxValue) {
                 timeSlider.slider('setValue', currentValue + 1);
-                let timeIndex = timeSlider.slider('getValue');
-                // Trigger a custom event to update fmri plots
-                const customEvent = $.Event('timeSliderChange',
-                    { detail: { timeIndex } }
-                );
-                // Dispatch the custom event through the jQuery object
-                $(document).trigger(customEvent);
+                timeSlider.trigger('change')
             } else {
                 stopMovie();  // Stop the movie when the slider reaches the max value
             }

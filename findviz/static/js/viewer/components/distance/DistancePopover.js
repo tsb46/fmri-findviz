@@ -1,9 +1,9 @@
 // distance.js
 // Class for handling distance plot options popover
-import { EVENT_TYPES } from '../../constants/EventTypes';
-import eventBus from '../../events/ViewerEvents';
-import { initializeRangeSlider, initializeSingleSlider } from '../sliders';
-import { getDistancePlotOptions, updateDistancePlotOptions } from '../../api/plot';
+import { EVENT_TYPES } from '../../constants/EventTypes.js';
+import eventBus from '../../events/ViewerEvents.js';
+import { initializeRangeSlider, initializeSingleSlider } from '../sliders.js';
+import { getDistancePlotOptions, updateDistancePlotOptions } from '../../api/plot.js';
 import ColorMap from '../ColorMap.js';
 
 class DistancePopover {

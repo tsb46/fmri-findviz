@@ -1,8 +1,8 @@
 // PeakFinder.js
-import { EVENT_TYPES } from '../../constants/EventTypes';
-import eventBus from '../../events/ViewerEvents';
-import { getTimeCourseLabels, getTaskConditions } from '../../api/data';
-import { findPeaks } from '../../api/analysis';
+import { EVENT_TYPES } from '../../constants/EventTypes.js';
+import eventBus from '../../events/ViewerEvents.js';
+import { getTimeCourseLabels, getTaskConditions } from '../../api/data.js';
+import { findPeaks } from '../../api/analysis.js';
 
 
 class PeakFinder {
@@ -30,7 +30,7 @@ class PeakFinder {
         this.initializePeakFinderPopOver();
 
         // listen for addition of fmri time courses and update time course select
-        eventBus.subscribe(EVENT_TYPES.TIMECOURSE.ADD_FMRI_TIMECOURSE, () => {
+        eventBus.subscribe(EVENT_TYPES.VISUALIZATION.TIMECOURSE.ADD_FMRI_TIMECOURSE, () => {
             this.fillPeakFinderTimeCourseSelect();
         });
     }

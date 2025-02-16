@@ -48,6 +48,9 @@ class TimeCourse {
 
         // attach event listeners
         this.attachEventListeners();
+
+        // initialize plot state - i.e. whether time course is plotted
+        this.plotState = false;
     }
 
     attachEventListeners() {
@@ -75,7 +78,9 @@ class TimeCourse {
         // listen for time slider change event - replot time marker
         eventBus.subscribe(
             EVENT_TYPES.VISUALIZATION.FMRI.TIME_SLIDER_CHANGE, (timePoint) => {
-                this.plotTimeMarker(timePoint);
+                if (this.plotState) {
+                    this.plotTimeMarker(timePoint);
+                }
             }
         );
 
@@ -88,6 +93,8 @@ class TimeCourse {
             ], async () => {  
                 // if fmri time course enabled, update functional timecourse
                 if (this.timeCourseEnabled) {
+                    // set plot state to true
+                    this.plotState = true;
                     // if previous selection was frozen, update functional timecourse
                     if (this.timeCourseFreeze) {
                         await updateFmriTimeCourse();
@@ -121,16 +128,20 @@ class TimeCourse {
         // remove most recent fmri timecourse and replot
         eventBus.subscribe(
             EVENT_TYPES.VISUALIZATION.TIMECOURSE.UNDO_FMRI_TIMECOURSE, async () => {
-                await popFmriTimeCourse();
-                // get time course data and plot
-                const timeCourseData = await getTimeCourseData();
-                const plotOptions = await this.getPlotOptions();
-                this.plotTimeCourseDataUpdate(timeCourseData, plotOptions);
-                // publish event that most recentfmri time course has been removed
-                eventBus.publish(
-                    EVENT_TYPES.VISUALIZATION.TIMECOURSE.UNDO_FMRI_TIMECOURSE
-                );
-                
+                if (this.plotState) {
+                    // set plot state to false
+                    this.plotState = false;
+                    // remove most recent fmri timecourse
+                    await popFmriTimeCourse();
+                    // get time course data and plot
+                    const timeCourseData = await getTimeCourseData();
+                    const plotOptions = await this.getPlotOptions();
+                    this.plotTimeCourseDataUpdate(timeCourseData, plotOptions);
+                    // publish event that most recentfmri time course has been removed
+                    eventBus.publish(
+                        EVENT_TYPES.VISUALIZATION.TIMECOURSE.UNDO_FMRI_TIMECOURSE
+                    );
+                }
             }
         );
 
@@ -138,15 +149,20 @@ class TimeCourse {
         // remove all fmri timecourses and replot
         eventBus.subscribe(
             EVENT_TYPES.VISUALIZATION.TIMECOURSE.REMOVE_FMRI_TIMECOURSE, async () => {
-                await removeFmriTimeCourses();
-                // get time course data and plot
-                const timeCourseData = await getTimeCourseData();
-                const plotOptions = await this.getPlotOptions();
-                this.plotTimeCourseDataUpdate(timeCourseData, plotOptions);
-                // publish event that all fmri time courses have been removed
-                eventBus.publish(
-                    EVENT_TYPES.VISUALIZATION.TIMECOURSE.REMOVE_FMRI_TIMECOURSE
-                );
+                if (this.plotState) {
+                    // set plot state to false
+                    this.plotState = false;
+                    // remove all fmri timecourses
+                    await removeFmriTimeCourses();
+                    // get time course data and plot
+                    const timeCourseData = await getTimeCourseData();
+                    const plotOptions = await this.getPlotOptions();
+                    this.plotTimeCourseDataUpdate(timeCourseData, plotOptions);
+                    // publish event that all fmri time courses have been removed
+                    eventBus.publish(
+                        EVENT_TYPES.VISUALIZATION.TIMECOURSE.REMOVE_FMRI_TIMECOURSE
+                    );
+                }
             }
         );
 
@@ -228,6 +244,8 @@ class TimeCourse {
     async initPlot() {
         // if time course or task design input, plot time course
         if (this.timeCourseInput || this.taskDesignInput) {
+            // set plot state to true
+            this.plotState = true;
             // get plot options
             const plotOptions = await this.getPlotOptions();
             // get time marker and global plot options
@@ -507,11 +525,11 @@ class TimeCourse {
             x1: timePoint,
             y1: 1,
             yref: 'paper',
-            opacity: timeMarkerPlotOptions['opacity'],
+            opacity: this.timeMarkerPlotOptions['opacity'],
             line: {
-                color: timeMarkerPlotOptions['color'],
-                width: timeMarkerPlotOptions['width'],
-                dash: timeMarkerPlotOptions['shape']
+                color: this.timeMarkerPlotOptions['color'],
+                width: this.timeMarkerPlotOptions['width'],
+                dash: this.timeMarkerPlotOptions['shape']
             },
         }
         

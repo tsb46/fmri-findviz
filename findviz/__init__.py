@@ -26,17 +26,19 @@ def create_app():
         
     # Import the blueprints
     from findviz.routes.file import file_bp
+    from findviz.routes.main import main_bp
     from findviz.routes.viewer.color import color_bp
     from findviz.routes.viewer.data import data_bp
-    from findviz.routes.viewer.plot import plot_options_bp
+    from findviz.routes.viewer.plot import plot_bp
     from findviz.routes.viewer.preprocess import preprocess_bp
 
 
     # Register the blueprints
     app.register_blueprint(file_bp)
+    app.register_blueprint(main_bp)
     app.register_blueprint(color_bp)
     app.register_blueprint(data_bp)
-    app.register_blueprint(plot_options_bp)
+    app.register_blueprint(plot_bp)
     app.register_blueprint(preprocess_bp)
 
     return app

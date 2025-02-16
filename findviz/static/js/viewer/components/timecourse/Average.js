@@ -1,10 +1,10 @@
 // average.js
 // Class for handling windowed average analysis
 
-import { EVENT_TYPES } from '../../constants/EventTypes';
-import eventBus from '../../events/ViewerEvents';
-import { windowedAverage } from '../../api/analysis';
-import { getAnnotationMarkers } from '../../api/plot';
+import { EVENT_TYPES } from '../../constants/EventTypes.js';
+import eventBus from '../../events/ViewerEvents.js';
+import { windowedAverage } from '../../api/analysis.js';
+import { getAnnotationMarkers } from '../../api/plot.js';
 
 class Average {
     /**

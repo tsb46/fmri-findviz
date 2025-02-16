@@ -1,8 +1,5 @@
 // ViewerEvents.js - central event management class for viewer interactions
 
-// Create a single instance
-const eventBus = new ViewerEvents();
-
 /**
  * Central event management class for viewer interactions
  */
@@ -68,4 +65,6 @@ class ViewerEvents {
     }
 }
 
+// Create and export a single instance
+const eventBus = new ViewerEvents();
 export default eventBus;

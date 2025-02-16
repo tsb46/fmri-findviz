@@ -14,12 +14,34 @@ import { displayInlineError, displayModalError, clearInlineError } from '../erro
  */
 export const makeRequest = async (url, options, errorConfig, callback) => {
     try {
-        const response = await fetch(url, {
-            ...options,
-            headers: {
+        let finalUrl = url;
+
+        // Handle URL parameters for GET requests
+        if (options.method === 'GET' && options.body instanceof FormData) {
+            const params = new URLSearchParams();
+            for (const [key, value] of options.body.entries()) {
+                if (value !== null) {
+                    params.append(key, value);
+                }
+            }
+            const queryString = params.toString();
+            if (queryString) {
+                finalUrl = `${url}?${queryString}`;
+            }
+            delete options.body;  // Remove body from GET request
+        }
+
+        // Don't set Content-Type for FormData - browser will set it automatically
+        const headers = options.body instanceof FormData 
+            ? options.headers 
+            : {
                 'Content-Type': 'application/json',
                 ...options.headers
-            }
+              };
+
+        const response = await fetch(finalUrl, {
+            ...options,
+            headers
         });
 
         if (!response.ok) {
@@ -70,7 +92,10 @@ export const makeRequest = async (url, options, errorConfig, callback) => {
 export const createFormData = (data) => {
     const formData = new FormData();
     Object.entries(data).forEach(([key, value]) => {
-        formData.append(key, value);
+        // Convert objects/arrays to JSON strings before appending
+        formData.append(key, 
+            typeof value === 'object' ? JSON.stringify(value) : value
+        );
     });
     return formData;
-}; 
+};

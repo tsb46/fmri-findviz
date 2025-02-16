@@ -1,8 +1,7 @@
-import { EVENT_TYPES } from '../constants/EventTypes.js';
+import { EVENT_TYPES } from '../../constants/EventTypes.js';
 import { initializeSingleSlider } from '../sliders.js';
-import eventBus from '../events/ViewerEvents.js';
-import { updateTimePoint } from '../api/plot.js';
-import { getViewerMetadata } from '../../api/data.js';
+import eventBus from '../../events/ViewerEvents.js';
+import { getViewerMetadata, updateTimepoint } from '../../api/data.js';
 
 class TimeSlider {
     /**
@@ -18,24 +17,24 @@ class TimeSlider {
         timeSliderTitle,
         timeSliderTitleId
     ) {
-        // get timepoint array from viewer metadata
-        this.timePoints = getViewerMetadata(
-            (metadata) => {
-                this.timePoints = metadata.timepoints;
-            }
-        );
+
         this.displayText = displayText;
         this.timeSliderId = timeSliderId;
         this.timeSlider = $(`#${this.timeSliderId}`);
-
         this.timeSliderTitle = $(`#${timeSliderTitleId}`);
 
         // display time slider title
         this.timeSliderTitle.text(timeSliderTitle);
-        
-        // Initialize time slider
-        this.initializeTimeSlider(this.timePoints)
 
+        // get timepoint array from viewer metadata
+        getViewerMetadata(
+            (metadata) => {
+                this.timePoints = metadata.timepoints;
+                // Initialize time slider
+                this.initializeTimeSlider(this.timePoints)
+            }
+        );
+        
         // Attach the `slide` event listener (for when the slider value changes)
         this.timeSlider.on('change', this.handleSlide.bind(this));
     }
@@ -72,7 +71,7 @@ class TimeSlider {
     async handleSlide() {
         const timeIndex = this.timeSlider.slider('getValue');
         // update time point
-        await updateTimePoint(timeIndex);
+        await updateTimepoint(timeIndex);
 
         // Trigger a time slider change event
         eventBus.publish(

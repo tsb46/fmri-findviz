@@ -1,12 +1,12 @@
 // Annotate.js - handles annotation of time courses
-import { EVENT_TYPES } from '../../constants/EventTypes';
-import eventBus from '../../events/ViewerEvents';
+import { EVENT_TYPES } from '../../constants/EventTypes.js';
+import eventBus from '../../events/ViewerEvents.js';
 import { 
     addAnnotationMarker, 
     clearAnnotationMarkers, 
     moveAnnotationSelection,
     undoAnnotationMarker
-} from '../../api/plot';
+} from '../../api/plot.js';
 
 class Annotate {
     /**

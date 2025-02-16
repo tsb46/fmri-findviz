@@ -1,11 +1,11 @@
 // viewOptionsTimeCourse.js
-import { EVENT_TYPES } from '../../constants/EventTypes';
-import eventBus from '../../events/ViewerEvents';
+import { EVENT_TYPES } from '../../constants/EventTypes.js';
+import eventBus from '../../events/ViewerEvents.js';
 import { 
     changeTaskConvolution,
     getTimeCourseGlobalPlotOptions,
     updateTimeCourseGlobalPlotOptions 
-} from '../../api/plot';
+} from '../../api/plot.js';
 
 class ViewOptionsTimeCourse {
     /**

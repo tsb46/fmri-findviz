@@ -24,8 +24,8 @@
 // - updateMontageSliceIdx
 // - updateTimepoint
 
-import { API_ENDPOINTS } from '../constants/APIEndpoints';
-import { makeRequest } from '../utils';
+import { API_ENDPOINTS } from '../constants/APIEndpoints.js';
+import { makeRequest, createFormData } from './utils.js';
 
 
 /**
@@ -350,16 +350,21 @@ export const updateMontageSliceDir = async (montageSliceDir, callback) => {
 
 /**
  * Updates montage slice indices on the server
- * @param {Object} montageSliceIdx - Montage slice indices to update
+ * @param {Object} montageSliceParams - Montage slice parameters to update
  * @param {Function} callback - Callback function to handle successful response
  * @returns {Promise} Promise object representing the API call
  */
-export const updateMontageSliceIdx = async (montageSliceIdx, callback) => {
+export const updateMontageSliceIdx = async (montageSliceParams, callback) => {
     return makeRequest(
         API_ENDPOINTS.DATA.UPDATE_MONTAGE_SLICE_IDX,
         {
             method: 'POST',
-            body: createFormData({ montage_slice_idx: montageSliceIdx })
+            body: createFormData(
+                {
+                    slice_name: montageSliceParams.slice_name,
+                    slice_idx: montageSliceParams.slice_idx
+                }
+            )
         },
         {
             errorPrefix: 'Error updating montage slice indices'

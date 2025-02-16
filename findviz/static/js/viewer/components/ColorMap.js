@@ -1,6 +1,6 @@
 // colormap.js - Colormap dropdown creation
-import { EVENT_TYPES } from '../constants/EventTypes';
-import eventBus from '../events/ViewerEvents';
+import eventBus from '../events/ViewerEvents.js';
+import { getColormapData } from '../api/plot.js';
 
 
 class ColorMap {
@@ -30,7 +30,7 @@ class ColorMap {
 
         // get plot options
         getPlotOptions((plotOptions) => {
-            this.initializeColorMapMenu(plotOptions.colorMap);
+            this.initializeColorMapMenu(plotOptions.color_map);
         });
     }
 
@@ -130,7 +130,7 @@ class ColorMap {
 
     async handleColorMapChange(colormap) {
         // update the plot options
-        await updatePlotOptions({ color_map: colormap });
+        await this.updatePlotOptions({ color_map: colormap });
         // trigger color map change event
         eventBus.publish(
             this.changeColorMapEvent,

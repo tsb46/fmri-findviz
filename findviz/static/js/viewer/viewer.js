@@ -25,13 +25,15 @@ import Average from './components/timecourse/Average.js';
 import Correlate from './components/timecourse/Correlate.js';
 import LinePlotOptions from './components/timecourse/LinePlotOptions.js';
 import PeakFinder from './components/timecourse/PeakFinder.js';
-import PreprocessTimecourse from './components/timecourse/PreprocessTimecourse.js';
-import ViewOptionsTimeCourse from './components/timecourse/ViewOptionsTimeCourse.js';
+import PreprocessTimecourse from './components/timecourse/PreprocessTimeCourse.js';
+import ViewOptionsTimeCourse from './components/timecourse/viewOptionsTimeCourse.js';
 // plot components
 import Distance from './plots/Distance.js';
 import GiftiViewer from './plots/GiftiViewer.js';
 import NiftiViewer from './plots/NiftiViewer.js';
 import TimeCourse from './plots/TimeCourse.js';
+// click handler
+import { NiftiClickHandler, GiftiClickHandler } from './plots/clickHandlers.js';
 // plot options
 import { 
     getDistancePlotOptions, 
@@ -49,33 +51,41 @@ import { getViewerMetadata } from './api/data.js';
 class MainViewer{
     /**
      * Creates a new MainViewer instance
-     * @param {object} viewerData - Data object containing visualization parameters and file information
      */
     constructor(
-        plotType,
-        viewerData
-      ) {
+        plotType
+     ) {
         this.plotType = plotType;
+    }
 
+    /**
+     * Initializes all viewer components and initial plot and sets up event listeners
+     * @public
+     * @returns {Promise<void>}
+     */
+    async init() {
         // Initialize viewer
-        this.initializeViewer(viewerData);
+        await this.initializeViewer();
         // Initialize viewer components
-        this.initializeComponents(viewerData);
-        
+        this.initializeComponents();
+        // change DOM elements of upload after successful upload
+        this.afterUpload();
+        // plot fmri data
+        this.viewer.initPlot();
+        // plot time course data
+        this.timecourse.initPlot();
     }
 
     /**
      * Initializes all viewer components (TimeSlider, VisualizationOptions, etc.)
      * @private
-     * @param {ViewerData} viewerData - Data for component initialization
      */
-    initializeComponents(viewerData) {
+    initializeComponents() {
         // initialize fmri components
         this.initializeFmriComponents();
 
         // initialize time course components
         this.initializeTimecourseComponents();
-
     }
 
     /**
@@ -92,22 +102,12 @@ class MainViewer{
         );
         // initialize color map component for fmri
         this.colorMap = new ColorMap(
-            DOM_IDS.VISUALIZATION_OPTIONS.COLORMAP_DROPDOWN,
-            DOM_IDS.VISUALIZATION_OPTIONS.COLORMAP_DROPDOWN_MENU,
-            DOM_IDS.VISUALIZATION_OPTIONS.COLORMAP_DROPDOWN_TOGGLE,
+            DOM_IDS.FMRI.VISUALIZATION_OPTIONS.COLORMAP_DROPDOWN,
+            DOM_IDS.FMRI.VISUALIZATION_OPTIONS.COLORMAP_DROPDOWN_MENU,
+            DOM_IDS.FMRI.VISUALIZATION_OPTIONS.COLORMAP_DROPDOWN_TOGGLE,
             getFmriPlotOptions,
             updateFmriPlotOptions,
             EVENT_TYPES.VISUALIZATION.FMRI.COLOR_MAP_CHANGE
-        );
-
-        // initialize color map component for distance
-        this.distanceColorMap = new ColorMap(
-            DOM_IDS.DISTANCE.COLORMAP_DROPDOWN,
-            DOM_IDS.DISTANCE.COLORMAP_DROPDOWN_MENU,
-            DOM_IDS.DISTANCE.COLORMAP_DROPDOWN_TOGGLE,
-            getDistancePlotOptions,
-            updateDistancePlotOptions,
-            EVENT_TYPES.VISUALIZATION.DISTANCE.COLOR_MAP_CHANGE
         );
 
         // initialize colorbar component
@@ -153,19 +153,21 @@ class MainViewer{
         );
 
         // initialize fmri viewer options component
+        let plotlyDivIds;
+        let captureDivId;
         if (this.plotType === 'nifti') {
-            const plotlyDivIds = [
+            plotlyDivIds = [
                 DOM_IDS.FMRI.NIFTI_CONTAINERS.SLICE_1_CONTAINER,
                 DOM_IDS.FMRI.NIFTI_CONTAINERS.SLICE_2_CONTAINER,
                 DOM_IDS.FMRI.NIFTI_CONTAINERS.SLICE_3_CONTAINER
             ];
-            const captureDivId = DOM_IDS.FMRI.NIFTI_CONTAINERS.SLICE_CONTAINER;
+            captureDivId = DOM_IDS.FMRI.NIFTI_CONTAINERS.SLICE_CONTAINER;
         }
         else if (this.plotType === 'gifti') {
-            const plotlyDivIds = [
+            plotlyDivIds = [
                 DOM_IDS.FMRI.GIFTI_CONTAINERS.SURFACE_CONTAINER
             ];
-            const captureDivId = DOM_IDS.FMRI.GIFTI_CONTAINERS.SURFACE_CONTAINER;
+            captureDivId = DOM_IDS.FMRI.GIFTI_CONTAINERS.SURFACE_CONTAINER;
         }
         this.fmriViewerOptions = new ViewOptionsFmri(
             this.plotType,
@@ -175,7 +177,6 @@ class MainViewer{
             DOM_IDS.FMRI.VISUALIZATION_OPTIONS.COLORMAP_DROPDOWN,
             DOM_IDS.FMRI.VISUALIZATION_OPTIONS.COLORMAP_DROPDOWN_MENU,
             DOM_IDS.FMRI.VISUALIZATION_OPTIONS.COLORMAP_DROPDOWN_TOGGLE,
-            DOM_IDS.FMRI.VISUALIZATION_OPTIONS.PLAY_MOVIE_BUTTON,
             DOM_IDS.FMRI.VISUALIZATION_OPTIONS.TOGGLE_VIEW_BUTTON,
             DOM_IDS.FMRI.VISUALIZATION_OPTIONS.CROSSHAIR_TOGGLE,
             DOM_IDS.FMRI.VISUALIZATION_OPTIONS.HOVER_TOGGLE,
@@ -294,25 +295,11 @@ class MainViewer{
     }
 
     /**
-     * Initializes the initial plot and sets up event listeners
-     * @public
-     * @returns {Promise<void>}
-     */
-    initializePlot() {
-        // change DOM elements of upload after successful upload
-        this.afterUpload();
-        // plot fmri data
-        this.viewer.initPlot();
-        // plot time course data
-        this.timecourse.initPlot();
-    }
-
-    /**
      * Initializes the appropriate viewer based on file type
      * @private
      */
     async initializeViewer() {
-        if (this.plotType === FILE_TYPES.NIFTI) {
+        if (this.plotType === 'nifti') {
             this.viewer = new NiftiViewer(
                 DOM_IDS.FMRI.NIFTI_CONTAINERS.SLICE_CONTAINER,
                 DOM_IDS.FMRI.NIFTI_CONTAINERS.SLICE_1_CONTAINER,
@@ -320,12 +307,23 @@ class MainViewer{
                 DOM_IDS.FMRI.NIFTI_CONTAINERS.SLICE_3_CONTAINER,
                 DOM_IDS.FMRI.NIFTI_CONTAINERS.COLORBAR
             );
-        } else if (this.plotType === FILE_TYPES.GIFTI) {
+            // initialize click handler
+            this.clickHandler = new NiftiClickHandler(
+                DOM_IDS.FMRI.NIFTI_CONTAINERS.SLICE_1_CONTAINER,
+                DOM_IDS.FMRI.NIFTI_CONTAINERS.SLICE_2_CONTAINER,
+                DOM_IDS.FMRI.NIFTI_CONTAINERS.SLICE_3_CONTAINER,
+            );
+        } else if (this.plotType === 'gifti') {
             this.viewer = new GiftiViewer(
                 DOM_IDS.FMRI.GIFTI_CONTAINERS.SURFACE_CONTAINER,
                 DOM_IDS.FMRI.GIFTI_CONTAINERS.SURFACE_CONTAINER,
                 DOM_IDS.FMRI.GIFTI_CONTAINERS.SURFACE_CONTAINER,
                 DOM_IDS.FMRI.GIFTI_CONTAINERS.SURFACE_CONTAINER,
+            );
+            // initialize click handler
+            this.clickHandler = new GiftiClickHandler(
+                DOM_IDS.FMRI.GIFTI_CONTAINERS.LEFT_SURFACE_CONTAINER,
+                DOM_IDS.FMRI.GIFTI_CONTAINERS.RIGHT_SURFACE_CONTAINER,
             );
         }
 

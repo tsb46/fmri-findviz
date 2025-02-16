@@ -1,15 +1,16 @@
 """Utility Modules for route input handling"""
 from enum import Enum
 from functools import wraps
-from typing import Union, Callable, TypeVar, ParamSpec, Any
-from flask import make_response
+from typing import Union, Callable, TypeVar, ParamSpec, List
+
 
 import numpy as np
 
-from nilearn import signal
+from flask import make_response, request
 
 from findviz.viz.exception import DataRequestError
 from findviz.logger_config import setup_logger
+
 
 # Set up logger
 logger = setup_logger(__name__)
@@ -20,6 +21,7 @@ R = TypeVar('R')
 
 class Routes(Enum):
     ADD_ANNOTATION_MARKER='/add_annotation_marker'
+    CHANGE_TASK_CONVOLUTION='/change_task_convolution'
     CHANGE_TIMECOURSE_SCALE='/change_timecourse_scale'
     CLEAR_ANNOTATION_MARKERS='/clear_annotation_markers'
     CORRELATE='/correlate'
@@ -34,6 +36,7 @@ class Routes(Enum):
     GET_FMRI_DATA='/get_fmri_data'
     GET_FMRI_PLOT_OPTIONS='/get_fmri_plot_options'
     GET_MONTAGE_DATA='/get_montage_data'
+    GET_NIFTI_VIEW_STATE='/get_nifti_view_state'
     GET_SELECTED_TIME_POINT='/get_selected_time_point'
     GET_SLICE_LENGTHS='/get_slice_lengths'
     GET_TASK_CONDITIONS='/get_task_conditions'
@@ -47,18 +50,23 @@ class Routes(Enum):
     GET_TIMEPOINT='/get_timepoint'
     GET_PREPROCESSED_FMRI='/get_preprocessed_fmri'
     GET_PREPROCESSED_TIMECOURSE='/get_preprocessed_timecourse'
+    GET_VIEWER_METADATA='/get_viewer_metadata'
     FIND_PEAKS='/find_peaks'
     MOVE_ANNOTATION_SELECTION='/move_annotation_selection'
     POP_FMRI_TIMECOURSE='/pop_fmri_timecourse'
+    REMOVE_DISTANCE_PLOT='/remove_distance_plot'
     REMOVE_FMRI_TIMECOURSES='/remove_fmri_timecourses'
     RESET_FMRI_COLOR_OPTIONS='/reset_fmri_color_options'
     RESET_FMRI_PREPROCESS='/reset_fmri_preprocess'
     RESET_TIMECOURSE_PREPROCESS='/reset_timecourse_preprocess'
     UNDO_ANNOTATION_MARKER='/undo_annotation_marker'
     UPDATE_DISTANCE_PLOT_OPTIONS='/update_distance_plot_options'
+    UPDATE_FUNCTIONAL_TIMECOURSE='/update_functional_timecourse'
     UPDATE_FMRI_PLOT_OPTIONS='/update_fmri_plot_options'
     UPDATE_MONTAGE_SLICE_DIR='/update_montage_slice_dir'
     UPDATE_MONTAGE_SLICE_IDX='/update_montage_slice_idx'
+    UPDATE_NIFTI_VIEW_STATE='/update_nifti_view_state'
+    UPDATE_TASK_DESIGN_PLOT_OPTIONS='/update_task_design_plot_options'
     UPDATE_TIMEPOINT='/update_timepoint'
     UPDATE_TIMECOURSE_PLOT_OPTIONS='/update_timecourse_plot_options'
     UPDATE_TIMECOURSE_GLOBAL_PLOT_OPTIONS='/update_timecourse_global_plot_options'
@@ -102,53 +110,12 @@ def convert_value(value: str) -> Union[str, int, float, None]:
     return value
 
 
-# Function to apply conversion to all values in a dictionary
-def convert_params(params):
-    return {key: convert_value(value) for key, value in params.items()}
-
-# Function to convert strings (passed via fetch) to list of floats
-def str_to_float_list(string):
-    return list(map(float, string.split(',')))
-
-
-# check string is numeric
-def is_numeric(value):
-    try:
-        float(value)  # Try to convert to a number
-        return True
-    except ValueError:
-        return False
-
-
-# temporal filtering with nilearn
-def filter(data, lowCut, highCut, tr):
-    # compute sampling frequency
-    sf = 1/tr
-    # perform filtering
-    data_filtered = signal.butterworth(
-        data, sampling_rate=sf, low_pass=highCut,
-        high_pass=lowCut
-    )
-    return data_filtered
-
-# Normalize time courses based on file type (gifti vs nifti)
-def normalize(data, norm, axis):
-    # z-score normalization
-    if norm == 'z_score':
-        data_norm = data - data.mean(axis=axis, keepdims=True)
-        data_norm = data_norm / data_norm.std(axis=axis, keepdims=True)
-        # handle constant values that return nan
-        data_norm = np.nan_to_num(data_norm, copy=False, nan=0.0)
-    elif norm == 'mean_center':
-        data_norm = data - data.mean(axis=axis, keepdims=True)
-
-    return data_norm
-
 def handle_route_errors(
     error_msg: str,
     log_msg: str = None,
     fmri_file_type: str = None,
     route: str = None,
+    route_parameters: List[str] = None,
 ) -> Callable[[Callable[P, R]], Callable[P, tuple[Union[R, str], int]]]:
     """
     Decorator to handle common route error patterns
@@ -165,6 +132,22 @@ def handle_route_errors(
     def decorator(func: Callable[P, R]) -> Callable[P, tuple[Union[R, str], int]]:
         @wraps(func)
         def wrapper(*args: P.args, **kwargs: P.kwargs) -> tuple[Union[R, str], int]:
+
+            # check if route parameters are provided
+            if route_parameters:
+                # check if all route parameters are provided
+                for param in route_parameters:
+                    if (param not in request.form) and (param not in request.args):
+                        # Handle missing required fields
+                        data_error = DataRequestError(
+                            message=f'{error_msg}.',
+                            fmri_file_type=fmri_file_type,
+                            route=route,
+                            input_field=param
+                        )
+                        logger.error(data_error)
+                        return make_response(data_error.message, 400)
+
             try:
                 # Execute the route function
                 result = func(*args, **kwargs)
@@ -178,17 +161,6 @@ def handle_route_errors(
                     return make_response(*result)
                 return make_response(result, 200)
 
-            except KeyError as e:
-                # Handle missing required fields
-                data_error = DataRequestError(
-                    message=f'{error_msg}.',
-                    fmri_file_type=fmri_file_type,
-                    route=route,
-                    input_field=e.args[0]
-                )
-                logger.error(data_error)
-                return make_response(data_error.message, 400)
-
             except Exception as e:
                 # Handle unexpected errors
                 logger.critical(
@@ -197,6 +169,36 @@ def handle_route_errors(
                 )
                 return make_response(error_msg, 500)
 
+        return wrapper
+
     return decorator
 
+# check string is numeric
+def is_numeric(value):
+    try:
+        float(value)  # Try to convert to a number
+        return True
+    except ValueError:
+        return False
 
+
+def sanitize_array_for_json(arr: np.ndarray) -> List[List[float]]:
+    """Convert numpy array to JSON-serializable format, replacing NaN with None.
+    
+    Parameters
+    ----------
+    arr : np.ndarray
+        Input array that may contain NaN values
+        
+    Returns
+    -------
+    List[List[float]]
+        JSON-serializable 2D list with NaN values replaced by None
+    """
+    # Replace NaN with None and convert to list
+    return np.where(np.isnan(arr), None, arr).tolist()
+
+
+# Function to convert strings (passed via fetch) to list of floats
+def str_to_float_list(string):
+    return list(map(float, string.split(',')))

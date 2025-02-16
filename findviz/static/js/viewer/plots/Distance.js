@@ -1,10 +1,10 @@
 // Distance.js
 // Plot distance between timepoint and all other timepoints
 
-import { EVENT_TYPES } from '../constants/EventTypes';
-import eventBus from '../events/ViewerEvents';
-import { getDistanceData, getTimePoint } from '../api/data';
-import { getDistancePlotOptions, removeDistancePlot } from '../api/plot';
+import { EVENT_TYPES } from '../constants/EventTypes.js';
+import eventBus from '../events/ViewerEvents.js';
+import { getDistanceData, getTimePoint } from '../api/data.js';
+import { getDistancePlotOptions, removeDistancePlot } from '../api/plot.js';
 
 class Distance {
     /**

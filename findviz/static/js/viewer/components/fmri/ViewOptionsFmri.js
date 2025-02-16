@@ -2,7 +2,12 @@
 import { captureScreenshot, playMovie } from './capture.js';
 import { EVENT_TYPES } from '../../constants/EventTypes.js';
 import eventBus from '../../events/ViewerEvents.js';
-import { getFmriPlotOptions, updateFmriPlotOptions } from '../../api/plot.js';
+import { 
+    getFmriPlotOptions, 
+    updateFmriPlotOptions, 
+    getNiftiViewState,
+    updateNiftiViewState,
+ } from '../../api/plot.js';
 import ColorMap from '../ColorMap.js';
 
 class ViewOptionsFmri {
@@ -58,11 +63,15 @@ class ViewOptionsFmri {
 
         // get plot options and initialize state variables
         this.toggleState = {};
-        getFmriPlotOptions(this.fmriFileType, (plotOptions) => {
-            this.toggleState['viewToggle'] = plotOptions.viewToggle;
-            this.toggleState['crosshairToggle'] = plotOptions.crosshairToggle;
-            this.toggleState['hoverToggle'] = plotOptions.hoverToggle;
-            this.toggleState['directionMarkerToggle'] = plotOptions.directionMarkerToggle;
+        getFmriPlotOptions((plotOptions) => {
+            this.toggleState['crosshairToggle'] = plotOptions.crosshair_on;
+            this.toggleState['hoverToggle'] = plotOptions.hover_text_on;
+            this.toggleState['directionMarkerToggle'] = plotOptions.direction_marker_on;
+        });
+
+        // get nifti view state
+        getNiftiViewState((viewState) => {
+            this.toggleState['viewToggle'] = viewState.view_state;
         });
 
         // initialize color map
@@ -74,9 +83,12 @@ class ViewOptionsFmri {
             updateFmriPlotOptions,
             EVENT_TYPES.VISUALIZATION.FMRI.COLOR_MAP_CHANGE
         );
+
+        // initialize view listeners
+        this.initializeViewListeners();
     }
 
-    viewListeners() {
+    initializeViewListeners() {
         // Nifti specific listeners
         if (this.fmriFileType == 'nifti') {
             // Ortho to Montage view listener (only for nifti)
@@ -84,12 +96,12 @@ class ViewOptionsFmri {
                 this.viewToggle = $(`#${this.viewToggleId}`);
                 this.viewToggle.on('click', () => {
                     this.toggleState['viewToggle'] = this.toggleState['viewToggle'] == 'ortho' ? 'montage' : 'ortho';
-                    updateFmriPlotOptions(
-                        { view_state: this.toggleState['viewToggle'] },
+                    updateNiftiViewState(
+                        this.toggleState['viewToggle'],
                         () => {
                             eventBus.publish(
                                 EVENT_TYPES.VISUALIZATION.FMRI.VIEW_TOGGLE,
-                                { viewState: this.toggleState['viewToggle'] }
+                                { view_state: this.toggleState['viewToggle'] }
                             );
                         }
                     );
@@ -112,23 +124,23 @@ class ViewOptionsFmri {
                     );
                 });
             }
-        }
 
-        // Crosshair listener
-        if (this.crosshairToggleId) {
-            this.crosshairToggle = $(`#${this.crosshairToggleId}`);
-            this.crosshairToggle.on('click', () => {
-                this.toggleState['crosshairToggle'] = !this.toggleState['crosshairToggle'];
-                updateFmriPlotOptions(
-                    { crosshair_on: this.toggleState['crosshairToggle'] },
-                    () => {
-                        eventBus.publish(
-                            EVENT_TYPES.VISUALIZATION.FMRI.TOGGLE_CROSSHAIR,
-                            { crosshairState: this.toggleState['crosshairToggle'] }
-                        );
-                    }
-                );
-            });
+            // Crosshair listener
+            if (this.crosshairToggleId) {
+                this.crosshairToggle = $(`#${this.crosshairToggleId}`);
+                this.crosshairToggle.on('click', () => {
+                    this.toggleState['crosshairToggle'] = !this.toggleState['crosshairToggle'];
+                    updateFmriPlotOptions(
+                        { crosshair_on: this.toggleState['crosshairToggle'] },
+                        () => {
+                            eventBus.publish(
+                                EVENT_TYPES.VISUALIZATION.FMRI.TOGGLE_CROSSHAIR,
+                                { crosshairState: this.toggleState['crosshairToggle'] }
+                            );
+                        }
+                    );
+                });
+            }
         }
 
         // Hover label listener
@@ -141,7 +153,7 @@ class ViewOptionsFmri {
                     () => {
                         eventBus.publish(
                             EVENT_TYPES.VISUALIZATION.FMRI.HOVER_TEXT_TOGGLE,
-                            { plotOptions: this.toggleState['hoverToggle'] }
+                            { hoverState: this.toggleState['hoverToggle'] }
                         );
                     }
                 );
@@ -159,9 +171,8 @@ class ViewOptionsFmri {
         // Play movie listener
         if (this.playMovieButtonId) {
             this.playMovieButton = $(`#${this.playMovieButtonId}`);
-            this.playMovieButton.on('click', () => {
-                playMovie(this.timeSlider, this.playMovieButton, this.playMovieRate);
-            });
+            // attach play movie button click listener
+            playMovie(this.timeSlider, this.playMovieButton, this.playMovieRate);
         }
     }
 }

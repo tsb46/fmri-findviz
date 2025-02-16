@@ -1,10 +1,10 @@
 // Correlate.js
 // Correlate fmri time courses with another time course
 
-import { EVENT_TYPES } from '../../constants/EventTypes';
-import eventBus from '../../events/ViewerEvents';
-import { getTimeCourseLabels, getTaskConditions } from '../../api/data';
-import { correlate } from '../../api/analysis';
+import { EVENT_TYPES } from '../../constants/EventTypes.js';
+import eventBus from '../../events/ViewerEvents.js';
+import { getTimeCourseLabels, getTaskConditions } from '../../api/data.js';
+import { correlate } from '../../api/analysis.js';
 
 class Correlate {
     /**
@@ -70,7 +70,7 @@ class Correlate {
             }
         });
         if (callback) {
-            callback();
+            callback(labels);
         }
         return labels;
     }
@@ -80,7 +80,13 @@ class Correlate {
      */
      fillCorrelateTimeCourseSelect() {
         this.getPlotLabels((labels) => {
+            // clear the select
             this.correlateTimeCourseSelect.empty();
+            // if no labels, do nothing
+            if (labels.length === 0) {
+                return;
+            }
+            // add labels to select
             for (const label of labels) {
                 this.correlateTimeCourseSelect.append(`<option value='${label}'>${label}</option>`);
             }

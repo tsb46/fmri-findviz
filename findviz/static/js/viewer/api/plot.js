@@ -5,6 +5,7 @@
 // - getDistancePlotOptions
 // - getColormapData
 // - getFmriPlotOptions
+// - getNiftiViewState
 // - getSelectedTimePoint
 // - getTaskDesignPlotOptions
 // - getTimeCoursePlotOptions
@@ -21,6 +22,7 @@
 // - undoAnnotationMarker
 // - updateDistancePlotOptions
 // - updateFmriPlotOptions
+// - updateNiftiViewState
 // - updateTaskDesignPlotOptions
 // - updateTimeCoursePlotOptions
 // - updateTimeCourseGlobalPlotOptions
@@ -28,8 +30,8 @@
 // - updateTimeMarkerPlotOptions
 
 
-import { makeRequest, createFormData } from './utils';
-import { API_ENDPOINTS } from '../constants/APIEndpoints';
+import { makeRequest, createFormData } from './utils.js';
+import { API_ENDPOINTS } from '../constants/APIEndpoints.js';
 
 /**
  * Add annotation marker
@@ -146,6 +148,20 @@ export const getFmriPlotOptions = async (callback) => {
         {
             errorPrefix: 'Error fetching plot options'
         },
+        callback
+    );
+};
+
+/**
+ * Get current nifti view state (ortho or montage)
+ * @param {Function} callback - Callback function to handle successful response
+ * @returns {Promise} Promise object representing the API call
+ */
+export const getNiftiViewState = async (callback) => {
+    return makeRequest(
+        API_ENDPOINTS.PLOT_OPTIONS.GET_NIFTI_VIEW_STATE,
+        { method: 'GET' },
+        { errorPrefix: 'Error fetching nifti view state' },
         callback
     );
 };
@@ -333,6 +349,21 @@ export const updateFmriPlotOptions = async (plotOptions, callback) => {
         {
             errorPrefix: 'Error updating fMRI plot options'
         },
+        callback
+    );
+};
+
+/**
+ * Update nifti view state
+ * @param {string} viewState - View state to update (ortho or montage)
+ * @param {Function} callback - Callback function to handle successful response
+ * @returns {Promise} Promise object representing the API call
+ */
+export const updateNiftiViewState = async (viewState, callback) => {
+    return makeRequest(
+        API_ENDPOINTS.PLOT_OPTIONS.UPDATE_NIFTI_VIEW_STATE,
+        { method: 'POST', body: createFormData({ view_state: viewState }) },
+        { errorPrefix: 'Error updating nifti view state' },
         callback
     );
 };

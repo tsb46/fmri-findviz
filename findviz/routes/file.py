@@ -7,6 +7,8 @@ from findviz.routes.shared import data_manager
 from findviz.routes.utils import convert_value
 from findviz.viz import exception
 from findviz.viz.io.cache import Cache
+from findviz.viz.io.nifti import NiftiFiles
+from findviz.viz.io.gifti import GiftiFiles
 from findviz.viz.io.timecourse import get_ts_header
 from findviz.viz.io.upload import FileUpload
 
@@ -135,22 +137,22 @@ def upload():
     # pass fmri data to data manager and get viewer data
     if fmri_file_type == 'nifti':
         data_manager.create_nifti_state(
-            func_img = uploads['nifti'][file_upload.Nifti.FUNC.value],
-            anat_img = uploads['nifti'][file_upload.Nifti.ANAT.value],
-            mask_img = uploads['nifti'][file_upload.Nifti.MASK.value]
+            func_img = uploads['nifti'][NiftiFiles.FUNC.value],
+            anat_img = uploads['nifti'][NiftiFiles.ANAT.value],
+            mask_img = uploads['nifti'][NiftiFiles.MASK.value]
         )
         logger.info("Nifti data manager state created successfully")
     else:
         data_manager.create_gifti_state(
-            left_func=uploads['gifti'][file_upload.Gifti.LEFT_FUNC.value],
-            right_func=uploads['gifti'][file_upload.Gifti.RIGHT_FUNC.value],
-            left_mesh=uploads['gifti'][file_upload.Gifti.LEFT_MESH.value],
-            right_mesh=uploads['gifti'][file_upload.Gifti.RIGHT_MESH.value]
+            left_func=uploads['gifti'][GiftiFiles.LEFT_FUNC.value],
+            right_func=uploads['gifti'][GiftiFiles.RIGHT_FUNC.value],
+            left_mesh=uploads['gifti'][GiftiFiles.LEFT_MESH.value],
+            right_mesh=uploads['gifti'][GiftiFiles.RIGHT_MESH.value]
         )
         logger.info("Gifti data manager state created successfully")
     # initialize data manager with or without time series data
     data_manager.add_timeseries(uploads['ts'])
-    if file_upload['ts'] is not None:
+    if file_upload.ts_status:
         logger.info("Time series data added to viewer data")
     else:
         logger.info("No time series data added to viewer data")
@@ -169,7 +171,7 @@ def upload():
     # get viewer metadata
     viewer_metadata = data_manager.get_viewer_metadata()
     logger.info("Viewer metadata retrieved successfully")
-
+    
     return make_response(
         viewer_metadata,
         201

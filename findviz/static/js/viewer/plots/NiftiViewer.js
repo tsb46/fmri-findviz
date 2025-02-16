@@ -28,9 +28,9 @@ class NiftiViewer {
 
         // define slice name to container id converter
         this.sliceName2ContainerId = {
-            slice1: slice1ContainerId,
-            slice2: slice2ContainerId,
-            slice3: slice3ContainerId,
+            slice_1: slice1ContainerId,
+            slice_2: slice2ContainerId,
+            slice_3: slice3ContainerId,
         };
 
         // create container
@@ -44,13 +44,22 @@ class NiftiViewer {
 
         // temporary slice data storage for quick plot updates
         this.sliceData = {
-            slice1: null,
-            slice2: null,
-            slice3: null,
-            slice1Anat: null,
-            slice2Anat: null,
-            slice3Anat: null,
+            slice_1: null,
+            slice_2: null,
+            slice_3: null,
+            slice_1_coords: null,
+            slice_2_coords: null,
+            slice_3_coords: null,
+            slice_1_anat: null,
+            slice_2_anat: null,
+            slice_3_anat: null,
         };
+
+        // initialize anatomical plot state as false
+        this.anatomicalInput = false;
+
+        // initialize hover text state as true
+        this.hoverTextOn = true;
 
         // Add event listeners
         this.attachEventListeners();
@@ -70,13 +79,28 @@ class NiftiViewer {
             () => {
                 getFMRIData((viewer_data) => {
                     this.sliceData = {
-                        slice1: viewer_data.data.func.x,
-                        slice2: viewer_data.data.func.y,
-                        slice3: viewer_data.data.func.z,
+                        slice_1: viewer_data.data.func.slice_1,
+                        slice_2: viewer_data.data.func.slice_2,
+                        slice_3: viewer_data.data.func.slice_3,
+                        slice_1_coords: viewer_data.data.coords.slice_1,
+                        slice_2_coords: viewer_data.data.coords.slice_2,
+                        slice3_coords: viewer_data.data.coords.slice_3,
                     };
-                    this.plotNiftiDataUpdate(this.slice1ContainerId, this.sliceData.slice1);
-                    this.plotNiftiDataUpdate(this.slice2ContainerId, this.sliceData.slice2);
-                    this.plotNiftiDataUpdate(this.slice3ContainerId, this.sliceData.slice3);
+                    this.plotNiftiDataUpdate(
+                        this.slice1ContainerId, 
+                        this.sliceData.slice_1, 
+                        this.sliceData.slice_1_coords
+                    );
+                    this.plotNiftiDataUpdate(
+                        this.slice2ContainerId, 
+                        this.sliceData.slice_2, 
+                        this.sliceData.slice_2_coords
+                    );
+                    this.plotNiftiDataUpdate(
+                        this.slice3ContainerId, 
+                        this.sliceData.slice_3, 
+                        this.sliceData.slice_3_coords
+                    );
                 });
             }
         );
@@ -86,13 +110,35 @@ class NiftiViewer {
             () => {
                 getFMRIData((viewer_data) => {
                     this.sliceData = {
-                        slice1: viewer_data.data.func.x,
-                        slice2: viewer_data.data.func.y,
-                        slice3: viewer_data.data.func.z,
+                        slice_1: viewer_data.data.func.slice_1,
+                        slice_2: viewer_data.data.func.slice_2,
+                        slice_3: viewer_data.data.func.slice_3,
+                        slice_1_coords: viewer_data.data.coords.slice_1,
+                        slice_2_coords: viewer_data.data.coords.slice_2,
+                        slice_3_coords: viewer_data.data.coords.slice_3,
                     };
-                    this.plotNiftiDataUpdate(this.slice1ContainerId, this.sliceData.slice1);
-                    this.plotNiftiDataUpdate(this.slice2ContainerId, this.sliceData.slice2);
-                    this.plotNiftiDataUpdate(this.slice3ContainerId, this.sliceData.slice3);
+                    this.plotNiftiDataUpdate(
+                        this.slice1ContainerId, 
+                        this.sliceData.slice_1, 
+                        this.sliceData.slice_1_coords
+                    );
+                    this.plotNiftiDataUpdate(
+                        this.slice2ContainerId, 
+                        this.sliceData.slice_2, 
+                        this.sliceData.slice_2_coords
+                    );
+                    this.plotNiftiDataUpdate(
+                        this.slice3ContainerId, 
+                        this.sliceData.slice_3, 
+                        this.sliceData.slice_3_coords
+                    );
+                });
+
+                // re-plot crosshairs
+                getCrosshairCoords((crosshairCoords) => {
+                    this.plotCrosshairs(this.slice1ContainerId, crosshairCoords.slice_1);
+                    this.plotCrosshairs(this.slice2ContainerId, crosshairCoords.slice_2);
+                    this.plotCrosshairs(this.slice3ContainerId, crosshairCoords.slice_3);
                 });
             }
         );
@@ -100,27 +146,56 @@ class NiftiViewer {
         // Handle view state change - update plot width and slice data and re-plot
         eventBus.subscribe(EVENT_TYPES.VISUALIZATION.FMRI.VIEW_TOGGLE, 
             (viewState) => {
-                this.changeViewPlotWidth(viewState);
+                this.changeViewPlotWidth(viewState.view_state);
                 getFMRIData((viewer_data) => {
                     this.sliceData = {
-                        slice1: viewer_data.data.func.x,
-                        slice2: viewer_data.data.func.y,
-                        slice3: viewer_data.data.func.z,
+                        slice_1: viewer_data.data.func.slice_1,
+                        slice_2: viewer_data.data.func.slice_2,
+                        slice_3: viewer_data.data.func.slice_3,
+                        slice_1_coords: viewer_data.data.coords.slice_1,
+                        slice_2_coords: viewer_data.data.coords.slice_2,
+                        slice_3_coords: viewer_data.data.coords.slice_3,
                     };
-                    this.plotNiftiDataUpdate(this.slice1ContainerId, this.sliceData.slice1);
-                    this.plotNiftiDataUpdate(this.slice2ContainerId, this.sliceData.slice2);
-                    this.plotNiftiDataUpdate(this.slice3ContainerId, this.sliceData.slice3);
+                    this.plotNiftiDataUpdate(
+                        this.slice1ContainerId, 
+                        this.sliceData.slice_1, 
+                        this.sliceData.slice_1_coords
+                    );
+                    this.plotNiftiDataUpdate(
+                        this.slice2ContainerId, 
+                        this.sliceData.slice_2, 
+                        this.sliceData.slice_2_coords
+                    );
+                    this.plotNiftiDataUpdate(
+                        this.slice3ContainerId, 
+                        this.sliceData.slice_3, 
+                        this.sliceData.slice_3_coords
+                    );
+                });
+
+                // re-plot crosshairs
+                getCrosshairCoords((crosshairCoords) => {
+                    this.plotCrosshairs(this.slice1ContainerId, crosshairCoords.slice_1);
+                    this.plotCrosshairs(this.slice2ContainerId, crosshairCoords.slice_2);
+                    this.plotCrosshairs(this.slice3ContainerId, crosshairCoords.slice_3);
                 });
             }
         );
 
         // Handle montage slice index change - replot with new slice indices
         eventBus.subscribe(EVENT_TYPES.VISUALIZATION.FMRI.MONTAGE_SLICE_CHANGE, 
-            (sliceName, sliceIdx) => {
+            (sliceParams) => {
+                const sliceName = sliceParams.slice_name;
+                const sliceIdx = sliceParams.slice_idx;
                 getFMRIData((viewer_data) => {
                     // only update slices that have changed
                     this.sliceData[sliceName] = viewer_data.data.func[sliceName];
-                    this.plotNiftiDataUpdate(this.sliceName2ContainerId[sliceName], this.sliceData[sliceName]);
+                    this.sliceData[sliceName + '_coords'] = viewer_data.data.coords[sliceName];
+                    this.plotNiftiDataUpdate(
+                        this.sliceName2ContainerId[sliceName], 
+                        this.sliceData[sliceName], 
+                        this.sliceData[sliceName + '_coords']
+                    );
                 });
             }
         );
@@ -155,13 +230,28 @@ class NiftiViewer {
             () => {
                 getFMRIData((viewer_data) => {
                     this.sliceData = {
-                        slice1: viewer_data.data.func.x,
-                        slice2: viewer_data.data.func.y,
-                        slice3: viewer_data.data.func.z,
+                        slice_1: viewer_data.data.func.slice_1,
+                        slice_2: viewer_data.data.func.slice_2,
+                        slice_3: viewer_data.data.func.slice_3,
+                        slice_1_coords: viewer_data.data.coords.slice_1,
+                        slice_2_coords: viewer_data.data.coords.slice_2,
+                        slice_3_coords: viewer_data.data.coords.slice_3,
                     };
-                    this.plotNiftiDataUpdate(this.slice1ContainerId, this.sliceData.slice1);
-                    this.plotNiftiDataUpdate(this.slice2ContainerId, this.sliceData.slice2);
-                    this.plotNiftiDataUpdate(this.slice3ContainerId, this.sliceData.slice3);
+                    this.plotNiftiDataUpdate(
+                        this.slice1ContainerId, 
+                        this.sliceData.slice_1, 
+                        this.sliceData.slice_1_coords
+                    );
+                    this.plotNiftiDataUpdate(
+                        this.slice2ContainerId, 
+                        this.sliceData.slice_2, 
+                        this.sliceData.slice_2_coords
+                    );
+                    this.plotNiftiDataUpdate(
+                        this.slice3ContainerId, 
+                        this.sliceData.slice_3, 
+                        this.sliceData.slice_3_coords
+                    );
                 });
             }
         );
@@ -171,13 +261,28 @@ class NiftiViewer {
             () => {
                 getFMRIData((viewer_data) => {
                     this.sliceData = {
-                        slice1: viewer_data.data.func.x,
-                        slice2: viewer_data.data.func.y,
-                        slice3: viewer_data.data.func.z,
+                        slice_1: viewer_data.data.func.slice_1,
+                        slice_2: viewer_data.data.func.slice_2,
+                        slice_3: viewer_data.data.func.slice_3,
+                        slice_1_coords: viewer_data.data.coords.slice_1,
+                        slice_2_coords: viewer_data.data.coords.slice_2,
+                        slice_3_coords: viewer_data.data.coords.slice_3,
                     };
-                    this.plotNiftiDataUpdate(this.slice1ContainerId, this.sliceData.slice1);
-                    this.plotNiftiDataUpdate(this.slice2ContainerId, this.sliceData.slice2);
-                    this.plotNiftiDataUpdate(this.slice3ContainerId, this.sliceData.slice3);
+                    this.plotNiftiDataUpdate(
+                        this.slice1ContainerId, 
+                        this.sliceData.slice_1, 
+                        this.sliceData.slice_1_coords
+                    );
+                    this.plotNiftiDataUpdate(
+                        this.slice2ContainerId, 
+                        this.sliceData.slice_2, 
+                        this.sliceData.slice_2_coords
+                    );
+                    this.plotNiftiDataUpdate(
+                        this.slice3ContainerId, 
+                        this.sliceData.slice_3, 
+                        this.sliceData.slice_3_coords
+                    );
                     // update plot color properties
                     getFmriPlotOptions((plotOptions) => {
                         this.plotColorUpdate(
@@ -200,11 +305,11 @@ class NiftiViewer {
         // Handle crosshair change
         eventBus.subscribe(EVENT_TYPES.VISUALIZATION.FMRI.TOGGLE_CROSSHAIR, 
             (crosshairState) => {
-                if (crosshairState) {
+                if (crosshairState.crosshairState) {
                     getCrosshairCoords((crosshairCoords) => {
-                        this.plotCrosshairs(this.slice1ContainerId, crosshairCoords.slice1);
-                        this.plotCrosshairs(this.slice2ContainerId, crosshairCoords.slice2);
-                        this.plotCrosshairs(this.slice3ContainerId, crosshairCoords.slice3);
+                        this.plotCrosshairs(this.slice1ContainerId, crosshairCoords.slice_1);
+                        this.plotCrosshairs(this.slice2ContainerId, crosshairCoords.slice_2);
+                        this.plotCrosshairs(this.slice3ContainerId, crosshairCoords.slice_3);
                     });
                 } else {
                     this.removeCrosshairs();
@@ -214,17 +319,42 @@ class NiftiViewer {
         // Handle direction marker change
         eventBus.subscribe(EVENT_TYPES.VISUALIZATION.FMRI.TOGGLE_DIRECTION_MARKER, 
             (directionMarkerState) => {
-                if (directionMarkerState) {
+                if (directionMarkerState.directionMarkerState) {
                     getDirectionLabelCoords((directionMarkerCoords) => {
-                        this.plotDirectionMarkers(this.slice1ContainerId, directionMarkerCoords.slice1);
-                        this.plotDirectionMarkers(this.slice2ContainerId, directionMarkerCoords.slice2);
-                        this.plotDirectionMarkers(this.slice3ContainerId, directionMarkerCoords.slice3);
+                        this.plotDirectionMarkers(this.slice1ContainerId, directionMarkerCoords.slice_1);
+                        this.plotDirectionMarkers(this.slice2ContainerId, directionMarkerCoords.slice_2);
+                        this.plotDirectionMarkers(this.slice3ContainerId, directionMarkerCoords.slice_3);
                     });
                 } else {
                     this.removeDirectionMarkers();
                 }
             }
         );
+
+        // Handle hover text toggle
+        eventBus.subscribe(EVENT_TYPES.VISUALIZATION.FMRI.HOVER_TEXT_TOGGLE, 
+            (hoverState) => {
+                this.plotNiftiDataUpdate(
+                    this.slice1ContainerId,
+                    this.sliceData.slice_1, 
+                    this.sliceData.slice_1_coords, 
+                    hoverState.hoverState
+                );
+                this.plotNiftiDataUpdate(
+                    this.slice2ContainerId,
+                    this.sliceData.slice_2, 
+                    this.sliceData.slice_2_coords, 
+                    hoverState.hoverState
+                );
+                this.plotNiftiDataUpdate(
+                    this.slice3ContainerId,
+                    this.sliceData.slice_3, 
+                    this.sliceData.slice_3_coords, 
+                    hoverState.hoverState
+                );
+            }
+        );
+
         // Add event listener for window resize
         window.addEventListener('resize', () => this.onWindowResize());
     }
@@ -275,7 +405,6 @@ class NiftiViewer {
             document.getElementById(this.slice1ContainerId).style.width = '38%';
             document.getElementById(this.slice2ContainerId).style.width = '31%';
             document.getElementById(this.slice3ContainerId).style.width = '31%';
-
         }
     }
 
@@ -287,15 +416,21 @@ class NiftiViewer {
         getFMRIData((viewer_data) => {
             // store temporary slice data
             this.sliceData = {
-                slice1: viewer_data.data.func.x,
-                slice2: viewer_data.data.func.y,
-                slice3: viewer_data.data.func.z,
-                slice1Anat: viewer_data.data.anat.x,
-                slice2Anat: viewer_data.data.anat.y,
-                slice3Anat: viewer_data.data.anat.z,
+                slice_1: viewer_data.data.func.slice_1,
+                slice_2: viewer_data.data.func.slice_2,
+                slice_3: viewer_data.data.func.slice_3,
+                slice_1_coords: viewer_data.data.coords.slice_1,
+                slice_2_coords: viewer_data.data.coords.slice_2,
+                slice_3_coords: viewer_data.data.coords.slice_3,
+                slice_1_anat: viewer_data.data.anat.slice_1,
+                slice_2_anat: viewer_data.data.anat.slice_2,
+                slice_3_anat: viewer_data.data.anat.slice_3,
             };
             // full plot update
             this.plotNiftiFullUpdate(viewer_data.plot_options);
+
+            // emit event to indicate initialization of plot is complete
+            eventBus.publish(EVENT_TYPES.VISUALIZATION.FMRI.INIT_NIFTI_VIEWER);
         });
     }
 
@@ -317,45 +452,48 @@ class NiftiViewer {
         // plot three slices individually
         this.plotSliceData(
             this.slice1ContainerId,
-            'slice1', 
+            'slice_1', 
             plotOptions.color_map, 
             plotOptions.color_min, 
             plotOptions.color_max, 
-            plotOptions.opacity
+            plotOptions.opacity,
+            plotOptions.hover_text_on
         );
         this.plotSliceData(
             this.slice2ContainerId,
-             'slice2',
+             'slice_2',
             plotOptions.color_map, 
             plotOptions.color_min, 
             plotOptions.color_max, 
-            plotOptions.opacity
+            plotOptions.opacity,
+            plotOptions.hover_text_on
         )
         this.plotSliceData(
             this.slice3ContainerId, 
-            'slice3',
+            'slice_3',
             plotOptions.color_map, 
             plotOptions.color_min, 
             plotOptions.color_max, 
-            plotOptions.opacity
+            plotOptions.opacity,
+            plotOptions.hover_text_on
         );
 
         // plot crosshairs if enabled
         if (plotOptions.crosshair_on) {
             getCrosshairCoords((crosshairCoords) => {
                 // plot crosshairs for each slice
-                this.plotCrosshairs(this.slice1ContainerId, crosshairCoords.slice1);
-                this.plotCrosshairs(this.slice2ContainerId, crosshairCoords.slice2);
-                this.plotCrosshairs(this.slice3ContainerId, crosshairCoords.slice3);
+                this.plotCrosshairs(this.slice1ContainerId, crosshairCoords.slice_1);
+                this.plotCrosshairs(this.slice2ContainerId, crosshairCoords.slice_2);
+                this.plotCrosshairs(this.slice3ContainerId, crosshairCoords.slice_3);
             });
         }
 
         // plot direction markers if enabled
         if (plotOptions.direction_markers_on) {
             getDirectionLabelCoords((directionMarkerCoords) => {
-                this.plotDirectionMarkers(this.slice1ContainerId, directionMarkerCoords.slice1);
-                this.plotDirectionMarkers(this.slice2ContainerId, directionMarkerCoords.slice2);
-                this.plotDirectionMarkers(this.slice3ContainerId, directionMarkerCoords.slice3);
+                this.plotDirectionMarkers(this.slice1ContainerId, directionMarkerCoords.slice_1);
+                this.plotDirectionMarkers(this.slice2ContainerId, directionMarkerCoords.slice_2);
+                this.plotDirectionMarkers(this.slice3ContainerId, directionMarkerCoords.slice_3);
             });
         }
     }
@@ -364,14 +502,28 @@ class NiftiViewer {
      * Partial plot update of nifti data across slices
      * @param {string} plotContainerId - The plot container ID
      * @param {object} sliceData - The slice data
+     * @param {object} sliceCoords - The slice coordinates
+     * @param {boolean} hoverTextOn - Whether hover text is enabled
      */
-    plotNiftiDataUpdate(plotContainerId, sliceData) {
+    plotNiftiDataUpdate(plotContainerId, sliceData, sliceCoords, hoverTextOn=null) {
         // update slice with new nifti data
-        let sliceUpdate = {
-            z: sliceData
+        if (hoverTextOn !== null) {
+            this.hoverTextOn = hoverTextOn;
         }
-        // Plot data update using restyle (functional data is always second trace - zero-indexed)
-        Plotly.restyle(plotContainerId, sliceUpdate, 1);
+        let sliceUpdate = {
+            z: [sliceData],
+            text: [sliceCoords],
+            hoverinfo: this.hoverTextOn ? 'all' : 'none',
+            hovertemplate: this.hoverTextOn ? 'Intensity: %{z}<br> %{text}<extra></extra>': null
+        }
+        // functional data is second trace (0-indexed) if anatomical input is enabled
+        let traceIndex
+        if (this.anatomicalInput) {
+            traceIndex = 1;
+        } else {
+            traceIndex = 0;
+        }
+        Plotly.restyle(plotContainerId, sliceUpdate, [traceIndex]);
     }
 
     /**
@@ -382,6 +534,7 @@ class NiftiViewer {
      * @param {number} colorMin - The color minimum
      * @param {number} colorMax - The color maximum
      * @param {number} opacity - The opacity
+     * @param {object} hoverTextOn - Whether hover text is enabled
      */
     plotSliceData(
         plotContainerId,
@@ -389,10 +542,12 @@ class NiftiViewer {
         colorMap,
         colorMin,
         colorMax,
-        opacity
+        opacity,
+        hoverTextOn
     ) {
+        // plot functional data
         const data = [{
-            z: this.viewerData[sliceName],
+            z: this.sliceData[sliceName],
             name: 'fMRI',
             type: 'heatmap',
             colorscale: colorMap,
@@ -400,10 +555,10 @@ class NiftiViewer {
             zmax: colorMax,
             opacity: opacity,
             showscale: false,
-            // hoverinfo: hoverTextOn ? 'all' : 'none',
+            hoverinfo: hoverTextOn ? 'all' : 'none',
             // Display voxel coordinates
-            // text: this.voxelText[axisLabel],
-            // hovertemplate: hoverTextOn ? 'Intensity: %{z}<br> %{text}<extra></extra>': null
+            text: this.sliceData[sliceName + '_coords'],
+            hovertemplate: hoverTextOn ? 'Intensity: %{z}<br> %{text}<extra></extra>': null
         }];
 
         const layout = {
@@ -431,11 +586,12 @@ class NiftiViewer {
             },
             margin: { l: 0, r: 0, t: 0, b: 0 },  // Remove any margins
         };
-
-        if (this.viewerData[sliceName + 'Anat']) {
+        // add anatomical data if available
+        if (this.sliceData[sliceName + '_anat']) {
+            this.anatomicalInput = true;
             // Add the anatomical image as a background layer
             data.unshift({
-                z: this.viewerData[sliceName + 'Anat'],
+                z: this.sliceData[sliceName + '_anat'],
                 name: 'anat',
                 type: 'heatmap',
                 colorscale: 'Greys',  // Use a grayscale colormap for the anatomical brain
@@ -462,29 +618,27 @@ class NiftiViewer {
         colorMax=null, 
         opacity=null
     ) {
-        let colorUpdate = {};
+        const colorUpdate = {};
         if (colorMap) {
-            colorUpdate = {
-                colorscale: colorMap,
-            };
+            colorUpdate.colorscale = [colorMap];
         }
-        else if (colorMin) {
-            colorUpdate = {
-                zmin: colorMin,
-            };
+        if (colorMin) {
+            colorUpdate.zmin = [colorMin];
         }
-        else if (colorMax) {
-            colorUpdate = {
-                zmax: colorMax,
-            };
+        if (colorMax) {
+            colorUpdate.zmax = [colorMax];
         }
-        else if (opacity) {
-            colorUpdate = {
-                opacity: opacity,
-            };
+        if (opacity) {
+            colorUpdate.opacity = [opacity];
         }
-        // Plot update using restyle (functional data is always second trace - zero-indexed)
-        Plotly.restyle(plotContainerId, colorUpdate, 1);
+        // functional data is second trace (0-indexed) if anatomical input is enabled
+        let traceIndex
+        if (this.anatomicalInput) {
+            traceIndex = 1;
+        } else {
+            traceIndex = 0;
+        }
+        Plotly.restyle(plotContainerId, colorUpdate, [traceIndex]);
     }
     /**
      * Plot crosshairs
@@ -502,7 +656,7 @@ class NiftiViewer {
                 type: 'line',
                 x0: 0,
                 y0: crosshairCoords.y,
-                x1: crosshairCoords.lenX,
+                x1: crosshairCoords.len_x,
                 y1: crosshairCoords.y,
                 line: { color: crosshairColor, width: crosshairWidth }
             },
@@ -511,7 +665,7 @@ class NiftiViewer {
                 x0: crosshairCoords.x,
                 y0: 0,
                 x1: crosshairCoords.x,
-                y1: crosshairCoords.lenY,
+                y1: crosshairCoords.len_y,
                 line: { color: crosshairColor, width: crosshairWidth }
             }
         ];
@@ -546,6 +700,30 @@ class NiftiViewer {
         };
         // Plot direction markers with relayout
         Plotly.relayout(plotContainerId, directionMarkerRelayout);
+    }
+
+    /**
+     * Plot hover text
+     * @param {boolean} hoverTextOn - Whether hover text is enabled
+     */
+    plotHoverText(hoverTextOn) {
+        // Plot hover text
+        // Plot data update using restyle (functional data is always second trace - zero-indexed)
+        Plotly.restyle(
+            this.slice1ContainerId, 
+            { hoverinfo: hoverTextOn ? 'all' : 'none' },
+            1
+        );
+        Plotly.restyle(
+            this.slice2ContainerId, 
+            { hoverinfo: hoverTextOn ? 'all' : 'none' }, 
+            1
+        );
+        Plotly.restyle(
+            this.slice3ContainerId, 
+            { hoverinfo: hoverTextOn ? 'all' : 'none' }, 
+            1
+        );
     }
 
     /**

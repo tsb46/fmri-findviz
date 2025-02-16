@@ -1,11 +1,11 @@
 // LinePlotOptions.js - Options for line plot (timecourse plot)
-import {initializeSingleSlider } from '../sliders';
-import { EVENT_TYPES } from '../../constants/EventTypes';
-import eventBus from '../../events/ViewerEvents';
+import {initializeSingleSlider } from '../sliders.js';
+import { EVENT_TYPES } from '../../constants/EventTypes.js';
+import eventBus from '../../events/ViewerEvents.js';
 import { 
     getTaskConditions,
     getTimeCourseLabels
-} from '../../api/data';
+} from '../../api/data.js';
 import { 
     getTaskDesignPlotOptions,
     getTimeCoursePlotOptions, 
@@ -14,7 +14,7 @@ import {
     updateTimeCoursePlotOptions,
     updateTimeMarkerPlotOptions,
     updateTimeCourseScale
-} from '../../api/plot';
+} from '../../api/plot.js';
 
 class LinePlotOptions {
     /**
@@ -41,11 +41,27 @@ class LinePlotOptions {
         timeCourseSelectModeId,
         timeMarkerWidthSliderId,
         timeMarkerOpacitySliderId,
+        timeMarkerSelectShapeId,
         timeMarkerSelectColorId,
         toggleConvolutionId,
         scaleIncreaseId,
         scaleDecreaseId,
     ) {
+
+        // get ids
+        this.timeCourseSelectMenuId = timeCourseSelectMenuId;
+        this.timeCourseOpacitySliderId = timeCourseOpacitySliderId;
+        this.timeCourseLineWidthSliderId = timeCourseLineWidthSliderId;
+        this.timeCourseSelectColorId = timeCourseSelectColorId;
+        this.timeCourseSelectModeId = timeCourseSelectModeId;
+        this.timeMarkerWidthSliderId = timeMarkerWidthSliderId;
+        this.timeMarkerOpacitySliderId = timeMarkerOpacitySliderId;
+        this.timeMarkerSelectColorId = timeMarkerSelectColorId;
+        this.timeMarkerSelectShapeId = timeMarkerSelectShapeId;
+        this.toggleConvolutionId = toggleConvolutionId;
+        this.scaleIncreaseId = scaleIncreaseId;
+        this.scaleDecreaseId = scaleDecreaseId;
+
         // get div elements
         this.timeCourseSelectMenu = $(`#${timeCourseSelectMenuId}`);
         this.timeCourseOpacitySlider = $(`#${timeCourseOpacitySliderId}`);
@@ -68,6 +84,11 @@ class LinePlotOptions {
 
         // get time course and task labels and initialize components
         this.getPlotLabels((labels) => {
+            // if no labels, return
+            if (labels.length === 0) {
+                return;
+            }
+            // initialize time course select menu
             this.initializeTimeCourseSelectMenu(labels, true);
             // initialize plot components for the first time course
             this.initializeLinePlotComponents(this.selectedTimeCourse);
@@ -224,13 +245,13 @@ class LinePlotOptions {
     ) {
         console.log('initializeTimeCoursePlotSliders');
         initializeSingleSlider(
-            this.timeCourseOpacitySlider, 
+            this.timeCourseOpacitySliderId, 
             timeCourseOpacityValue,
             [0, 1],
             0.01
         );
         initializeSingleSlider(
-            this.timeCourseLineWidthSlider, 
+            this.timeCourseLineWidthSliderId, 
             timeCourseLineWidthValue,
             [0.5, 10],
             0.1
@@ -318,7 +339,6 @@ class LinePlotOptions {
                 callback
             );
         }
-        
     }
 
     /**

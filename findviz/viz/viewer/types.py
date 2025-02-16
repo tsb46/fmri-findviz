@@ -72,18 +72,24 @@ class ColorOptions(TypedDict):
 
 class SliceCoordsDict(TypedDict):
     """Dictionary of x,y click coordinates (integers) for nifti slices"""
-    slice1: Dict[Literal['x', 'y'], int]
-    slice2: Dict[Literal['x', 'y'], int]
-    slice3: Dict[Literal['x', 'y'], int]
+    slice_1: Dict[Literal['x', 'y'], int]
+    slice_2: Dict[Literal['x', 'y'], int]
+    slice_3: Dict[Literal['x', 'y'], int]
 
-class SliceIndexDict(TypedDict):
-    """Dictionary of x,y,z slice indices"""
-    slice1: Dict[Literal['x', 'y', 'z'], int]
-    slice2: Dict[Literal['x', 'y', 'z'], int]
-    slice3: Dict[Literal['x', 'y', 'z'], int]
+class OrthoSliceIndexDict(TypedDict):
+    """Dictionary of x,y,z slice indices for ortho view"""
+    x: int
+    y: int
+    z: int
+
+class MontageSliceDirectionIndexDict(TypedDict):
+    """Dictionary of x,y,z slice indices for a direction in montage view"""
+    slice_1: Dict[Literal['x', 'y', 'z'], int]
+    slice_2: Dict[Literal['x', 'y', 'z'], int]
+    slice_3: Dict[Literal['x', 'y', 'z'], int]
 
 class MontageSliceIndexDict(TypedDict):
-    """Dictionary of montage slice indices
+    """Dictionary of montage slice indices for montage view
     Keys are slice directions:
     x: axial
     y: coronal
@@ -91,9 +97,9 @@ class MontageSliceIndexDict(TypedDict):
 
     Each slice direction has a dictionary of indices for the three slices.
     """
-    x: SliceIndexDict # axial
-    y: SliceIndexDict # coronal
-    z: SliceIndexDict # sagittal
+    x: MontageSliceDirectionIndexDict # axial
+    y: MontageSliceDirectionIndexDict # coronal
+    z: MontageSliceDirectionIndexDict # sagittal
 
 class MontageSliceCoordsDict(TypedDict):
     """Dictionary of montage slice click coordinates (integers)

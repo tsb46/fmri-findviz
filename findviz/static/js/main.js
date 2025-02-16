@@ -3,28 +3,28 @@
 import MainViewer from './viewer/viewer.js';
 import FileUploader from './upload/file.js';
 import { initBootstrapComponents } from './utils.js';
-
+import { DOM_IDS } from './viewer/constants/DomIds.js';
 
 async function main() {
     // Check if data was pre-loaded via CLI
     try {
         const response = await fetch('/check_cache');
         const data = await response.json();
-        
+
         if (data.has_cache) {
             // Use pre-loaded data
-            const visualizationContainer = document.getElementById('parent-container');
+            const visualizationContainer = document.getElementById(DOM_IDS.PARENT_CONTAINER);
             visualizationContainer.style.display = 'block';
             
             let mainViewer = new MainViewer(data.cache_data, data.plot_type);
             mainViewer.init();
         } else {
             // Initialize file uploader for browser inputs
-            new FileUploader((data, plotType) => {
-                const visualizationContainer = document.getElementById('parent-container');
+            new FileUploader((fileType) => {
+                const visualizationContainer = document.getElementById(DOM_IDS.PARENT_CONTAINER);
                 visualizationContainer.style.display = 'block';
                 
-                let mainViewer = new MainViewer(data, plotType);
+                let mainViewer = new MainViewer(fileType);
                 mainViewer.init();
             });
         }

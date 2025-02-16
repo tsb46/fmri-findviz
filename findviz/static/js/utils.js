@@ -40,17 +40,9 @@ function initBootstrapComponents() {
 }
 
 
-// circular index of array
-function circularIndex(arr, index) {
-  const length = arr.length;
-  return (index % length + length) % length;
-}
-
-
 
 export {
     initBootstrapComponents,
-    circularIndex
 };
 
 

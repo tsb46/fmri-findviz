@@ -1,4 +1,4 @@
-import GiftiViewer from "../plots/GiftiViewer";
+// EventTypes.js - findviz event types
 
 export const EVENT_TYPES = {
     ANALYSIS: {
@@ -26,6 +26,8 @@ export const EVENT_TYPES = {
             COLOR_MAP_CHANGE: 'colorMapChange',
             GIFTIVIEWER_CLICK: 'giftiViewerClick',
             HOVER_TEXT_TOGGLE: 'toggleHoverChange',
+            INIT_NIFTI_VIEWER: 'initNiftiViewer',
+            INIT_GIFTIVIEWER: 'initGiftiViewer',
             MONTAGE_POPOVER_SHOW: 'montagePopoverShow',
             MONTAGE_SLICE_DIRECTION_CHANGE: 'montageSliceDirectionChange',
             MONTAGE_SLICE_CHANGE: 'montageSliceChange',

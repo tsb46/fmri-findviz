@@ -1,7 +1,7 @@
 // analysis.js
 // API calls for analysis functions
-import { API_ENDPOINTS } from '../constants/APIEndpoints';
-import { makeRequest, makeFormData } from './utils';
+import { API_ENDPOINTS } from '../constants/APIEndpoints.js';
+import { makeRequest, createFormData } from './utils.js';
 
 
 /**
@@ -16,7 +16,7 @@ import { makeRequest, makeFormData } from './utils';
 export const correlate = async (label, time_course_type, correlateParams, callback) => {
     return makeRequest(
         API_ENDPOINTS.ANALYSIS.CORRELATE,
-        { method: 'POST', body: makeFormData({ label, time_course_type, ...correlateParams }) },
+        { method: 'POST', body: createFormData({ label, time_course_type, ...correlateParams }) },
         callback
     );
 };
@@ -32,7 +32,7 @@ export const correlate = async (label, time_course_type, correlateParams, callba
 export const distance = async (distanceParams, callback) => {
     return makeRequest(
         API_ENDPOINTS.ANALYSIS.DISTANCE,
-        { method: 'POST', body: makeFormData(distanceParams) },
+        { method: 'POST', body: createFormData(distanceParams) },
         callback
     );
 };
@@ -48,7 +48,7 @@ export const distance = async (distanceParams, callback) => {
 export const findPeaks = async (label, time_course_type, peakFinderParams, callback) => {
     return makeRequest(
         API_ENDPOINTS.ANALYSIS.FIND_PEAKS,
-        { method: 'POST', body: makeFormData(
+        { method: 'POST', body: createFormData(
             { label, time_course_type, ...peakFinderParams }
             ) 
         },
@@ -70,7 +70,7 @@ export const findPeaks = async (label, time_course_type, peakFinderParams, callb
 export const windowedAverage = async (windowedAverageParams, callback) => {
     return makeRequest(
         API_ENDPOINTS.ANALYSIS.WINDOWED_AVERAGE, 
-        { method: 'POST', body: makeFormData(windowedAverageParams) }, 
+        { method: 'POST', body: createFormData(windowedAverageParams) }, 
         {
             errorPrefix: 'Error windowing average'
         },
