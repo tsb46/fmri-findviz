@@ -31,7 +31,7 @@
 
 
 import { makeRequest, createFormData } from './utils.js';
-import { API_ENDPOINTS } from '../constants/APIEndpoints.js';
+import { API_ENDPOINTS } from '../../constants/APIEndpoints.js';
 
 /**
  * Add annotation marker
@@ -340,6 +340,7 @@ export const updateDistancePlotOptions = async (plotOptions, callback) => {
  * @returns {Promise} Promise object representing the API call
  */
 export const updateFmriPlotOptions = async (plotOptions, callback) => {
+    console.log(`Updating fMRI plot options: ${JSON.stringify(plotOptions)}`);
     return makeRequest(
         API_ENDPOINTS.PLOT_OPTIONS.UPDATE_FMRI_PLOT_OPTIONS,
         {

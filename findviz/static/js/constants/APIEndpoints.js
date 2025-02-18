@@ -62,5 +62,10 @@ export const API_ENDPOINTS = {
         GET_PREPROCESSED_TIMECOURSE: '/get_preprocessed_timecourse',
         RESET_FMRI_PREPROCESS: '/reset_fmri_preprocess',
         RESET_TIMECOURSE_PREPROCESS: '/reset_timecourse_preprocess',
+    },
+    UPLOAD: {
+        FILES: '/upload',
+        HEADER: '/get_header',
+        SCENE: '/upload_cache'
     }
 };

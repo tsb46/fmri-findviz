@@ -1,5 +1,5 @@
 // PeakFinder.js
-import { EVENT_TYPES } from '../../constants/EventTypes.js';
+import { EVENT_TYPES } from '../../../constants/EventTypes.js';
 import eventBus from '../../events/ViewerEvents.js';
 import { getTimeCourseLabels, getTaskConditions } from '../../api/data.js';
 import { findPeaks } from '../../api/analysis.js';
@@ -66,6 +66,7 @@ class PeakFinder {
      */
     initializePeakFinderPopOver() {
         this.peakFinderPopOver.on('shown.bs.popover', () => {
+            console.log('peak finder popover shown');
             const popoverContent = $('.popover');
             popoverContent.find('.toggle-immediate').tooltip({
                 html: true, // Enable HTML content in the tooltip
@@ -107,6 +108,7 @@ class PeakFinder {
      */
     handlePeakFinderSubmit(event) {
         event.preventDefault();
+        console.log('peak finder submit button clicked');
         // get selected time course
         const timeCourse = this.peakFinderTimeCourseSelect.val();
         const timeCourseType = this.timeCourseTypes[timeCourse];
@@ -118,6 +120,7 @@ class PeakFinder {
             'peak_width': this.peakFinderForm.find('#peak-width').val(),
         }
         findPeaks(timeCourse, timeCourseType, peakFinderParams, () => {
+            console.log('peak finder success');
             eventBus.publish(EVENT_TYPES.VISUALIZATION.ANNOTATE.ANNOTATE_MARKER_ADDED);
         });
 

@@ -44,7 +44,7 @@
           Montage
         </button>
       </div>
-      <div class='col'>
+      <div class='col pl-0'>
         <!-- Toggle crosshair for Nifti -->
         <button class="btn btn-outline-secondary btn-sm toggle-wait" id='toggle-crosshair' data-toggle="tooltip" data-placement="top" title="Toggle crosshair">
           <i class="fa-solid fa-plus"></i>
@@ -57,40 +57,32 @@
         <button class="btn btn-outline-secondary btn-sm toggle-wait" id='toggle-direction-labels' data-toggle="tooltip" data-placement="top" title="Toggle direction labels">
           <i class="fa-solid fa-text-slash"></i>
         </button>
+        <!-- Toggle colorbar -->
+        <button class="btn btn-outline-secondary btn-sm toggle-wait" id='toggle-colorbar' data-toggle="tooltip" data-placement="top" title="Toggle colorbar">
+          <i class="fa-solid fa-ruler-vertical"></i>
+        </button>
+        <!-- Reverse colorbar -->
+        <button class="btn btn-outline-secondary btn-sm toggle-wait" id='reverse-colorbar' data-toggle="tooltip" data-placement="top" title="Reverse colorbar">
+          <i class="fa-solid fa-arrows-up-down"></i>
+        </button>
         <!-- Take screenshot of visualization container -->
         <button class="btn btn-outline-secondary btn-sm toggle-wait" id='select-screenshot' data-toggle="tooltip" data-placement="top" title="Take screenshot">
           <i class="fa-solid fa-image"></i>
         </button>
-        <!-- Play movie -->
-        <button class="btn btn-outline-secondary btn-sm toggle-wait" id='play-movie' data-toggle="tooltip" data-placement="top" title="Cycle through timepoints">
-          <i class="fa-solid fa-play"></i>
-        </button>
-      </div>
-      <div class = 'col-2 mr-2'>
-        <div class='row'>
-          <button type="button" class="btn btn-outline-primary btn-sm" data-toggle="modal" id='distance-modal-button' data-target="#distance-modal">Distance
+        <!-- Movie controls -->
+        <div class="btn-group">
+          <!-- Play movie -->
+          <button class="btn btn-outline-secondary btn-sm toggle-wait" id='play-movie' data-toggle="tooltip" data-placement="top" title="Cycle through timepoints">
+            <i class="fa-solid fa-play"></i>
           </button>
-          <button class="btn btn-outline-primary btn-sm toggle-wait pr-1 pl-1 mr-2" id='distance-popover' title="Time Point Distance Plot Options" data-container="body" data-toggle="popover" data-placement="top" disabled data-content= "
+          <!-- Play movie options popover -->
+          <button class="btn btn-outline-secondary btn-sm toggle-wait pr-1 pl-1" id='play-movie-popover' title="Play Movie Options" data-container="body" data-toggle="popover" data-placement="top" data-content= "
             <div class='row'>
               <div class='col mr-5 ml-5'>
-                <div id='distance-plot-options'>
+                <div id='play-movie-options'>
                   <div class='row'>
-                    <label for='distance-plot-colormap'>Choose Colormap:</label>
-                    <div class='custom-dropdown' id='distance-plot-colormap'>
-                      <!-- Dropdown content goes here -->
-                    </div>
-                  </div>
-                  <div class='row mt-2'>
-                    <label for='distance-plot-color-range' class='mb-1'>Color Range:</label>
-                    <input id='distance-plot-color-range' type='text' class='slider' data-slider-responsive='true' />
-                  </div>
-                  <div class='row'>
-                    <label for='distance-plot-time-marker-width' class='mb-1'>Time Marker Width:</label>
-                    <input id='distance-plot-time-marker-width' type='text' class='slider' data-slider-responsive='true' />
-                  </div>
-                  <div class='row mb-2'>
-                    <label for='distance-plot-time-marker-opacity' class='mb-1'>Time Marker Opacity</label>
-                    <input id='distance-plot-time-marker-opacity' type='text' class='slider' data-slider-responsive='true' />
+                    <label for='play-movie-speed' class='mb-1'>Frame Update Interval (ms)</label>
+                    <input id='play-movie-speed' type='text' class='slider' data-slider-responsive='true' />
                   </div>
                 </div>
               </div>
@@ -98,6 +90,44 @@
           ">
             <i class="fa-solid fa-caret-up"></i>
           </button>
+        </div>
+      </div>
+      <div class = 'col-2 mr-2'>
+        <div class='row'>
+          <!-- Distance plot -->
+          <div class="btn-group">
+            <button type="button" class="btn btn-outline-primary btn-sm" data-toggle="modal" id='distance-modal-button' data-target="#distance-modal">Distance
+            </button>
+            <!-- Distance plot options popover -->
+            <button class="btn btn-outline-primary btn-sm toggle-wait pr-1 pl-1 mr-2" id='distance-popover' title="Time Point Distance Plot Options" data-container="body" data-toggle="popover" data-placement="top" disabled data-content= "
+              <div class='row'>
+                <div class='col mr-5 ml-5'>
+                  <div id='distance-plot-options'>
+                    <div class='row'>
+                      <label for='distance-plot-colormap'>Choose Colormap:</label>
+                      <div class='custom-dropdown' id='distance-plot-colormap'>
+                        <!-- Dropdown content goes here -->
+                      </div>
+                    </div>
+                    <div class='row mt-2'>
+                      <label for='distance-plot-color-range' class='mb-1'>Color Range:</label>
+                      <input id='distance-plot-color-range' type='text' class='slider' data-slider-responsive='true' />
+                    </div>
+                    <div class='row'>
+                      <label for='distance-plot-time-marker-width' class='mb-1'>Time Marker Width:</label>
+                      <input id='distance-plot-time-marker-width' type='text' class='slider' data-slider-responsive='true' />
+                    </div>
+                    <div class='row mb-2'>
+                      <label for='distance-plot-time-marker-opacity' class='mb-1'>Time Marker Opacity</label>
+                      <input id='distance-plot-time-marker-opacity' type='text' class='slider' data-slider-responsive='true' />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ">
+              <i class="fa-solid fa-caret-up"></i>
+            </button>
+          </div>
           <button class="btn btn-outline-secondary btn-sm toggle-wait" id='remove-distance-plot' data-toggle="tooltip" data-placement="top" title="Remove distance plot" disabled>
             <i class="fa-solid fa-trash"></i>
           </button>
@@ -174,7 +204,6 @@
 </div>
 <!-- Time Point Distance Modal-->
 <div class="modal fade" id="distance-modal" tabindex="-1" aria-labelledby="distance-modal-label" aria-hidden="true">
-  <div class='spinner-overlay' id="distance-spinner-overlay"></div>
   <div id='distance-modal-dialog' class="modal-dialog modal-dialog-centered">
     <div class="modal-content">
       <div class="modal-header">
@@ -185,9 +214,6 @@
       </div>
       <form id="distance-form" enctype="multipart/form-data">
         <div class="modal-body">
-          <div id='distance-spinner' class="spinner-border spinner-viz" role="status">
-              <span class="sr-only">Computing...</span>
-          </div>
           <div class="row">
             <div class='col ml-3 mr-3'>
               <div class='row'>

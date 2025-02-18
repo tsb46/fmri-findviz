@@ -1,6 +1,6 @@
 // analysis.js
 // API calls for analysis functions
-import { API_ENDPOINTS } from '../constants/APIEndpoints.js';
+import { API_ENDPOINTS } from '../../constants/APIEndpoints.js';
 import { makeRequest, createFormData } from './utils.js';
 
 

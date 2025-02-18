@@ -75,7 +75,7 @@ def preprocess_fmri(
     # check if mask is provided for nifti processing
     if file_type == 'nifti' and mask_img is None:
         raise NiftiMaskError(
-            message="Mask is required for nifti preprocessing",
+            message="A brain mask is required for nifti preprocessing",
         )
 
     # convert functional image to array
@@ -116,14 +116,18 @@ def preprocess_fmri(
     # 3d gaussian smooth (only for nifti)
     if inputs['smooth']:
         if file_type == 'nifti':
-            func_array = utils.nifti_smooth(func_array, inputs['fwhm'])
+            # need to convert back to nifti before smoothing 
+            func_img_prep = array_to_nifti_masked(func_array, mask_img)
+            func_img_prep = utils.nifti_smooth(func_img_prep, inputs['fwhm'])
         elif file_type == 'gifti':
             raise NotImplementedError("Smoothing is not supported for Gifti files")
 
     # convert array back to nifti or gifti
     if file_type == 'nifti':
-        func_img_prep = array_to_nifti_masked(func_array, mask_img)
-        return func_img_prep
+        if inputs['smooth']:
+            return func_img_prep    
+        else:
+            return array_to_nifti_masked(func_array, mask_img)
     elif file_type == 'gifti':
         left_func_img_prep = None
         right_func_img_prep = None

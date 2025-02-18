@@ -1,7 +1,7 @@
 """Utility Modules for route input handling"""
 from enum import Enum
 from functools import wraps
-from typing import Union, Callable, TypeVar, ParamSpec, List
+from typing import Union, Callable, TypeVar, ParamSpec, List, Type
 
 
 import numpy as np
@@ -116,6 +116,7 @@ def handle_route_errors(
     fmri_file_type: str = None,
     route: str = None,
     route_parameters: List[str] = None,
+    custom_exceptions: List[Type[Exception]] = None,
 ) -> Callable[[Callable[P, R]], Callable[P, tuple[Union[R, str], int]]]:
     """
     Decorator to handle common route error patterns
@@ -125,7 +126,7 @@ def handle_route_errors(
         log_msg (str, optional): Message to log on success. Defaults to None.
         fmri_file_type (str, optional): FMRI file type for DataRequestError. Defaults to None.
         route (str, optional): Route name for DataRequestError. Defaults to None.
-    
+        custom_exceptions (List[Type[Exception]], optional): List of custom exceptions to handle. Defaults to None.
     Returns:
         Callable: Decorated route function that handles errors consistently
     """
@@ -162,13 +163,20 @@ def handle_route_errors(
                 return make_response(result, 200)
 
             except Exception as e:
-                # Handle unexpected errors
+                # check if exception is in custom exceptions
+                # log as error and return 400 to handle in frontend
+                for custom_exception in custom_exceptions:
+                    if isinstance(e, custom_exception):
+                        logger.error(e)
+                        return make_response(e.message, 400)
+                
+                # Handle unexpected errors and log as critical
                 logger.critical(
                     f"{error_msg}: {str(e)}", 
                     exc_info=True
                 )
                 return make_response(error_msg, 500)
-
+            
         return wrapper
 
     return decorator

@@ -120,13 +120,16 @@ class FmriPlotOptions:
         color_min: Minimum value for color mapping. Default is None
         color_max: Maximum value for color mapping. Default is None
         color_range: Color range for color mapping. Default is None
+        colorbar_on: Whether colorbar is enabled. Default is True
         opacity: Opacity of the color mapping. Default is 1
         threshold_min: Minimum value for threshold mapping. Default is 0
         threshold_max: Maximum value for threshold mapping. Default is 0
         threshold_range: Threshold range for threshold mapping. Default is None
         color_map: Color map for color mapping. Default is 'Viridis'
+        reverse_colormap: Whether the colormap is reversed. Default is False
         hover_text_on: Whether hover text is enabled. Default is True
         precision: Precision of the color mapping. Default is 6
+        play_movie_speed: Speed of the movie (in milliseconds). Default is 500
         slider_step_size: Stepsize of the sliders. Default is 100
         allowed_precision: Allowed precision of the sliders. Default is 6
         view_state: View state ('ortho' or 'montage') for NIFTI data. 
@@ -140,13 +143,16 @@ class FmriPlotOptions:
     color_min: Optional[float] = None
     color_max: Optional[float] = None
     color_range: Optional[Tuple[float, float]] = None
+    colorbar_on: bool = True
     opacity: float = 1
     threshold_min: float = 0
     threshold_max: float = 0
     threshold_range: Optional[Tuple[float, float]] = None
     color_map: ColorMaps = ColorMaps.VIRIDIS
+    reverse_colormap: bool = False
     hover_text_on: bool = True
     precision: int = 6
+    play_movie_speed: int = 500
     slider_step_size: int = 100
     allowed_precision: int = 6
     crosshair_on: bool = True
@@ -156,15 +162,18 @@ class FmriPlotOptions:
         """Convert to dictionary."""
         return {
             'color_map': self.color_map.value,
+            'reverse_colormap': self.reverse_colormap,
             'color_min': self.color_min,
             'color_max': self.color_max,
             'color_range': self.color_range,
+            'colorbar_on': self.colorbar_on,
             'threshold_min': self.threshold_min,
             'threshold_max': self.threshold_max,
             'threshold_range': self.threshold_range,
             'opacity': self.opacity,
             'hover_text_on': self.hover_text_on,
             'precision': self.precision,
+            'play_movie_speed': self.play_movie_speed,
             'slider_step_size': self.slider_step_size,
             'allowed_precision': self.allowed_precision,
             'crosshair_on': self.crosshair_on,

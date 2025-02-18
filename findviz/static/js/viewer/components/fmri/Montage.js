@@ -1,5 +1,5 @@
 // set montage box popup options
-import { EVENT_TYPES } from '../../constants/EventTypes.js';
+import { EVENT_TYPES } from '../../../constants/EventTypes.js';
 import { initializeSingleSlider } from '../sliders.js';
 import eventBus from '../../events/ViewerEvents.js';
 import { 
@@ -65,6 +65,7 @@ class Montage {
     initializeMontageOptions() {
         // Event listener for when the popover is shown
         $(`#${this.montagePopoverId}`).on('shown.bs.popover', () => {
+            console.log('montage popover shown');
             // get plot options
             getMontageData((montageData) => {
                 const montageSliceDir = montageData.montage_slice_dir;
@@ -114,6 +115,7 @@ class Montage {
      * @param {Event} event - event object
      */
     async handleMontageSliceDirectionChange(event) {
+        console.log('montage slice direction changed');
         // update plot options
         await updateMontageSliceDir(event.target.value);
         // get plot options
@@ -139,6 +141,7 @@ class Montage {
         // Listen for slider changes and update slice index
         this.sliceSliderIds.forEach((sliceSliderId, index) => {
             $(`#${sliceSliderId}`).on('change', (event) => {
+                console.log('montage slice changed');
                 const sliceName = this.sliceSliderId2Names[sliceSliderId];
                 const sliceIdx = event.value.newValue;
                 this.handleMontageSliceChange(sliceName, sliceIdx);

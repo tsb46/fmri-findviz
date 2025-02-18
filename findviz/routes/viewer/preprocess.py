@@ -12,7 +12,7 @@ from flask import Blueprint, request, make_response
 
 from findviz.logger_config import setup_logger
 from findviz.routes.shared import data_manager
-from findviz.routes.utils import Routes, handle_route_errors
+from findviz.routes.utils import convert_value, Routes, handle_route_errors
 from findviz.viz.preprocess.fmri import preprocess_fmri, PreprocessFMRIInputs
 from findviz.viz.preprocess.timecourse import preprocess_timecourse, PreprocessTimecourseInputs
 from findviz.viz.preprocess.input import (
@@ -30,42 +30,40 @@ preprocess_bp = Blueprint('preprocess', __name__)
     log_msg='FMRI preprocessing successful',
     fmri_file_type=data_manager.fmri_file_type,
     route=Routes.GET_PREPROCESSED_FMRI,
-    route_parameters=list(PreprocessFMRIInputs.__annotations__.keys())
+    route_parameters=list(PreprocessFMRIInputs.__annotations__.keys()),
+    custom_exceptions=[NiftiMaskError, PreprocessInputError]
 )
+
 def get_preprocessed_fmri() -> dict:
     """Get preprocessed FMRI data"""
     if data_manager.fmri_preprocessed:
         logger.info("FMRI data already preprocessed, clearing it")
         data_manager.clear_fmri_preprocessed()
 
-    inputs = PreprocessFMRIInputs(**request.form)
+    params = {key: convert_value(value) for key, value in request.form.items()}
+    inputs = PreprocessFMRIInputs(**params)
     logger.info(f"Preprocessing FMRI data with inputs: {inputs}")
 
     # Validate inputs
-    try:
-        fmri_input_validator = FMRIPreprocessInputValidator(data_manager.fmri_file_type)
-        fmri_input_validator.validate_preprocess_input(inputs)
-    except PreprocessInputError as e:
-        logger.error(e)
-        return make_response(e.message, 400)
+    fmri_input_validator = FMRIPreprocessInputValidator(data_manager.fmri_file_type)
+    fmri_input_validator.validate_preprocess_input(inputs)
 
+    # get fmri data
     viewer_data = data_manager.get_viewer_data(
         fmri_data=True,
-        use_preprocess=False,
         time_course_data=False,
         task_data=False,
     )
-    try:
-        func_proc = preprocess_fmri(
-            file_type=data_manager.fmri_file_type,
-            inputs=inputs,
-            func_data=viewer_data['func_data'],
-            mask_data=viewer_data['mask_data'],
-        )
-    except NiftiMaskError as e:
-        logger.error(e)
-        return make_response(e.message, 400)
+    
+    # preprocess fmri data
+    func_proc = preprocess_fmri(
+        file_type=data_manager.fmri_file_type,
+        inputs=inputs,
+        func_img=viewer_data['func_img'],
+        mask_img=viewer_data['mask_img'],
+    )
 
+    # store preprocessed fmri data
     if data_manager.fmri_file_type == 'nifti':
         data_manager.store_fmri_preprocessed({'func_img': func_proc})
     else:
@@ -74,14 +72,19 @@ def get_preprocessed_fmri() -> dict:
             'right_func_img': func_proc[1]
         })
     
+    logger.info(f"Preprocessed FMRI data successfully")
+    
     return {'status': 'success'}
+
 
 @preprocess_bp.route(Routes.GET_PREPROCESSED_TIMECOURSE.value, methods=['POST'])
 @handle_route_errors(
     error_msg='Unknown error in preprocess timecourse request',
     log_msg='Timecourse preprocessing successful',
     route=Routes.GET_PREPROCESSED_TIMECOURSE,
-    route_parameters=list(PreprocessTimecourseInputs.__annotations__.keys())
+    fmri_file_type=data_manager.fmri_file_type,
+    route_parameters=list(PreprocessTimecourseInputs.__annotations__.keys()),
+    custom_exceptions=[PreprocessInputError]
 )
 def get_preprocessed_timecourse() -> dict:
     """Get preprocessed timecourse data"""
@@ -93,13 +96,10 @@ def get_preprocessed_timecourse() -> dict:
     logger.info(f"Preprocessing timecourse data with inputs: {inputs}")
 
     # Validate inputs
-    try:
-        timecourse_input_validator = TimecoursePreprocessInputValidator()
-        timecourse_input_validator.validate_preprocess_input(inputs)
-    except PreprocessInputError as e:
-        logger.error(e)
-        return make_response(e.message, 400)
+    timecourse_input_validator = TimecoursePreprocessInputValidator()
+    timecourse_input_validator.validate_preprocess_input(inputs)
 
+    # get timecourse data
     viewer_data = data_manager.get_viewer_data(
         fmri_data=False,
         use_preprocess=False,
@@ -107,6 +107,7 @@ def get_preprocessed_timecourse() -> dict:
         task_data=False,
     )
 
+    # preprocess timecourse data
     ts_data = {}
     for ts_label in inputs['ts_labels']:
         ts_proc = preprocess_timecourse(
@@ -115,8 +116,10 @@ def get_preprocessed_timecourse() -> dict:
         )
         ts_data[ts_label] = ts_proc
 
+    # store preprocessed timecourse data
     data_manager.store_timecourse_preprocessed(ts_data)
     return {'status': 'success'}
+
 
 @preprocess_bp.route(Routes.RESET_FMRI_PREPROCESS.value, methods=['POST'])
 @handle_route_errors(
@@ -129,6 +132,7 @@ def reset_fmri_preprocess() -> dict:
     """Reset FMRI preprocessing"""
     data_manager.clear_fmri_preprocessed()
     return {'status': 'success'}
+
 
 @preprocess_bp.route(Routes.RESET_TIMECOURSE_PREPROCESS.value, methods=['POST'])
 @handle_route_errors(

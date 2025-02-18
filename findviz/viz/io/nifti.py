@@ -218,7 +218,7 @@ class NiftiUpload:
                     [browser_fields[NiftiFiles.MASK.value]]
                 )
             # validate that mask only contains 1s and 0s
-            if not validate.validate_nii_brain_mask(nii_anat, nii_func):
+            if not validate.validate_nii_brain_mask(nii_mask):
                 raise exception.FileValidationError(
                     "The mask file must only contain 1s and 0s. Please check file.",
                     validate.validate_nii_brain_mask.__name__,

@@ -1,5 +1,5 @@
 // viewOptionsTimeCourse.js
-import { EVENT_TYPES } from '../../constants/EventTypes.js';
+import { EVENT_TYPES } from '../../../constants/EventTypes.js';
 import eventBus from '../../events/ViewerEvents.js';
 import { 
     changeTaskConvolution,

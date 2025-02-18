@@ -22,7 +22,10 @@ logger = setup_logger(__name__)
 @handle_route_errors(
     error_msg='Error correlating',
     log_msg='Correlation found successfully',
-    route=Routes.CORRELATE
+    route=Routes.CORRELATE,
+    fmri_file_type=data_manager.fmri_file_type,
+    route_parameters=['label', 'time_course_type', 'negative_lag', 'positive_lag'],
+    custom_exceptions=[ParameterInputError]
 )
 def correlate():
     logger.info('Correlating time course with fMRI data')
@@ -50,17 +53,13 @@ def correlate():
         fmri_data = transforms.nifti_to_array(viewer_data['fmri'])
     elif fmri_file_type == 'gifti':
         fmri_data, split_indx = transforms.gifti_to_array(viewer_data['fmri'])
-    # create correlate
-    try:
-        correlate = Correlate(
-            negative_lag=correlate_params['negative_lag'],
-            positive_lag=correlate_params['positive_lag'],
-            time_length=fmri_data.shape[0]
-        )
-    except ParameterInputError as e:
-        logger.error(e)
-        return make_response(e.message, 400)
-    
+    # initialize correlate class
+    correlate = Correlate(
+        negative_lag=correlate_params['negative_lag'],
+        positive_lag=correlate_params['positive_lag'],
+        time_length=fmri_data.shape[0]
+    )
+    # correlate time course with fmri data
     correlation_map = correlate.correlate(fmri_data, time_course)
     return {'status': 'success'}
 
@@ -69,7 +68,10 @@ def correlate():
 @handle_route_errors(
     error_msg='Error calculating distance',
     log_msg='Distance calculated successfully',
-    route=Routes.DISTANCE
+    route=Routes.DISTANCE,
+    fmri_file_type=data_manager.fmri_file_type,
+    route_parameters=['distance_metric'],
+    custom_exceptions=[ParameterInputError]
 )
 def distance():
     logger.info('Calculating distance')
@@ -104,7 +106,19 @@ def distance():
 @handle_route_errors(
     error_msg='Error finding peaks',
     log_msg='Peaks found successfully',
-    route=Routes.FIND_PEAKS
+    route=Routes.FIND_PEAKS,
+    fmri_file_type=data_manager.fmri_file_type,
+    route_parameters=[
+        'label', 
+        'time_course_type', 
+        'zscore', 
+        'peak_distance', 
+        'peak_height', 
+        'peak_prominence', 
+        'peak_width', 
+        'peak_threshold'
+    ],
+    custom_exceptions=[PeakFinderNoPeaksFoundError]
 )
 def find_peaks():
     logger.info('Finding peaks')
@@ -134,11 +148,8 @@ def find_peaks():
         peak_width=peak_finder_params['peak_width'],
         peak_threshold=peak_finder_params['peak_threshold']
     )
-    try:
-        peaks = peak_finder.find_peaks(data)
-    except PeakFinderNoPeaksFoundError as e:
-        logger.error(e)
-        return make_response(e.message, 400)
+    # find peaks
+    peaks = peak_finder.find_peaks(data)
     # convert peaks to list
     peaks = peaks.tolist()
     logger.info(f'Peaks found: {peaks}')

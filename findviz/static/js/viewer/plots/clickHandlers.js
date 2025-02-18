@@ -1,6 +1,6 @@
 // ClickHandler.js
 // Handles click events for NiftiViewer and GiftiViewer
-import { EVENT_TYPES } from '../constants/EventTypes.js';
+import { EVENT_TYPES } from '../../constants/EventTypes.js';
 import eventBus from '../events/ViewerEvents.js';
 import { updateLocation } from '../api/data.js';
 
@@ -40,6 +40,7 @@ export class NiftiClickHandler {
      * @param {string} sliceName - The name of the slice
      */
     clickHandler(eventData, sliceName) {
+        console.log('click event on nifti viewer');
         const x = Math.round(eventData.points[0].x);
         const y = Math.round(eventData.points[0].y);
         updateLocation({ x, y }, sliceName, () => {
@@ -89,6 +90,7 @@ export class GiftiClickHandler {
      * @param {string} hemisphere - The hemisphere
      */
     clickHandler(eventData, hemisphere) {
+        console.log('click event on gifti viewer');
         const vertexIndex = eventData.points[0].pointNumber;
         updateLocation({ click_coords: { selected_vertex: vertexIndex, selected_hemi: hemisphere }}, null, () => {
             eventBus.publish(EVENT_TYPES.VISUALIZATION.FMRI.GIFTIVIEWER_CLICK, { vertexIndex, hemisphere });

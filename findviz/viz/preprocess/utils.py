@@ -8,7 +8,7 @@ import nibabel as nib
 import numpy as np
 
 from nilearn.image import smooth_img
-from nilearn.signal import butterworth as butterworth_filter
+from nilearn.signal import butterworth
 from scipy.signal import detrend
 
 
@@ -17,8 +17,7 @@ def butterworth_filter(
     sf: float,
     low_cutoff: float, 
     high_cutoff: float, 
-    order: int = 5,
-    axis: int = 0, 
+    order: int = 5
 ) -> np.ndarray:
     """
     Butterworth filter
@@ -41,10 +40,9 @@ def butterworth_filter(
         np.ndarray
             Filtered data
     """
-    return butterworth_filter(
+    return butterworth(
         data, 
         sampling_rate=sf, 
-        axis=axis, 
         low_pass=high_cutoff, 
         high_pass=low_cutoff, 
         order=order

@@ -1,7 +1,7 @@
 // Colorsliders.js - used to initialize color sliders
 
 import { initializeRangeSlider, initializeSingleSlider } from '../sliders.js';
-import { EVENT_TYPES } from '../../constants/EventTypes.js';
+import { EVENT_TYPES } from '../../../constants/EventTypes.js';
 import eventBus from '../../events/ViewerEvents.js';
 import { 
     getFmriPlotOptions, 
@@ -49,8 +49,19 @@ class ColorSliders {
         this.colorRangeSliderListener();
         this.thresholdSliderListener();
         this.opacitySliderListener();
-        // listen for reset color slider
-        this.resetColorSliderListener();
+        // listen for reset color slider values
+        this.resetColorSliderValuesListener();
+
+        // listen for preprocess submit and reset - full reset of color sliders (range and values)
+        eventBus.subscribeMultiple(
+            [
+                EVENT_TYPES.PREPROCESSING.PREPROCESS_FMRI_SUCCESS,
+                EVENT_TYPES.PREPROCESSING.PREPROCESS_FMRI_RESET
+            ],
+            () => {
+                this.resetColorSliders();
+            }
+        );
     }
 
 /**
@@ -81,7 +92,6 @@ initializeColorSliders(
     thresholdSliderId,
     opacitySliderId,
 ) {
-    
     // Initialize color range slider
     initializeRangeSlider(
         colorSliderId,
@@ -109,10 +119,13 @@ initializeColorSliders(
     );
     }
 
-    // color range slider listener
+    /**
+     * Color range slider listener
+     */
     colorRangeSliderListener() {
         const colorSlider = $(`#${this.colorSliderId}`);
         colorSlider.on('change', (event) => {
+            console.log('color range slider changed');
             const colorValues = event.value.newValue;
             updateFmriPlotOptions({
                 color_min: colorValues[0],
@@ -123,10 +136,13 @@ initializeColorSliders(
         });
     }
 
-    // threshold slider listener
+    /**
+     * Threshold slider listener
+     */
     thresholdSliderListener() {
         const thresholdSlider = $(`#${this.thresholdSliderId}`);
         thresholdSlider.on('change', (event) => {
+            console.log('threshold slider changed');
             const thresholdValues = event.value.newValue;
             updateFmriPlotOptions({
                 threshold_min: thresholdValues[0],
@@ -137,10 +153,13 @@ initializeColorSliders(
         });
     }
 
-    // opacity slider listener
+    /**
+     * Opacity slider listener
+     */
     opacitySliderListener() {
         const opacitySlider = $(`#${this.opacitySliderId}`);
         opacitySlider.on('change', (event) => {
+            console.log('opacity slider changed');
             const opacityValues = event.value.newValue;
             updateFmriPlotOptions({
                 opacity: opacityValues,
@@ -151,35 +170,64 @@ initializeColorSliders(
     }
 
     /**
-     * Reset color slider listener
+     * Full reset of color sliders (values and range) for preprocessed data
      */
-    resetColorSliderListener() {
-        const resetColorSlider = $(`#${this.resetColorSliderId}`);
-        resetColorSlider.on('click', () => {
-            this.resetColorSliders();
+    resetColorSliders() {
+        console.log('resetting color sliders');
+        getFmriPlotOptions((plotOptions) => {
+            this.resetColorSliderRange(plotOptions);
+            this.resetColorSliderValues(plotOptions);
         });
     }
 
     /**
-     * Reset color sliders
+    * Reset color slider listener
      */
-    async resetColorSliders() {
-        await resetFmriColorOptions();
-        getFmriPlotOptions((plotOptions) => {
-            // reset slider values
-            // set color slider to original min and max values
-            const colorSlider = $(`#${this.colorSliderId}`);
-            colorSlider.slider('setValue', [plotOptions.color_min, plotOptions.color_max], false, true);
-            // Set threshold slider back to [0,0]
-            const thresholdSlider = $(`#${this.thresholdSliderId}`);
-            thresholdSlider.slider('setValue', [plotOptions.threshold_min, plotOptions.threshold_max], false, true);
-            // set opacity slider back to 1
-            const opacitySlider = $(`#${this.opacitySliderId}`);
-            opacitySlider.slider('setValue', [plotOptions.opacity], false, true);
-            // publish reset color sliders event
-            eventBus.publish(EVENT_TYPES.VISUALIZATION.FMRI.RESET_COLOR_SLIDERS);
+    resetColorSliderValuesListener() {
+        const resetColorSlider = $(`#${this.resetColorSliderId}`);
+        resetColorSlider.on('click', async () => {
+            await resetFmriColorOptions();
+            getFmriPlotOptions((plotOptions) => {
+                this.resetColorSliderValues(plotOptions);
+                // publish reset color sliders event
+                eventBus.publish(EVENT_TYPES.VISUALIZATION.FMRI.RESET_COLOR_SLIDERS);
+            });
         });
     }
+
+    /**
+     * Reset color slider range
+     * 
+     * @param {object} plotOptions - Plot options object
+     */
+    resetColorSliderRange(plotOptions) {
+        // reset slider range
+        const colorSlider = $(`#${this.colorSliderId}`);
+        colorSlider.slider('setAttribute', 'max', plotOptions.color_range[1]);
+        colorSlider.slider('setAttribute', 'min', plotOptions.color_range[0]);
+        // reset threshold slider range
+        const thresholdSlider = $(`#${this.thresholdSliderId}`);
+        thresholdSlider.slider('setAttribute', 'max', plotOptions.color_range[1]);
+        thresholdSlider.slider('setAttribute', 'min', plotOptions.color_range[0]);
+    }
+
+    /**
+     * Reset color slider values
+     * 
+     * @param {object} plotOptions - Plot options object
+     */
+    resetColorSliderValues(plotOptions) {
+        // set color slider to original min and max values
+        const colorSlider = $(`#${this.colorSliderId}`);
+        colorSlider.slider('setValue', [plotOptions.color_min, plotOptions.color_max], false, true);
+        // Set threshold slider back to [0,0]
+        const thresholdSlider = $(`#${this.thresholdSliderId}`);
+        thresholdSlider.slider('setValue', [plotOptions.threshold_min, plotOptions.threshold_max], false, true);
+        // set opacity slider back to 1
+        const opacitySlider = $(`#${this.opacitySliderId}`);
+        opacitySlider.slider('setValue', [plotOptions.opacity], false, true);
+    }
+
 }
 
 export default ColorSliders;

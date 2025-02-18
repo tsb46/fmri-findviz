@@ -447,6 +447,7 @@ class DataManager:
 
         # apply mask if present
         if mask_img:
+            logger.info("Applying mask to NIFTI data")
             func_img = apply_mask_nifti(func_img, mask_img)
 
         self._state.nifti_data['func_img'] = func_img
@@ -748,7 +749,7 @@ class DataManager:
         
         # Add file type specific data
         if fmri_data:
-            if self._state.file_type == 'nifti':
+            if self.fmri_file_type == 'nifti':
                 if self._state.fmri_preprocessed:
                     data.update({
                         'func_img': self._state.nifti_data_preprocessed['func_img'],
@@ -764,8 +765,7 @@ class DataManager:
                     'anat_input': self._state.anat_input,
                     'mask_input': self.state.mask_input,
                     'anat_img': self._state.nifti_data['anat_img'],
-                    'mask_img': self._state.nifti_data['mask_img'],
-                    'func_img': self._state.nifti_data['func_img'],
+                    'mask_img': self._state.nifti_data['mask_img']
                 })
                 if coord_labels:
                     data.update({
@@ -959,6 +959,12 @@ class DataManager:
         """Store preprocessed fMRI data."""
         logger.info("Storing preprocessed fMRI data")
         self._state.fmri_preprocessed = True
+        # apply mask to preprocessed data (should always be present for preprocessing)
+        if self._state.mask_input:
+            data['func_img'] = apply_mask_nifti(
+                data['func_img'], 
+                self._state.nifti_data['mask_img']
+            )
         if self._state.file_type == 'nifti':
             self._state.nifti_data_preprocessed.update(data)
         else:
@@ -977,16 +983,17 @@ class DataManager:
             color_min=metadata['color_min'],
             color_max=metadata['color_max'],
             color_range=metadata['color_range'],
-            threshold_min=metadata['threshold_min'],
-            threshold_max=metadata['threshold_max'],
             threshold_range=metadata['threshold_range'],
             precision=metadata['precision'],
-            slider_steps=metadata['slider_step_size'],
+            slider_step_size=metadata['slider_step_size'],
             hover_text_on=self._state.fmri_plot_options.hover_text_on,
             color_map=self._state.fmri_plot_options.color_map,
             opacity=self._state.fmri_plot_options.opacity,
             crosshair_on=self._state.fmri_plot_options.crosshair_on,
             direction_marker_on=self._state.fmri_plot_options.direction_marker_on,
+            play_movie_speed=self._state.fmri_plot_options.play_movie_speed,
+            reverse_colormap=self._state.fmri_plot_options.reverse_colormap,
+            colorbar_on=self._state.fmri_plot_options.colorbar_on,
         )
         
         # preserve original color options
@@ -999,6 +1006,7 @@ class DataManager:
             'threshold_range': self._state.preprocessed_fmri_plot_options.threshold_range,
             'opacity': self._state.preprocessed_fmri_plot_options.opacity
         }
+        logger.info("Preprocessed fMRI data stored")
     
     @requires_state
     def store_timecourse_preprocessed(self, data: Dict) -> None:

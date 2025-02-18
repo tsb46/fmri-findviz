@@ -19,6 +19,7 @@ class Spinner {
      * Show spinner
      */
     show() {
+        console.log('showing spinner');
         this.spinnerOverlay.style.display = 'block';
         this.spinnerDiv.style.display = 'block';
     }
@@ -27,6 +28,7 @@ class Spinner {
      * Hide spinner
      */
     hide() {
+        console.log('hiding spinner');
         this.spinnerOverlay.style.display = 'none';
         this.spinnerDiv.style.display = 'none';
     }

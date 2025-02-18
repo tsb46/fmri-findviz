@@ -122,7 +122,7 @@ def get_fmri_data() -> dict:
         time_course_data=False,
         task_data=False,
     )
-    
+
     # pass viewer data to get_timepoint_data
     if data_manager.fmri_file_type == 'nifti':
         slice_idx = data_manager.get_slice_idx()

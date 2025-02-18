@@ -1,6 +1,6 @@
 // Timecourse plot
 // Handles all plotting and click events for time course visualization
-import { EVENT_TYPES } from '../constants/EventTypes.js';
+import { EVENT_TYPES } from '../../constants/EventTypes.js';
 import eventBus from '../events/ViewerEvents.js';
 import { 
     getTimeCourseData, 
@@ -57,12 +57,15 @@ class TimeCourse {
         // listen for enable/disable fmri time course events
         eventBus.subscribe(
             EVENT_TYPES.VISUALIZATION.TIMECOURSE.ENABLE_FMRI_TIMECOURSE, (state) => {
+                console.log('enabling fmri time course plotting');
                 this.timeCourseEnabled = state;
                 // state is true and no user input, make time course container visible
                 if (state && !this.userInput) {
+                    console.log('making time course container visible');
                     this.timeCoursePlotContainer.css("visibility", "visible");
                 // state is false and no user input, make time course container hidden
                 } else if (!state && !this.userInput) {
+                    console.log('making time course container hidden');
                     this.timeCoursePlotContainer.css("visibility", "hidden");
                 }
             }
@@ -72,6 +75,7 @@ class TimeCourse {
         eventBus.subscribe(
             EVENT_TYPES.VISUALIZATION.TIMECOURSE.FREEZE_FMRI_TIMECOURSE, (state) => {
                 this.timeCourseFreeze = state;
+                console.log('freezing fmri time course');
             }
         );
 
@@ -79,6 +83,7 @@ class TimeCourse {
         eventBus.subscribe(
             EVENT_TYPES.VISUALIZATION.FMRI.TIME_SLIDER_CHANGE, (timePoint) => {
                 if (this.plotState) {
+                    console.log('replotting time marker');
                     this.plotTimeMarker(timePoint);
                 }
             }
@@ -93,10 +98,12 @@ class TimeCourse {
             ], async () => {  
                 // if fmri time course enabled, update functional timecourse
                 if (this.timeCourseEnabled) {
+                    console.log('updating functional timecourse on plotly click');
                     // set plot state to true
                     this.plotState = true;
                     // if previous selection was frozen, update functional timecourse
                     if (this.timeCourseFreeze) {
+                        console.log('adding functional timecourse due to freeze');
                         await updateFmriTimeCourse();
                         // get time course data and plot
                         const timeCourseData = await getTimeCourseData();
@@ -109,6 +116,7 @@ class TimeCourse {
                     } else {
                         // if previous selection was not frozen, remove most recent 
                         // fmri timecourse and replace with current selection
+                        console.log('removing most recent fmri timecourse and replacing with current selection');
                         await popFmriTimeCourse();
                         await updateFmriTimeCourse();
                         // get time course data and plot
@@ -129,6 +137,7 @@ class TimeCourse {
         eventBus.subscribe(
             EVENT_TYPES.VISUALIZATION.TIMECOURSE.UNDO_FMRI_TIMECOURSE, async () => {
                 if (this.plotState) {
+                    console.log('removing most recently added fmri timecourse');
                     // set plot state to false
                     this.plotState = false;
                     // remove most recent fmri timecourse
@@ -150,6 +159,7 @@ class TimeCourse {
         eventBus.subscribe(
             EVENT_TYPES.VISUALIZATION.TIMECOURSE.REMOVE_FMRI_TIMECOURSE, async () => {
                 if (this.plotState) {
+                    console.log('removing all fmri timecourses');
                     // set plot state to false
                     this.plotState = false;
                     // remove all fmri timecourses
@@ -176,6 +186,7 @@ class TimeCourse {
                 EVENT_TYPES.VISUALIZATION.TIMECOURSE.TIMECOURSE_LINE_WIDTH_SLIDER_CHANGE,
                 EVENT_TYPES.VISUALIZATION.TIMECOURSE.TIMECOURSE_SCALE_CHANGE
             ], async (label) => {
+                console.log('updating time course property');
                 const plotOptions = await this.getPlotOptions();
                 this.plotTimeCoursePropertyUpdate(
                     label, 
@@ -197,6 +208,7 @@ class TimeCourse {
                 EVENT_TYPES.VISUALIZATION.TIMECOURSE.TIME_MARKER_SHAPE_CHANGE,
                 EVENT_TYPES.VISUALIZATION.TIMECOURSE.TIME_MARKER_OPACITY_SLIDER_CHANGE
             ], async () => {
+                console.log('updating time marker property');
                 const timeMarkerPlotOptions = await getTimeMarkerPlotOptions();
                 const timePoint = await getTimePoint();
                 this.plotTimeMarker(timePoint, timeMarkerPlotOptions);
@@ -210,6 +222,7 @@ class TimeCourse {
                 EVENT_TYPES.VISUALIZATION.TIMECOURSE.TOGGLE_CONVOLUTION,
                 EVENT_TYPES.VISUALIZATION.TIMECOURSE.TOGGLE_CONVOLUTION_GLOBAL
             ], async () => {
+                console.log('replotting time course due to convolution toggle');
                 // get time course data and plot
                 const timeCourseData = await getTimeCourseData();
                 const plotOptions = await this.getPlotOptions();
@@ -226,6 +239,7 @@ class TimeCourse {
                 EVENT_TYPES.VISUALIZATION.ANNOTATE.ANNOTATE_MARKER_REMOVED,
                 EVENT_TYPES.VISUALIZATION.ANNOTATE.ANNOTATE_MARKER_UNDONE
             ], async () => {
+                console.log('replotting time course due to annotation marker change');
                 // get annnotation markers and plot
                 getAnnotationMarkers( (annotationData) => {
                     // if no annotation markers, don't plot
@@ -244,6 +258,7 @@ class TimeCourse {
     async initPlot() {
         // if time course or task design input, plot time course
         if (this.timeCourseInput || this.taskDesignInput) {
+            console.log('plotting time course with user-provided input');
             // set plot state to true
             this.plotState = true;
             // get plot options

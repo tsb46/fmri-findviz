@@ -1,6 +1,6 @@
 // distance_modal.js
 // Class for handling distance analysis modal
-import { EVENT_TYPES } from '../../constants/EventTypes.js';
+import { EVENT_TYPES } from '../../../constants/EventTypes.js';
 import eventBus from '../../events/ViewerEvents.js';
 import { distance } from '../../api/analysis.js';
 

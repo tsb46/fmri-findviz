@@ -1,21 +1,16 @@
 /**
  * Class for handling file upload errors and displaying error messages
  */
+
 class UploadErrorHandler {
     /**
      * Create error handler instance
      * @param {string} errorMessageDivId - ID of main error message div
-     * @param {string} spinnerOverlayId - ID of spinner overlay div
-     * @param {string} spinnerDivId - ID of spinner div
      */
     constructor(
-        errorMessageDivId = 'error-message-upload',
-        spinnerOverlayId = 'file-load-spinner-overlay',
-        spinnerDivId = 'file-load-spinner'
+        errorMessageDivId
     ) {
         this.errorMessageDiv = document.getElementById(errorMessageDivId);
-        this.spinnerOverlay = document.getElementById(spinnerOverlayId);
-        this.spinnerDiv = document.getElementById(spinnerDivId);
 
         // set clear error message listener on form input change
         this.clearErrorMessageOnFormChange();
@@ -128,30 +123,6 @@ class UploadErrorHandler {
             }
         }
         this.displayError(data.error, errorIconDivs, fieldDivs);
-    }
-
-    /**
-     * Show loading spinner
-     */
-    showSpinner() {
-        if (this.spinnerOverlay) {
-            this.spinnerOverlay.style.display = 'block';
-        }
-        if (this.spinnerDiv) {
-            this.spinnerDiv.style.display = 'block';
-        }
-    }
-
-    /**
-     * Hide loading spinner
-     */
-    hideSpinner() {
-        if (this.spinnerOverlay) {
-            this.spinnerOverlay.style.display = 'none';
-        }
-        if (this.spinnerDiv) {
-            this.spinnerDiv.style.display = 'none';
-        }
     }
 
     /**

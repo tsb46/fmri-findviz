@@ -1,7 +1,7 @@
 // Correlate.js
 // Correlate fmri time courses with another time course
 
-import { EVENT_TYPES } from '../../constants/EventTypes.js';
+import { EVENT_TYPES } from '../../../constants/EventTypes.js';
 import eventBus from '../../events/ViewerEvents.js';
 import { getTimeCourseLabels, getTaskConditions } from '../../api/data.js';
 import { correlate } from '../../api/analysis.js';
@@ -98,6 +98,7 @@ class Correlate {
      */
     handleCorrelateSubmit(event) {
         event.preventDefault();
+        console.log('correlation submit button clicked');
         const label = this.correlateTimeCourseSelect.val();
         const timeCourseType = this.timeCourseTypes[label];
         const correlateParams = {

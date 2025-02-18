@@ -2,10 +2,10 @@
 // Main viewer class for neuroimaging and time course data visualization
 
 // Constants
-import { DOM_IDS } from './constants/DomIds.js';
-import { API_ENDPOINTS } from './constants/APIEndpoints.js';
+import { DOM_IDS } from '../constants/DomIds.js';
+import { API_ENDPOINTS } from '../constants/APIEndpoints.js';
 // Event Types
-import { EVENT_TYPES } from './constants/EventTypes.js';
+import { EVENT_TYPES } from '../constants/EventTypes.js';
 // Components
 // general components
 import ColorMap from './components/ColorMap.js';
@@ -13,9 +13,10 @@ import ColorMap from './components/ColorMap.js';
 import DistanceModal from './components/distance/DistanceModal.js';
 import DistancePopover from './components/distance/DistancePopover.js';
 // FMRI plot components
-import ColorBar from './components/fmri/ColorBar.js';
 import ColorSliders from './components/fmri/ColorSliders.js';
 import Montage from './components/fmri/Montage.js';
+import Movie from './components/fmri/movie/Movie.js';
+import MoviePopover from './components/fmri/movie/moviePopover.js';
 import PreprocessFmri from './components/fmri/PreprocessFmri.js';
 import TimeSlider from './components/fmri/TimeSlider.js';
 import ViewOptionsFmri from './components/fmri/ViewOptionsFmri.js';
@@ -28,6 +29,7 @@ import PeakFinder from './components/timecourse/PeakFinder.js';
 import PreprocessTimecourse from './components/timecourse/PreprocessTimeCourse.js';
 import ViewOptionsTimeCourse from './components/timecourse/viewOptionsTimeCourse.js';
 // plot components
+import ColorBar from './plots/ColorBar.js';
 import Distance from './plots/Distance.js';
 import GiftiViewer from './plots/GiftiViewer.js';
 import NiftiViewer from './plots/NiftiViewer.js';
@@ -72,6 +74,8 @@ class MainViewer{
         this.afterUpload();
         // plot fmri data
         this.viewer.initPlot();
+        // plot colorbar
+        this.colorBar.initPlot();
         // plot time course data
         this.timecourse.initPlot();
     }
@@ -108,12 +112,6 @@ class MainViewer{
             getFmriPlotOptions,
             updateFmriPlotOptions,
             EVENT_TYPES.VISUALIZATION.FMRI.COLOR_MAP_CHANGE
-        );
-
-        // initialize colorbar component
-        this.colorBar = new ColorBar(
-            DOM_IDS.FMRI.NIFTI_CONTAINERS.COLORBAR,
-            'Intensity'
         );
 
         // initialize color sliders component
@@ -181,8 +179,21 @@ class MainViewer{
             DOM_IDS.FMRI.VISUALIZATION_OPTIONS.CROSSHAIR_TOGGLE,
             DOM_IDS.FMRI.VISUALIZATION_OPTIONS.HOVER_TOGGLE,
             DOM_IDS.FMRI.VISUALIZATION_OPTIONS.DIRECTION_LABELS_TOGGLE,
+            DOM_IDS.FMRI.VISUALIZATION_OPTIONS.COLORBAR_TOGGLE,
+            DOM_IDS.FMRI.VISUALIZATION_OPTIONS.REVERSE_COLORBAR_TOGGLE,
             DOM_IDS.FMRI.VISUALIZATION_OPTIONS.SCREENSHOT_BUTTON,
-            DOM_IDS.FMRI.VISUALIZATION_OPTIONS.PLAY_MOVIE_BUTTON
+        );
+
+        // initialize movie component
+        this.movie = new Movie(
+            DOM_IDS.TIME_SLIDER.TIME_SLIDER,
+            DOM_IDS.FMRI.VISUALIZATION_OPTIONS.PLAY_MOVIE_BUTTON,
+        );
+
+        // initialize movie popover component
+        this.moviePopover = new MoviePopover(
+            DOM_IDS.FMRI.VISUALIZATION_OPTIONS.PLAY_MOVIE_POPOVER,
+            DOM_IDS.FMRI.VISUALIZATION_OPTIONS.PLAY_MOVIE_SPEED
         );
 
         // initialize distance modal component
@@ -326,6 +337,12 @@ class MainViewer{
                 DOM_IDS.FMRI.GIFTI_CONTAINERS.RIGHT_SURFACE_CONTAINER,
             );
         }
+
+        // initialize colorbar 
+        this.colorBar = new ColorBar(
+            DOM_IDS.FMRI.NIFTI_CONTAINERS.COLORBAR,
+            'Intensity'
+        );
 
         // check for time course or task design input
         const viewerMetadata = await getViewerMetadata();

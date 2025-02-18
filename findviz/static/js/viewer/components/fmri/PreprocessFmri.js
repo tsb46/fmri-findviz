@@ -1,6 +1,8 @@
 // PreprocessFmri.js - Preprocessing for FMRI data
-import { EVENT_TYPES } from '../../constants/EventTypes.js';
+import { DOM_IDS } from '../../../constants/DomIds.js';
+import { EVENT_TYPES } from '../../../constants/EventTypes.js';
 import eventBus from '../../events/ViewerEvents.js';
+import Spinner from '../../../Spinner.js';
 import { getPreprocessedFMRI, resetFMRIPreprocess } from '../../api/preprocess.js';
 
 class PreprocessFmri {
@@ -61,8 +63,19 @@ class PreprocessFmri {
         this.normSwitchEnabled = false;
         this.filterSwitchEnabled = false;
         this.smoothSwitchEnabled = false;
+
+        // initialize spinner
+        this.spinner = new Spinner(
+            DOM_IDS.SPINNERS.OVERLAY, 
+            DOM_IDS.SPINNERS.WHEEL
+        );
+
         // initialize preprocessing switches
         this.initializeSwitches();
+        // initialize preprocess submit
+        this.prepSubmit.on('click', (event) => this.handlePreprocessSubmit(event));
+        // initialize preprocess reset
+        this.prepReset.on('click', (event) => this.handlePreprocessReset(event));
     }
 
     /**
@@ -73,18 +86,31 @@ class PreprocessFmri {
         this.normSwitch.on('click', () => {
             this.normSwitchEnabled = !this.normSwitchEnabled
             const inputsNorm = [this.meanCenter, this.zScore];
-            inputsNorm.forEach(
-                input => this.normSwitchEnabled ? input.disabled = false : input.disabled = true
-            );
+            // Enable/disable bootstrap radio buttons
+            inputsNorm.forEach(input => {
+                if (this.normSwitchEnabled) {
+                    input.prop('disabled', false);
+                    input.closest('.custom-control').removeClass('disabled');
+                } else {
+                    input.prop('disabled', true); 
+                    input.closest('.custom-control').addClass('disabled');
+                }
+            });
         });
 
         // Enable filtering switch
         this.filterSwitch.on('click', () => {
             this.filterSwitchEnabled = !this.filterSwitchEnabled
             const inputsFilter = [this.lowCut, this.highCut, this.TR];
-            inputsFilter.forEach(
-                input => this.filterSwitchEnabled ? input.disabled = false : input.disabled = true
-            );
+            inputsFilter.forEach(input => {
+                if (this.filterSwitchEnabled) {
+                    input.prop('disabled', false);
+                    input.closest('.custom-control').removeClass('disabled');
+                } else {
+                    input.prop('disabled', true); 
+                    input.closest('.custom-control').addClass('disabled');
+                }
+            });
         });
 
         // Enable smoothing switch, smoothing only available for volumes (nifti)
@@ -93,15 +119,18 @@ class PreprocessFmri {
                 this.smoothSwitchEnabled = !this.smoothSwitchEnabled;
                 const inputSmooth = this.smoothFwhm;
                 if (this.smoothSwitchEnabled) {
-                    inputSmooth.disabled = false
+                    inputSmooth.prop('disabled', false);
+                    inputSmooth.closest('.custom-control').removeClass('disabled');
                 } else {
-                    inputSmooth.disabled = true
+                    inputSmooth.prop('disabled', true);
+                    inputSmooth.closest('.custom-control').addClass('disabled');
                 }
             });
         }
         else {
             // Disable smoothing switch
-            this.smoothSwitch.attr('disabled', true)
+            this.smoothSwitch.prop('disabled', true);
+            this.smoothSwitch.closest('.custom-control').addClass('disabled');
         }
     }
 
@@ -118,16 +147,27 @@ class PreprocessFmri {
             filter: this.filterSwitchEnabled,
             smooth: this.smoothSwitchEnabled,
             detrend: false,
-            mean_center: this.meanCenter.val(),
-            zscore: this.zScore.val(),
+            mean_center: this.meanCenter.prop('checked'),
+            zscore: this.zScore.prop('checked'),
             tr: this.TR.val(),
             low_cut: this.lowCut.val(),
             high_cut: this.highCut.val(),
             fwhm: this.smoothFwhm.val()
         }
+        // show spinner
+        this.spinner.show();
         // preprocess FMRI
-        getPreprocessedFMRI(preprocessParams, this.errorInlineId, (response) => {
-            eventBus.publish(EVENT_TYPES.PREPROCESSING.PREPROCESS_FMRI_SUCCESS);
+        getPreprocessedFMRI(preprocessParams, this.errorInlineId, 
+            () => {
+                console.log('preprocessed FMRI successfully');
+                // hide spinner
+                this.spinner.hide();
+                // publish event
+                eventBus.publish(EVENT_TYPES.PREPROCESSING.PREPROCESS_FMRI_SUCCESS);
+            }, 
+            () => {
+                // hide spinner
+                this.spinner.hide();
         });
         // show preprocess alert
         this.preprocessAlert.css("display", "block");
@@ -140,6 +180,9 @@ class PreprocessFmri {
     handlePreprocessReset(event) {
         event.preventDefault();
         console.log('preprocess reset button clicked');
+        // clear error message
+        const errorInline = $(`#${this.errorInlineId}`);
+        errorInline.css("display", "none");
         // Set switches to disabled
         this.normSwitch.prop('checked', false);
         this.filterSwitch.prop('checked', false);
@@ -148,12 +191,19 @@ class PreprocessFmri {
         this.filterSwitchEnabled = false;
         this.smoothSwitchEnabled = false;
         // clear parameters
-        this.meanCenter.val('');
-        this.zScore.val('');
+        this.meanCenter.prop('checked', false);
+        this.zScore.prop('checked', false);
         this.TR.val('');
         this.lowCut.val('');
         this.highCut.val('');
         this.smoothFwhm.val('');
+        // disable preprocessing parameters
+        this.meanCenter.prop('disabled', true);
+        this.zScore.prop('disabled', true);
+        this.TR.prop('disabled', true);
+        this.lowCut.prop('disabled', true);
+        this.highCut.prop('disabled', true);
+        this.smoothFwhm.prop('disabled', true);
         // reset preprocess
         resetFMRIPreprocess(this.errorInlineId, () => {
             eventBus.publish(EVENT_TYPES.PREPROCESSING.PREPROCESS_FMRI_RESET);

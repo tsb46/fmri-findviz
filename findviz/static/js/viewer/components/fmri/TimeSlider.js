@@ -1,4 +1,4 @@
-import { EVENT_TYPES } from '../../constants/EventTypes.js';
+import { EVENT_TYPES } from '../../../constants/EventTypes.js';
 import { initializeSingleSlider } from '../sliders.js';
 import eventBus from '../../events/ViewerEvents.js';
 import { getViewerMetadata, updateTimepoint } from '../../api/data.js';
@@ -69,6 +69,7 @@ class TimeSlider {
      * Handle slider change
      */
     async handleSlide() {
+        console.log('time slider changed');
         const timeIndex = this.timeSlider.slider('getValue');
         // update time point
         await updateTimepoint(timeIndex);

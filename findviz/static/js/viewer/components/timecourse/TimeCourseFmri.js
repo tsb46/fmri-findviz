@@ -30,6 +30,7 @@ class TimeCourseFmri {
     attachEventListeners() {
         // enable fmri time course plotting
         this.enableFmriTimeCourseButton.on('click', () => {
+            console.log('fmri time course enable button clicked');
             this.timeCourseEnabled = !this.timeCourseEnabled;
             eventBus.publish(
                 EVENT_TYPES.VISUALIZATION.TIMECOURSE.ENABLE_FMRI_TIMECOURSE, 
@@ -39,6 +40,7 @@ class TimeCourseFmri {
 
         // undo most recent fmri time course
         this.timeCourseUndoButton.on('click', () => {
+            console.log('fmri time course undo button clicked');
             popFmriTimecourse(() => {
                 eventBus.publish(
                     EVENT_TYPES.VISUALIZATION.TIMECOURSE.UNDO_FMRI_TIMECOURSE
@@ -48,6 +50,7 @@ class TimeCourseFmri {
 
         // remove all fmri time courses
         this.timeCourseRemoveButton.on('click', () => {
+            console.log('fmri time course remove button clicked');
             removeFmriTimecourses(() => {
                 eventBus.publish(
                     EVENT_TYPES.VISUALIZATION.TIMECOURSE.REMOVE_FMRI_TIMECOURSE
@@ -57,6 +60,7 @@ class TimeCourseFmri {
 
         // freeze currently plotted fmri time course
         this.timeCourseFreezeButton.on('click', () => {
+            console.log('fmri time course freeze button clicked');
             this.timeCourseFreeze = !this.timeCourseFreeze;
             eventBus.publish(
                 EVENT_TYPES.VISUALIZATION.TIMECOURSE.FREEZE_FMRI_TIMECOURSE,

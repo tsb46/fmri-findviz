@@ -69,7 +69,7 @@ def get_nifti_data(
         }
     """
     # Select time point
-    func_data = index_img(func_img, time_point).get_fdata()
+    func_data = np.array(index_img(func_img, time_point).get_fdata())
     
     # threshold data if threshold_min or threshold_max are provided
     if (threshold_min != 0) or (threshold_max != 0):
@@ -104,7 +104,7 @@ def get_nifti_data(
         slice_out['func'][slice_container] = get_slice_data(
             func_data, slice_i, axis=nifti_axis
         )
-        if anat_data:
+        if anat_img is not None:
             slice_out['anat'][slice_container] = get_slice_data(
                 anat_data, slice_i, axis=nifti_axis
             )
@@ -213,6 +213,6 @@ def threshold_nifti_data(
     # create mask
     mask = (nifti_data >= threshold_min) & (nifti_data <= threshold_max)
     # apply mask
-    nifti_data[mask] = None
+    nifti_data[mask] = np.nan
     return nifti_data
 

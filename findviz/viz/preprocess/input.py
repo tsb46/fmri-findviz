@@ -61,10 +61,10 @@ class FMRIPreprocessInputValidator:
         try:
             self._validate_any_input(input)
             # validate normalization parameters
-            if input['normalization']:
+            if input['normalize']:
                 validate_normalization(input['mean_center'], input['zscore'])
             # validate filtering parameters
-            if input['filtering']:
+            if input['filter']:
                 validate_tr_exists(input['tr'])
                 validate_tr_positive(input['tr'])
                 validate_cutoff_exists(input['low_cut'], input['high_cut'])
@@ -78,7 +78,7 @@ class FMRIPreprocessInputValidator:
                 # validate cutoff order
                 validate_cutoff_order(input['low_cut'], input['high_cut'])
             # validate smoothing parameters
-            if input['smoothing']:
+            if input['smooth']:
                 validate_fwhm_positive(input['fwhm'])
 
             return True
@@ -124,10 +124,10 @@ class TimecoursePreprocessInputValidator:
         try:
             self._validate_any_input(input)
             # validate normalization parameters
-            if input['normalization']:
+            if input['normalize']:
                 validate_normalization(input['mean_center'], input['zscore'])
             # validate filtering parameters
-            if input['filtering']:
+            if input['filter']:
                 validate_tr_exists(input['tr'])
                 validate_tr_positive(input['tr'])
                 validate_cutoff_exists(input['low_cut'], input['high_cut'])

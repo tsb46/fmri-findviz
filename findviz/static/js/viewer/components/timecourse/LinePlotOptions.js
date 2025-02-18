@@ -1,6 +1,6 @@
 // LinePlotOptions.js - Options for line plot (timecourse plot)
 import {initializeSingleSlider } from '../sliders.js';
-import { EVENT_TYPES } from '../../constants/EventTypes.js';
+import { EVENT_TYPES } from '../../../constants/EventTypes.js';
 import eventBus from '../../events/ViewerEvents.js';
 import { 
     getTaskConditions,

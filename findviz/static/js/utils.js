@@ -25,6 +25,12 @@ function initBootstrapComponents() {
         sanitize: false,
     });
 
+    // Enable HTML content in the play movie button
+    $("#play-movie-popover").popover({
+        html: true,
+        sanitize: false,
+    });
+
     // Enable HTML content in the time point distance button
     $("#distance-popover").popover({
         html: true,

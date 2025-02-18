@@ -2,7 +2,7 @@
 // API calls for preprocessing data
 
 import { makeRequest, createFormData } from './utils.js';
-import { API_ENDPOINTS } from '../constants/APIEndpoints.js';
+import { API_ENDPOINTS } from '../../constants/APIEndpoints.js';
 
 
 /**
@@ -10,9 +10,15 @@ import { API_ENDPOINTS } from '../constants/APIEndpoints.js';
  * @param {Object} preprocessParams - Parameters for FMRI preprocessing
  * @param {string} errorInlineId - ID of inline error element
  * @param {Function} callback - Callback function to handle successful response
+ * @param {Function} [errorCallback] - Callback function for error response
  * @returns {Promise} Promise object representing the API call
  */
-export const getPreprocessedFMRI = async (preprocessParams, errorInlineId, callback) => {
+export const getPreprocessedFMRI = async (
+    preprocessParams, 
+    errorInlineId, 
+    callback, 
+    errorCallback
+) => {
     return makeRequest(
         API_ENDPOINTS.PREPROCESS.GET_PREPROCESSED_FMRI,
         {
@@ -24,7 +30,8 @@ export const getPreprocessedFMRI = async (preprocessParams, errorInlineId, callb
             isInline: true,
             errorPrefix: 'Error preprocessing FMRI data'
         },
-        callback
+        callback,
+        errorCallback
     );
 };
 

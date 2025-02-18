@@ -29,27 +29,43 @@
 
 /*Spinner Overlay*/
 .spinner-overlay {
-  position: fixed;
-  display: none;
-  width: 100%;
-  height: 100%;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0,0,0,0.5);
-  z-index: 10;
+    position: fixed;
+    display: none;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0,0,0,0.5);
+    z-index: 10;
 }
 
-.spinner-viz {
-  position: fixed;
-  text-align: center;
-  z-index: 20;
-  top: 50%;
-  left: 50%;
-  display: none;
-  width: 64px;
-  height: 64px;
+/* Spinner Container */
+.spinner-container {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 20;
+    display: none;
+}
+
+/* Spinner Wheel */
+.spinner-wheel {
+    width: 64px;
+    height: 64px;
+    margin: 0;
+    border: 5px solid #f3f3f3;
+    border-top: 5px solid #3498db;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    display: none;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
 }
 
 /*FMRI Container Layout*/

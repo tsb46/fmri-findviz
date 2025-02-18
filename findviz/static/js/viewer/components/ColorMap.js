@@ -58,6 +58,7 @@ class ColorMap {
         colormapData,
         colorMapSelect
     ) {
+        console.log('creating colormap dropdown');
         // get colormap container
         const colormapContainer = document.getElementById(this.colormapContainerId);
         // Dynamically generate the colormap options
@@ -119,6 +120,7 @@ class ColorMap {
 
         // Handle item selection
         dropdownMenu.addEventListener('click', (event) => {
+            console.log('colormap dropdown item clicked');
             if (event.target.tagName === 'LI' || event.target.parentElement.tagName === 'LI') {
                 const selectedValue = event.target.closest('li').getAttribute('data-value');
                 dropdownToggle.textContent = event.target.closest('li').querySelector('span:first-child').textContent;
@@ -129,6 +131,7 @@ class ColorMap {
     }
 
     async handleColorMapChange(colormap) {
+        console.log('handling color map change');
         // update the plot options
         await this.updatePlotOptions({ color_map: colormap });
         // trigger color map change event

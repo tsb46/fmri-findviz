@@ -1,18 +1,16 @@
 // file.js
-import { 
-  FILE_UPLOAD_FIELDS,
-  FMRI_FILE_TYPES, 
-  UPLOAD_ENDPOINTS, 
-} from './constants.js';
-import UploadErrorHandler from './error.js';
+import { DOM_IDS } from '../constants/DomIds.js';
+import { API_ENDPOINTS } from '../constants/APIEndpoints.js';
+import UploadErrorHandler from './UploadErrorHandler.js';
+import Spinner from '../Spinner.js';
 
 /** 
- * @typedef {import('./types').UploadResponse} UploadResponse
- * @typedef {import('./types').NiftiFiles} NiftiFiles 
- * @typedef {import('./types').GiftiFiles} GiftiFiles
- * @typedef {import('./types').TimeSeriesFile} TimeSeriesFile
- * @typedef {import('./types').TaskDesignFile} TaskDesignFile
- * @typedef {import('./types').UploadFormData} UploadFormData
+ * @typedef {import('./types.js').UploadResponse} UploadResponse
+ * @typedef {import('./types.js').NiftiFiles} NiftiFiles 
+ * @typedef {import('./types.js').GiftiFiles} GiftiFiles
+ * @typedef {import('./types.js').TimeSeriesFile} TimeSeriesFile
+ * @typedef {import('./types.js').TaskDesignFile} TaskDesignFile
+ * @typedef {import('./types.js').UploadFormData} UploadFormData
  */
 
 
@@ -33,7 +31,7 @@ class FileUploader {
     // callback function to run after upload completion
     this.onUploadComplete = onUploadComplete;
     // initialize upload error handler
-    this.errorHandler = new UploadErrorHandler();
+    this.errorHandler = new UploadErrorHandler(DOM_IDS.FILE_UPLOAD.ERROR_MESSAGE);
     // Set up form submission listener
     document.getElementById('upload-form').onsubmit = async (event) => {
       // prevent page reload
@@ -43,16 +41,20 @@ class FileUploader {
       // Check whether the input is nifti or gifti based on active tab
       let fmriFileType
       if (activeTab == '#nifti') {
-        fmriFileType = FMRI_FILE_TYPES.NIFTI;
+        fmriFileType = 'nifti';
       }
       else if (activeTab == '#gifti') {
-        fmriFileType = FMRI_FILE_TYPES.GIFTI;;
+        fmriFileType = 'gifti';
       }
       this.uploadFiles(event, fmriFileType);
     };
 
-    // get error message placeholder
-    this.errorMessageDiv = document.getElementById('error-message-upload');
+
+    // initialize spinner
+    this.spinner = new Spinner(
+      DOM_IDS.FILE_UPLOAD.SPINNERS.OVERLAY, 
+      DOM_IDS.FILE_UPLOAD.SPINNERS.WHEEL
+    );
 
     // Initialize modal listeners
     this.initializeModalListeners();
@@ -69,18 +71,18 @@ class FileUploader {
    */
 
   async uploadFiles(event, fmriFileType) {
-    this.errorHandler.showSpinner();
+    this.spinner.show();
 
     try {
         const uploadData = this.getFiles();
         uploadData.append('fmri_file_type', fmriFileType);
-        const response = await fetch(UPLOAD_ENDPOINTS.FILES, {
+        const response = await fetch(API_ENDPOINTS.UPLOAD.FILES, {
           method: 'POST',
           body: uploadData
         });
         if (response.ok) {
             const data = await response.json();
-            document.getElementById('fmri-visualization-container').style.display = 'block';
+            document.getElementById(DOM_IDS.FMRI.VISUALIZATION_CONTAINER).style.display = 'block';
             this.onUploadComplete(data.file_type);
             $('#upload-modal').modal('hide');
         } else {
@@ -96,24 +98,24 @@ class FileUploader {
         console.error('Unexpected error during file upload:', error);
         this.errorHandler.showServerErrorModal();
     } finally {
-        this.errorHandler.hideSpinner();
+        this.spinner.hide();
     }
   }
 
   /**
    * Upload scene file and process cached data
-   * @param {object} data - Scene file data
+   * @param {object} event - Scene file data
    * @returns {Promise<void>}
    */
-  async uploadSceneFile(event, data) {
-    this.errorHandler.showSpinner();
+  async uploadSceneFile(event) {
+    this.spinner.show();
 
     try {
         const sceneFile = event.target.files[0];
         const formData = new FormData();
         formData.append('scene_file', sceneFile);
 
-        const response = await fetch(UPLOAD_ENDPOINTS.SCENE, {
+        const response = await fetch(API_ENDPOINTS.UPLOAD.SCENE, {
             method: 'POST',
             body: formData
         });
@@ -144,7 +146,7 @@ class FileUploader {
         console.error('Error during scene file upload:', error);
         this.errorHandler.showServerErrorModal();
     } finally {
-        this.errorHandler.hideSpinner();
+        this.spinner.hide();
     }
   }
 
@@ -159,22 +161,22 @@ class FileUploader {
     // increase counter
     this.tsFileCounter += 1
     // create unique id for switch input
-    const uniqueID = `${FILE_UPLOAD_FIELDS.TS.HEADER}-${this.tsFileCounter}`;
+    const uniqueID = `${DOM_IDS.FILE_UPLOAD.TS.HEADER}-${this.tsFileCounter}`;
 
     filePair.className = 'times-series-file-pair row mb-2';
     filePair.innerHTML = `
       <div class="col-6">
         <span class="d-inline-block text-secondary">Time Series File (.txt, .csv, optional)</span>
-        <i class="fa-solid fa-triangle-exclamation ${FILE_UPLOAD_FIELDS.TS.FILE}-error" style="color: #e93407; display: none;"></i>
-        <input type="file" class="form-control-file ${FILE_UPLOAD_FIELDS.TS.FILE} pt-2" data-index="${this.tsFileCounter - 1}">
+        <i class="fa-solid fa-triangle-exclamation ${DOM_IDS.FILE_UPLOAD.TS.FILE}-error" style="color: #e93407; display: none;"></i>
+        <input type="file" class="form-control-file ${DOM_IDS.FILE_UPLOAD.TS.FILE} pt-2" data-index="${this.tsFileCounter - 1}">
       </div>
       <div class="col-4">
         <div class="custom-control custom-switch">
-          <input type="checkbox" class="custom-control-input ${FILE_UPLOAD_FIELDS.TS.HEADER}" id="${uniqueID}">
+          <input type="checkbox" class="custom-control-input ${DOM_IDS.FILE_UPLOAD.TS.HEADER}" id="${uniqueID}">
           <label class="custom-control-label" for="${uniqueID}">Header</label>
           <span class="fa fa-info-circle ml-1 toggle-immediate" data-toggle="tooltip" data-placement="top" title="Does the file have a header (i.e. name) in the first row?" aria-hidden="true"></span>
         </div>
-        <textarea class="form-control ${FILE_UPLOAD_FIELDS.TS.LABEL}" placeholder="Label" rows="1"></textarea>
+        <textarea class="form-control ${DOM_IDS.FILE_UPLOAD.TS.LABEL}" placeholder="Label" rows="1"></textarea>
       </div>
       <div class="col-2 mt-4">
         <button type="button" class="remove-time-series btn btn-danger btn-sm">x</button>
@@ -187,11 +189,11 @@ class FileUploader {
     const tooltip = filePair.querySelector('.toggle-immediate');
     $(tooltip).tooltip()
     // Select the file input we just added
-    const newFileInput = filePair.querySelector(`.${FILE_UPLOAD_FIELDS.TS.FILE}`);
+    const newFileInput = filePair.querySelector(`.${DOM_IDS.FILE_UPLOAD.TS.FILE}`);
 
      // Select the header switch we just added and add the event listener
     const headerSwitch = filePair.querySelector('.custom-control-input');
-    const labelTextarea = filePair.querySelector(`.${FILE_UPLOAD_FIELDS.TS.LABEL}`);
+    const labelTextarea = filePair.querySelector(`.${DOM_IDS.FILE_UPLOAD.TS.LABEL}`);
 
     headerSwitch.addEventListener('change', () => {
       if (headerSwitch.checked) {
@@ -216,16 +218,16 @@ class FileUploader {
    */
   clearfMRIFiles(fmriType) {
     // Get nifti files
-    if (fmriType == FMRI_FILE_TYPES.NIFTI) {
-      document.getElementById(FILE_UPLOAD_FIELDS.FMRI.NIFTI.FUNC).value = '';
-      document.getElementById(FILE_UPLOAD_FIELDS.FMRI.NIFTI.ANAT).value = '';
-      document.getElementById(FILE_UPLOAD_FIELDS.FMRI.NIFTI.MASK).value = '';
+    if (fmriType == 'nifti') {
+      document.getElementById(DOM_IDS.FILE_UPLOAD.FMRI.NIFTI.FUNC).value = '';
+      document.getElementById(DOM_IDS.FILE_UPLOAD.FMRI.NIFTI.ANAT).value = '';
+      document.getElementById(DOM_IDS.FILE_UPLOAD.FMRI.NIFTI.MASK).value = '';
     // remove gifti files
-    } else if (fmriType == FMRI_FILE_TYPES.GIFTI) {
-      document.getElementById(FILE_UPLOAD_FIELDS.FMRI.GIFTI.LEFT_FUNC).value = '';
-      document.getElementById(FILE_UPLOAD_FIELDS.FMRI.GIFTI.RIGHT_FUNC).value = '';
-      document.getElementById(FILE_UPLOAD_FIELDS.FMRI.GIFTI.LEFT_MESH).value = '';
-      document.getElementById(FILE_UPLOAD_FIELDS.FMRI.GIFTI.RIGHT_MESH).value = '';
+    } else if (fmriType == 'gifti') {
+      document.getElementById(DOM_IDS.FILE_UPLOAD.FMRI.GIFTI.LEFT_FUNC).value = '';
+      document.getElementById(DOM_IDS.FILE_UPLOAD.FMRI.GIFTI.RIGHT_FUNC).value = '';
+      document.getElementById(DOM_IDS.FILE_UPLOAD.FMRI.GIFTI.LEFT_MESH).value = '';
+      document.getElementById(DOM_IDS.FILE_UPLOAD.FMRI.GIFTI.RIGHT_MESH).value = '';
     }
   }
 
@@ -238,15 +240,15 @@ class FileUploader {
       const formData = new FormData();
       formData.append(
           'nii_func', 
-          document.getElementById(FILE_UPLOAD_FIELDS.FMRI.NIFTI.FUNC).files[0]
+          document.getElementById(DOM_IDS.FILE_UPLOAD.FMRI.NIFTI.FUNC).files[0]
       );
       formData.append(
           'nii_anat', 
-          document.getElementById(FILE_UPLOAD_FIELDS.FMRI.NIFTI.ANAT).files[0]
+          document.getElementById(DOM_IDS.FILE_UPLOAD.FMRI.NIFTI.ANAT).files[0]
       );
       formData.append(
           'nii_mask', 
-          document.getElementById(FILE_UPLOAD_FIELDS.FMRI.NIFTI.MASK).files[0]
+          document.getElementById(DOM_IDS.FILE_UPLOAD.FMRI.NIFTI.MASK).files[0]
       );
       return formData;
   }
@@ -260,19 +262,19 @@ class FileUploader {
       const formData = new FormData();
       formData.append(
           'left_gii_func', 
-          document.getElementById(FILE_UPLOAD_FIELDS.FMRI.GIFTI.LEFT_FUNC).files[0]
+          document.getElementById(DOM_IDS.FILE_UPLOAD.FMRI.GIFTI.LEFT_FUNC).files[0]
       );
       formData.append(
           'right_gii_func',
-          document.getElementById(FILE_UPLOAD_FIELDS.FMRI.GIFTI.RIGHT_FUNC).files[0]
+          document.getElementById(DOM_IDS.FILE_UPLOAD.FMRI.GIFTI.RIGHT_FUNC).files[0]
       );
       formData.append(
           'left_gii_mesh',
-          document.getElementById(FILE_UPLOAD_FIELDS.FMRI.GIFTI.LEFT_MESH).files[0]
+          document.getElementById(DOM_IDS.FILE_UPLOAD.FMRI.GIFTI.LEFT_MESH).files[0]
       );
       formData.append(
           'right_gii_mesh',
-          document.getElementById(FILE_UPLOAD_FIELDS.FMRI.GIFTI.RIGHT_MESH).files[0]
+          document.getElementById(DOM_IDS.FILE_UPLOAD.FMRI.GIFTI.RIGHT_MESH).files[0]
       );
       return formData;
   }
@@ -285,9 +287,9 @@ class FileUploader {
   _getTimeSeriesFiles() {
       const formData = new FormData();
       let hasTimeSeries = false;
-      const timeSeriesInput = document.querySelectorAll(`.${FILE_UPLOAD_FIELDS.TS.FILE}`);
-      const timeSeriesInputLabel = document.querySelectorAll(`.${FILE_UPLOAD_FIELDS.TS.LABEL}`);
-      const timeSeriesHeader = document.querySelectorAll(`.${FILE_UPLOAD_FIELDS.TS.HEADER}`);
+      const timeSeriesInput = document.querySelectorAll(`.${DOM_IDS.FILE_UPLOAD.TS.FILE}`);
+      const timeSeriesInputLabel = document.querySelectorAll(`.${DOM_IDS.FILE_UPLOAD.TS.LABEL}`);
+      const timeSeriesHeader = document.querySelectorAll(`.${DOM_IDS.FILE_UPLOAD.TS.HEADER}`);
 
       for (const [index, ts] of timeSeriesInput.entries()) {
           if (ts.files.length > 0) {
@@ -311,16 +313,16 @@ class FileUploader {
    */
   _getTaskDesignFiles() {
       const formData = new FormData();
-      const taskInput = document.getElementById(FILE_UPLOAD_FIELDS.TASK.FILE).files[0];
+      const taskInput = document.getElementById(DOM_IDS.FILE_UPLOAD.TASK.FILE).files[0];
 
       formData.append('task_file', taskInput);
       formData.append(
           'tr', 
-          document.getElementById(FILE_UPLOAD_FIELDS.TASK.TR).value
+          document.getElementById(DOM_IDS.FILE_UPLOAD.TASK.TR).value
       );
       formData.append(
           'slicetime_ref',
-          document.getElementById(FILE_UPLOAD_FIELDS.TASK.SLICETIME).value
+          document.getElementById(DOM_IDS.FILE_UPLOAD.TASK.SLICETIME).value
       );
 
       return {
@@ -338,10 +340,10 @@ class FileUploader {
     
     // Get active tab to determine fMRI file type
     const activeTab = document.querySelector('.nav-pills .active').getAttribute('href');
-    const fmriFileType = activeTab === '#nifti' ? FMRI_FILE_TYPES.NIFTI : FMRI_FILE_TYPES.GIFTI;
+    const fmriFileType = activeTab === '#nifti' ? 'nifti' : 'gifti';
     
     // Get all file data
-    const fmriData = fmriFileType === FMRI_FILE_TYPES.NIFTI 
+    const fmriData = fmriFileType === 'nifti' 
         ? this._getNiftiFiles() 
         : this._getGiftiFiles();
     const { formData: tsData, hasTimeSeries, files: tsFiles } = this._getTimeSeriesFiles();
@@ -414,7 +416,7 @@ class FileUploader {
     // Clear inputs and error messages on tab switch
     document.querySelectorAll('.nav-pills .nav-link').forEach(tab => {
       tab.addEventListener('click', function () {
-        document.getElementById('error-message-upload').style.display = 'none'; // Clear error message on tab switch
+        document.getElementById(DOM_IDS.FILE_UPLOAD.ERROR_MESSAGE).style.display = 'none'; // Clear error message on tab switch
         // Get the currently active tab
         let activeTab = document.querySelector('.nav-pills .active').getAttribute('href');
         let fileType
@@ -444,11 +446,11 @@ class FileUploader {
 
     // Add event listener for bootstrap model close to clear error message
     $('#upload-modal').on('hidden.bs.modal', function (e) {
-        document.getElementById('error-message-upload').style.display = 'none';
+        document.getElementById(DOM_IDS.FILE_UPLOAD.ERROR_MESSAGE).style.display = 'none';
     });
 
     // Event listener for add physio file
-    let addTSDiv = document.getElementById('add-time-series')
+    let addTSDiv = document.getElementById(DOM_IDS.FILE_UPLOAD.ADD_TS)
     addTSDiv.addEventListener('click', this.addTimeSeriesFile.bind(this))
 
     // On document ready add one time series file
@@ -464,7 +466,7 @@ class FileUploader {
   initializeTRFormListeners() {
     // Get references to the input fields for TRs
     // TR input field in modal for Task Design File
-    const TRInput1 = document.getElementById(FILE_UPLOAD_FIELDS.TASK.TR);
+    const TRInput1 = document.getElementById(DOM_IDS.FILE_UPLOAD.TASK.TR);
     // TR input field for fmri preprocessing
     const TRInput2 = document.getElementById('filter-tr');
     // TR input field for time course preprocessing

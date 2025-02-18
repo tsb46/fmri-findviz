@@ -1,5 +1,5 @@
 // PreprocessTimeCourse.js - Preprocessing for timecourse data
-import { EVENT_TYPES } from '../../constants/EventTypes.js';
+import { EVENT_TYPES } from '../../../constants/EventTypes.js';
 import eventBus from '../../events/ViewerEvents.js';
 import { getPreprocessedTimeCourse, resetTimeCoursePreprocess } from '../../api/preprocess.js';
 import { getTimeCourseLabels } from '../../api/data.js';
@@ -119,8 +119,8 @@ class PreprocessTimeCourse {
             normalize: this.normSwitchEnabled,
             filter: this.filterSwitchEnabled,
             detrend: false,
-            mean_center: this.meanCenter.val(),
-            zscore: this.zScore.val(),
+            mean_center: this.meanCenter.prop('checked'),
+            zscore: this.zScore.prop('checked'),
             tr: this.TR.val(),
             low_cut: this.lowCut.val(),
             high_cut: this.highCut.val(),
@@ -147,8 +147,8 @@ class PreprocessTimeCourse {
         this.normSwitchEnabled = false;
         this.filterSwitchEnabled = false;
         // clear parameters
-        this.meanCenter.val('');
-        this.zScore.val('');
+        this.meanCenter.prop('checked', false);
+        this.zScore.prop('checked', false);
         this.TR.val('');
         this.lowCut.val('');
         this.highCut.val('');

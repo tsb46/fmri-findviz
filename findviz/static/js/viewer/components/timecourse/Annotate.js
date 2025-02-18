@@ -1,5 +1,5 @@
 // Annotate.js - handles annotation of time courses
-import { EVENT_TYPES } from '../../constants/EventTypes.js';
+import { EVENT_TYPES } from '../../../constants/EventTypes.js';
 import eventBus from '../../events/ViewerEvents.js';
 import { 
     addAnnotationMarker, 
@@ -50,6 +50,7 @@ class Annotate {
             if (this.annotateState) {
                 const x = Math.round(eventData.points[0].x);
                 addAnnotationMarker(x, () => {
+                    console.log('annotation marker added');
                     eventBus.publish(
                         EVENT_TYPES.VISUALIZATION.ANNOTATE.ANNOTATE_MARKER_ADDED, 
                         x
@@ -63,6 +64,7 @@ class Annotate {
     initializeHighlightToggleListener() {
         this.highlightToggle.on('click', () => {
             this.highlightState = !this.highlightState;
+            console.log('highlight toggle clicked');
             eventBus.publish(
                 EVENT_TYPES.VISUALIZATION.ANNOTATE.ANNOTATE_HIGHLIGHT_TOGGLE, 
                 this.highlightState
@@ -73,6 +75,7 @@ class Annotate {
     // initialize right move annotate listener
     initializeRightMoveAnnotateListener() {
         this.rightMoveAnnotate.on('click', () => {
+            console.log('right move annotate clicked');
             moveAnnotationSelection('right', () => {
                 eventBus.publish(
                     EVENT_TYPES.VISUALIZATION.ANNOTATE.ANNOTATE_MARKER_MOVED, 
@@ -85,6 +88,7 @@ class Annotate {
     // initialize left move annotate listener
     initializeLeftMoveAnnotateListener() {
         this.leftMoveAnnotate.on('click', () => {
+            console.log('left move annotate clicked');
             moveAnnotationSelection('left', () => {
                 eventBus.publish(
                     EVENT_TYPES.VISUALIZATION.ANNOTATE.ANNOTATE_MARKER_MOVED, 
@@ -97,6 +101,7 @@ class Annotate {
     // initialize undo annotate listener
     initializeUndoAnnotateListener() {
         this.undoAnnotate.on('click', () => {
+            console.log('undo annotate clicked');
             undoAnnotationMarker(() => {
                 eventBus.publish(
                     EVENT_TYPES.VISUALIZATION.ANNOTATE.ANNOTATE_MARKER_UNDONE, 
@@ -109,6 +114,7 @@ class Annotate {
     // initialize remove annotate listener
     initializeRemoveAnnotateListener() {
         this.removeAnnotate.on('click', () => {
+            console.log('remove annotate clicked');
             clearAnnotationMarkers(() => {
                 eventBus.publish(
                     EVENT_TYPES.VISUALIZATION.ANNOTATE.ANNOTATE_MARKER_REMOVED, 

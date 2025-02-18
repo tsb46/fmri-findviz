@@ -1,7 +1,7 @@
 // Distance.js
 // Plot distance between timepoint and all other timepoints
 
-import { EVENT_TYPES } from '../constants/EventTypes.js';
+import { EVENT_TYPES } from '../../constants/EventTypes.js';
 import eventBus from '../events/ViewerEvents.js';
 import { getDistanceData, getTimePoint } from '../api/data.js';
 import { getDistancePlotOptions, removeDistancePlot } from '../api/plot.js';
@@ -24,6 +24,7 @@ class Distance {
         // listen for distance submit event and plot distance vector
         eventBus.subscribe(EVENT_TYPES.ANALYSIS.DISTANCE, 
             async () => {
+                console.log('plotting distance');
                 const distanceVector = await getDistanceData();
                 const timeIndex = await getTimePoint();
                 const plotOptions = await getDistancePlotOptions();
@@ -37,6 +38,7 @@ class Distance {
         // listen for distance remove event and remove distance plot
         eventBus.subscribe(EVENT_TYPES.ANALYSIS.DISTANCE_REMOVE, 
             () => {
+                console.log('removing distance plot');
                 Plotly.purge(this.distancePlotId);
                 // hide container
                 document.getElementById(this.distanceContainerId).style.display = 'none';
@@ -59,6 +61,7 @@ class Distance {
                 EVENT_TYPES.VISUALIZATION.DISTANCE.TIME_MARKER_OPACITY_CHANGE
             ] , 
             async () => {
+                console.log('replotting time point marker');
                 const plotOptions = await getDistancePlotOptions();
                 const timeIndex = await getTimePoint();
                 this.plotTimePointMarker(timeIndex, plotOptions);

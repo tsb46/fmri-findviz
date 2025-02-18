@@ -10,9 +10,10 @@ import { displayInlineError, displayModalError, clearInlineError } from '../erro
  * @param {boolean} [errorConfig.isInline=false] - Whether to show error inline
  * @param {string} errorConfig.errorPrefix - Prefix for error logging
  * @param {Function} [callback] - Callback function for successful response
+ * @param {Function} [errorCallback] - Callback function for error response
  * @returns {Promise<any>} Response data or true for POST requests
  */
-export const makeRequest = async (url, options, errorConfig, callback) => {
+export const makeRequest = async (url, options, errorConfig, callback, errorCallback) => {
     try {
         let finalUrl = url;
 
@@ -47,13 +48,20 @@ export const makeRequest = async (url, options, errorConfig, callback) => {
         if (!response.ok) {
             const errorText = await response.text();
             console.log(`HTTP error! status: ${response.status}, message: ${errorText}`);
-            
+
             if (errorConfig.isInline && errorConfig.errorId) {
                 displayInlineError(errorText, errorConfig.errorId);
             } else {
                 displayModalError(errorText);
             }
+
+            // Call error callback if provided
+            if (errorCallback) {
+                errorCallback();
+            }
+
             return;
+
         }
 
         // Clear inline error if it exists
@@ -80,6 +88,10 @@ export const makeRequest = async (url, options, errorConfig, callback) => {
         console.error(`${errorConfig.errorPrefix}:`, error);
         // always display modal for catch-all error
         displayModalError(error.message);
+        // Call error callback if provided
+        if (errorCallback) {
+            errorCallback();
+        }
         return;
     }
 };

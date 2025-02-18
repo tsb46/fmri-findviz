@@ -40,8 +40,8 @@
 
   <!-- Parent Visualization Container -->
   <div id="parent-container" class="container-fluid mt-5" style="display: none;">
-    <!-- Spinner overlay for preprocessing wait -->
-    <div class='spinner-overlay' id="preproc-spinner-overlay"></div>
+    <!-- Spinner overlay for upload, preprocessing, and analysis wait -->
+    <div id="spinner-overlay" class="spinner-overlay"></div>
     <!-- FMRI Container -->
     <div id="fmri-container" class='row justify-content-center'>
       <!-- FMRI User Options Container -->
@@ -53,11 +53,12 @@
       </div>
       <!-- Visualization Container -->
       <div id="fmri-visualization-container">
-        <div id='preproc-load-spinner' class="spinner-border spinner-viz" role="status">
-          <span class="sr-only">Preprocessing...</span>
-        </div>
         <!-- fmri visualization card -->
         {% include 'components/fmriVisualizationCard.html' %}
+      </div>
+      <!-- Spinner wheel for upload, preprocessing, and analysis wait -->
+      <div class="spinner-container d-flex justify-content-center">
+        <div id="spinner-wheel" class="spinner-wheel"></div>
       </div>
     </div>
     <!-- Time Course Container -->
@@ -76,6 +77,8 @@
         {% include 'components/timeCourseVisualizationCard.html' %}
       </div>
     </div>
+    <!-- Viewer Error Modal -->
+    {% include 'components/viewerErrorModal.html' %}
   </div>
 
   <!-- Include the main JavaScript module -->

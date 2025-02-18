@@ -39,7 +39,39 @@ export const DOM_IDS = {
         PREPROCESS: 'error-message-preprocess',
         TIMECOURSE: 'error-message-timecourse'
     },
+    FILE_UPLOAD: {
+        ADD_TS: 'add-time-series',
+        ERROR_MESSAGE: 'error-message-upload',
+        FMRI: {
+          GIFTI: {
+            LEFT_FUNC: 'left-hemisphere-gifti-func',
+            RIGHT_FUNC: 'right-hemisphere-gifti-func',
+            LEFT_MESH: 'left-hemisphere-gifti-mesh',
+            RIGHT_MESH: 'right-hemisphere-gifti-mesh'
+          },
+          NIFTI: {
+            FUNC: 'nifti-func',
+            ANAT: 'nifti-anat',
+            MASK: 'nifti-mask',
+          },
+        },
+        SPINNERS: {
+          OVERLAY: 'file-load-spinner-overlay',
+          WHEEL: 'file-load-spinner-wheel'
+        },
+        TS: {
+          FILE: 'time-series-file',
+          LABEL: 'time-series-label',
+          HEADER: 'has-header'
+        },
+        TASK: {
+          FILE: 'task-design-file',
+          TR: 'task-design-tr',
+          SLICETIME: 'task-design-slicetime'
+        },
+    },
     FMRI: {
+        VISUALIZATION_CONTAINER: 'fmri-visualization-container',
         GIFTI_CONTAINERS: {
             COLORBAR: 'colorbar-container-gii',
             SURFACE_CONTAINER: 'surface-container',
@@ -54,6 +86,7 @@ export const DOM_IDS = {
             SLICE_3_CONTAINER: 'slice-3-container'
         },
         VISUALIZATION_OPTIONS: {
+            COLORBAR_TOGGLE: 'toggle-colorbar',
             COLOR_RANGE_SLIDER: 'color-range-slider',
             COLORMAP_DROPDOWN: 'colormap-dropdown',
             COLORMAP_DROPDOWN_MENU: 'colormap-dropdown-menu',
@@ -68,7 +101,10 @@ export const DOM_IDS = {
             MONTAGE_SLICE_3_SLIDER: 'slice-3-slider',
             OPACITY_SLIDER: 'opacity-slider',
             PLAY_MOVIE_BUTTON: 'play-movie',
+            PLAY_MOVIE_POPOVER: 'play-movie-popover',
+            PLAY_MOVIE_SPEED: 'play-movie-speed',
             RESET_SLIDER_BUTTON: 'reset-slider-button',
+            REVERSE_COLORBAR_TOGGLE: 'reverse-colorbar',
             THRESHOLD_SLIDER: 'threshold-slider',
             TOGGLE_VIEW_BUTTON: 'toggle-view',
             SCREENSHOT_BUTTON: 'select-screenshot',
@@ -157,14 +193,8 @@ export const DOM_IDS = {
     },
     SAVE_SCENE: 'save-scene-display',
     SPINNERS: {
-        AVERAGE_OVERLAY: 'average-spinner-overlay',
-        AVERAGE: 'average-spinner',
-        CORRELATE_OVERLAY: 'correlate-spinner-overlay',
-        CORRELATE: 'correlate-spinner',
-        DISTANCE_OVERLAY: 'distance-spinner-overlay',
-        DISTANCE: 'distance-spinner',
-        PREPROCESS_OVERLAY: 'preprocess-spinner-overlay',
-        PREPROCESS: 'preprocess-load-spinner'
+        OVERLAY: 'spinner-overlay',
+        WHEEL: 'spinner-wheel',
     },
     UPLOAD_BUTTON: 'upload-file'
     

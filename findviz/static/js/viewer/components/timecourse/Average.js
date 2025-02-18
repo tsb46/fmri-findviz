@@ -1,7 +1,7 @@
 // average.js
 // Class for handling windowed average analysis
 
-import { EVENT_TYPES } from '../../constants/EventTypes.js';
+import { EVENT_TYPES } from '../../../constants/EventTypes.js';
 import eventBus from '../../events/ViewerEvents.js';
 import { windowedAverage } from '../../api/analysis.js';
 import { getAnnotationMarkers } from '../../api/plot.js';
@@ -58,6 +58,7 @@ class Average {
      */
     handleAverageSubmit(event) {
         event.preventDefault();
+        console.log('average submit button clicked');
         const windowedAverageParams = {
             leftEdge: this.leftEdge.val(),
             rightEdge: this.rightEdge.val(),

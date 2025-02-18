@@ -13,7 +13,6 @@ import nibabel as nib
 
 from nibabel.gifti import GiftiImage
 from nibabel.nifti1 import Nifti1Image
-from nilearn.masking import apply_mask, unmask
 
 from findviz.logger_config import setup_logger
 
@@ -41,16 +40,17 @@ def apply_mask_nifti(
         Masked NIfTI image
     """
     # apply mask
-    masked_data = apply_mask(nifti_img, mask_img)
-    # unmask data
-    masked_img = unmask(masked_data, mask_img)
+    nifti_data = nifti_img.get_fdata()
+    mask_data = mask_img.get_fdata()
+    nifti_data[mask_data == 0, :] = np.nan
+    masked_img = nib.Nifti1Image(nifti_data, nifti_img.affine, nifti_img.header)
     return masked_img
 
 
 def extend_color_range(
     color_min: float,
     color_max: float,
-    extend_range: float = 0.05
+    extend_range: float = 0.25
 ) -> Tuple[float, float]:
     """Extend color range by a given percentage
     
@@ -64,7 +64,7 @@ def extend_color_range(
     --------
     Tuple containing (extended_color_min, extended_color_max)
     """
-    return color_min - (extend_range * color_min), color_max + (extend_range * color_max)
+    return color_min - (extend_range * abs(color_min)), color_max + (extend_range * abs(color_max))
 
 
 def get_coord_labels(
@@ -186,6 +186,7 @@ def get_ortho_slice_coords(
             }
     return ortho_slice_coords
 
+
 def get_ortho_slice_idx(slice_len: Dict[str, int]) -> Dict[str, int]:
     """Get orthogonal view slice indices for NIFTI data. Set as middle of x,y,z dimensions
     
@@ -202,6 +203,7 @@ def get_ortho_slice_idx(slice_len: Dict[str, int]) -> Dict[str, int]:
         'y': int(slice_len['y'] / 2),
         'z': int(slice_len['z'] / 2)
     }
+
 
 def get_montage_slice_coords(
     ortho_slice_coords: Dict[str, Dict[str, int]],
@@ -237,6 +239,7 @@ def get_montage_slice_coords(
             'y': y,
         }
     return montage_slice_coords
+
 
 def get_montage_slice_idx(
     slice_len: Dict[str, int],
@@ -275,6 +278,7 @@ def get_montage_slice_idx(
         montage_slice_idx[slice][montage_slice_dir] = slice_idx_dir
 
     return montage_slice_idx
+
 
 def get_slider_step_size(
     data_range: float,
