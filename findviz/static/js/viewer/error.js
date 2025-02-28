@@ -1,19 +1,67 @@
 // error.js
 // Error handling for viewer
 
-/**
- * Display error message in modal
- * @param {string} errorMessage - Error message to display
- * @param {string} [modalId='error-viewer-modal'] - ID of error modal
- */
-export function displayModalError(errorMessage, modalId = 'error-viewer-modal') {
-    // Set error message and display
-    const errorDiv = document.getElementById(modalId);
-    errorDiv.textContent = errorMessage;
-    errorDiv.style.display = 'block';
+export class ErrorHandler {
+    constructor(
+        modalId = 'error-viewer-modal',
+        modalTextId = 'error-viewer-modal-message'
+    ) {
+        this.modalId = modalId;
+        this.modalTextId = modalTextId;
+        this.activeErrors = [];
+        
+        // Get DOM elements
+        this.errorDiv = document.getElementById(modalId);
+        this.errorTextDiv = document.getElementById(modalTextId);
+        
+        // Bind modal close event
+        this.initializeModalEvents();
+    }
 
-    // display error modal
-    $(`#${modalId}`).modal('show');
+    /**
+     * Initialize modal event listeners
+     */
+    initializeModalEvents() {
+        $(`#${this.modalId}`).on('hidden.bs.modal', () => {
+            this.clearErrors();
+        });
+    }
+
+    /**
+     * Display error message in modal
+     * @param {string} errorMessage - Error message to display
+     */
+    displayError(errorMessage) {
+        // Add new error to active errors
+        this.activeErrors.push(errorMessage);
+        
+        // Format all active errors
+        const formattedErrors = this.activeErrors
+            .map(msg => `• ${msg}`)
+            .join('<br>');
+        
+        // Update error text and show modal
+        this.errorTextDiv.innerHTML = formattedErrors;
+        this.errorDiv.style.display = 'block';
+        $(`#${this.modalId}`).modal('show');
+    }
+
+    /**
+     * Clear all errors and hide modal
+     */
+    clearErrors() {
+        this.activeErrors = [];
+        this.errorTextDiv.innerHTML = '';
+        $(`#${this.modalId}`).modal('hide');
+    }
+
+    /**
+     * Get current number of active errors
+     * @returns {number} Number of active errors
+     */
+    getErrorCount() {
+        return this.activeErrors.length;
+    }
 }
 
 /**
@@ -22,7 +70,6 @@ export function displayModalError(errorMessage, modalId = 'error-viewer-modal') 
  * @param {string} elementId - ID of inline error element
  */
 export function displayInlineError(errorMessage, elementId) {
-    // Set error message and display
     const errorDiv = document.getElementById(elementId);
     errorDiv.textContent = errorMessage;
     errorDiv.style.display = 'block';
@@ -37,3 +84,7 @@ export function clearInlineError(elementId) {
     errorDiv.textContent = '';
     errorDiv.style.display = 'none';
 }
+
+// Create and export a singleton instance
+export const modalErrorHandler = new ErrorHandler();
+

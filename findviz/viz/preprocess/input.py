@@ -1,6 +1,6 @@
 """Input validation of user inputs for preprocessing"""
 
-from typing import Literal
+from typing import Literal, List
 from findviz.logger_config import setup_logger
 
 from findviz.viz.preprocess.fmri import PreprocessFMRIInputs
@@ -24,33 +24,15 @@ class FMRIPreprocessInputValidator:
     ):
         self.fmri_file_type = fmri_file_type
 
-    def _validate_any_input(
-        self,
-        input: PreprocessFMRIInputs | PreprocessTimecourseInputs
-    ) -> None:
-        """Validate that at least one preprocessing parameter is passed"""
-        input_missing = [
-            input['detrend'] is False,
-            input['mean_center'] is False,
-            input['zscore'] is False,
-            input['tr'] is None,
-            input['low_cut'] is None,
-            input['high_cut'] is None,
-            input['fwhm'] is None
-        ]
-        if all(input_missing):
-            logger.error('No preprocessing options selected')
-            raise PreprocessInputError('No preprocessing options selected')
-
     def validate_preprocess_input(
         self, 
-        input: PreprocessFMRIInputs | PreprocessTimecourseInputs
+        input: PreprocessFMRIInputs
     ) -> bool:
         """Validate user inputs for fmri preprocessing
 
         Parameters
         ----------
-        input : PreprocessFMRIInputs | PreprocessTimecourseInputs
+        input : PreprocessFMRIInputs
             User inputs for preprocessing
 
         Returns
@@ -85,6 +67,24 @@ class FMRIPreprocessInputValidator:
         # raise error to handle higher up
         except Exception as e:
             raise e
+    
+    def _validate_any_input(
+        self,
+        input: PreprocessFMRIInputs | PreprocessTimecourseInputs
+    ) -> None:
+        """Validate that at least one preprocessing parameter is passed"""
+        input_missing = [
+            input['detrend'] is False,
+            input['mean_center'] is False,
+            input['zscore'] is False,
+            input['tr'] is None,
+            input['low_cut'] is None,
+            input['high_cut'] is None,
+            input['fwhm'] is None
+        ]
+        if all(input_missing):
+            logger.error('No preprocessing options selected')
+            raise PreprocessInputError('No preprocessing options selected')
 
 
 class TimecoursePreprocessInputValidator:
@@ -93,35 +93,31 @@ class TimecoursePreprocessInputValidator:
         self,
     ):
         pass
-    
-    def _validate_any_input(
-        self,
-        input: PreprocessTimecourseInputs
-    ) -> None:
-        """Validate that at least one preprocessing parameter is passed"""
-        param_missing = [
-            input['detrend'] is False,
-            input['mean_center'] is False,
-            input['zscore'] is False,
-            input['tr'] is None,
-            input['low_cut'] is None,
-            input['high_cut'] is None,
-        ]
-        # check if any time course is selected
-        if input['ts_labels'] is None or len(input['ts_labels']) < 1:
-            raise PreprocessInputError('No time courses selected')
-        
-        # check if any parameters are missing
-        if any(param_missing):
-            raise PreprocessInputError('No preprocessing options selected')
 
         
     def validate_preprocess_input(
         self, 
-        input: PreprocessTimecourseInputs
+        input: PreprocessTimecourseInputs,
+        ts_labels: List[str]
     ) -> bool:
-        """Validate user inputs for timecourse preprocessing"""
+        """Validate user inputs for timecourse preprocessing
+
+        Parameters
+        ----------
+        input : PreprocessTimecourseInputs
+            User inputs for preprocessing
+        ts_labels : List[str]
+            Time course labels
+
+        Returns
+        -------
+        bool
+            True if inputs are valid, False otherwise
+        """
         try:
+            # validate that at least one time course is selected
+            self._validate_ts_selected(ts_labels)
+            # validate that at least one preprocessing parameter is passed
             self._validate_any_input(input)
             # validate normalization parameters
             if input['normalize']:
@@ -145,3 +141,29 @@ class TimecoursePreprocessInputValidator:
         # raise error to handle higher up
         except Exception as e:
             raise e
+    
+    def _validate_any_input(
+        self,
+        input: PreprocessTimecourseInputs
+    ) -> None:
+        """Validate that at least one preprocessing parameter is passed"""
+        param_missing = [
+            input['detrend'] is False,
+            input['mean_center'] is False,
+            input['zscore'] is False,
+            input['tr'] is None,
+            input['low_cut'] is None,
+            input['high_cut'] is None,
+        ]
+        
+        # check if any parameters are missing
+        if all(param_missing):
+            raise PreprocessInputError('No preprocessing options selected')
+    
+    def _validate_ts_selected(
+        self,
+        ts_labels: List[str]
+    ) -> None:
+        """Validate that at least one time course is selected"""
+        if ts_labels is None or len(ts_labels) < 1:
+            raise PreprocessInputError('No time courses selected')

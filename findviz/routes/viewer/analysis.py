@@ -1,18 +1,23 @@
 """
 Analysis routes for findviz viewer
 """
+import json
 
 from flask import Blueprint, request, make_response
 
 from findviz.logger_config import setup_logger
 from findviz.viz import transforms
 from findviz.routes.shared import data_manager
-from findviz.routes.utils import handle_route_errors, Routes
+from findviz.routes.utils import convert_value, handle_route_errors, Routes
 from findviz.viz.analysis.correlate import Correlate
 from findviz.viz.analysis.distance import Distance
 from findviz.viz.analysis.peak_finder import PeakFinder
 from findviz.viz.analysis.average import WindowAverage
-from findviz.viz.exception import ParameterInputError, PeakFinderNoPeaksFoundError
+from findviz.viz.exception import (
+    ParameterInputError, 
+    PeakFinderNoPeaksFoundError,
+    NiftiMaskError
+)
 
 analysis_bp = Blueprint('analysis', __name__)
 logger = setup_logger(__name__)
@@ -50,7 +55,18 @@ def correlate():
     fmri_file_type = data_manager.fmri_file_type
     # convert fmri data to array
     if fmri_file_type == 'nifti':
-        fmri_data = transforms.nifti_to_array(viewer_data['fmri'])
+        # if mask is not provided, log error and return 400 error
+        if viewer_data['mask_img'] is None:
+            e = NiftiMaskError(
+                message="A brain mask is required for nifti preprocessing",
+            )
+            logger.error(e)
+            return make_response(e.message, 400)
+        # convert fmri data to array
+        fmri_data = transforms.nifti_to_array_masked(
+            viewer_data['fmri'],
+            viewer_data['mask_img']
+        )
     elif fmri_file_type == 'gifti':
         fmri_data, split_indx = transforms.gifti_to_array(viewer_data['fmri'])
     # initialize correlate class
@@ -71,12 +87,12 @@ def correlate():
     route=Routes.DISTANCE,
     fmri_file_type=data_manager.fmri_file_type,
     route_parameters=['distance_metric'],
-    custom_exceptions=[ParameterInputError]
+    custom_exceptions=[ParameterInputError, NiftiMaskError]
 )
 def distance():
     logger.info('Calculating distance')
-    # get distance parameters from request
-    distance_params = request.json
+    # get distance metric from request
+    distance_metric = request.form['distance_metric']
     # get fmri datafrom data manager
     viewer_data = data_manager.get_viewer_data(
         fmri_data=True,
@@ -87,12 +103,24 @@ def distance():
     fmri_file_type = data_manager.fmri_file_type
     # convert fmri data to array
     if fmri_file_type == 'nifti':
-        fmri_data = transforms.nifti_to_array(viewer_data['fmri'])
+        # if mask is not provided, raise error
+        if viewer_data['mask_img'] is None:
+            raise NiftiMaskError(
+                message="A brain mask is required for time point distance calculation",
+            )        
+        # convert fmri data to array
+        fmri_data = transforms.nifti_to_array_masked(
+            viewer_data['func_img'],
+            viewer_data['mask_img']
+        )
     elif fmri_file_type == 'gifti':
-        fmri_data, split_indx = transforms.gifti_to_array(viewer_data['fmri'])
+        fmri_data, split_indx = transforms.gifti_to_array(
+            viewer_data['left_func_img'],
+            viewer_data['right_func_img']
+        )
     # create distance class
     distance = Distance(
-        distance_metric=distance_params['distance_metric']
+        distance_metric=distance_metric
     )
     # calculate distance from current time point and fmri data
     distance_map = distance.calculate_distance(data_manager.timepoint, fmri_data)
@@ -111,29 +139,27 @@ def distance():
     route_parameters=[
         'label', 
         'time_course_type', 
-        'zscore', 
-        'peak_distance', 
-        'peak_height', 
-        'peak_prominence', 
-        'peak_width', 
-        'peak_threshold'
+        'peak_finder_params'
     ],
     custom_exceptions=[PeakFinderNoPeaksFoundError]
 )
 def find_peaks():
     logger.info('Finding peaks')
     # get label from request
-    label = request.json['label']
+    label = request.form['label']
     # get time course type (timecourse or task) from request
-    time_course_type = request.json['time_course_type']
+    time_course_type = request.form['time_course_type']
     # get peak finder parameters from request
-    peak_finder_params = request.json
-    # get time course and taskdata from data manager
+    peak_finder_params = json.loads(request.form['peak_finder_params'])
+    # convert peak finder parameters
+    peak_finder_params = { 
+        key: convert_value(value) for key, value in peak_finder_params.items()
+    }
+    # get time course and task data from data manager
     viewer_data = data_manager.get_viewer_data(
         fmri_data=False,
         time_course_data=True,
-        task_data=True,
-        label=label
+        task_data=True
     )
     if time_course_type == 'timecourse':
         data = viewer_data['ts'][label]
@@ -159,13 +185,13 @@ def find_peaks():
     return {'status': 'success'}
 
 
-@analysis_bp.route(Routes.AVERAGE.value, methods=['POST'])
+@analysis_bp.route(Routes.WINDOW_AVERAGE.value, methods=['POST'])
 @handle_route_errors(
     error_msg='Error averaging',
     log_msg='Averaging found successfully',
-    route=Routes.AVERAGE
+    route=Routes.WINDOW_AVERAGE
 )
-def average():
+def window_average():
     logger.info('Window averaging')
     # get label from request
     label = request.json['label']
@@ -182,7 +208,18 @@ def average():
     fmri_file_type = data_manager.fmri_file_type
     # convert fmri data to array
     if fmri_file_type == 'nifti':
-        fmri_data = transforms.nifti_to_array(viewer_data['fmri'])
+        # if mask is not provided, log error and return 400 error
+        if viewer_data['mask_img'] is None:
+            e = NiftiMaskError(
+                message="A brain mask is required for nifti preprocessing",
+            )
+            logger.error(e)
+            return make_response(e.message, 400)
+        # convert fmri data to array
+        fmri_data = transforms.nifti_to_array_masked(
+            viewer_data['fmri'],
+            viewer_data['mask_img']
+        )
     elif fmri_file_type == 'gifti':
         fmri_data, split_indx = transforms.gifti_to_array(viewer_data['fmri'])
     # get annotation markers from data manager

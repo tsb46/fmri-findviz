@@ -27,6 +27,7 @@ import Correlate from './components/timecourse/Correlate.js';
 import LinePlotOptions from './components/timecourse/LinePlotOptions.js';
 import PeakFinder from './components/timecourse/PeakFinder.js';
 import PreprocessTimecourse from './components/timecourse/PreprocessTimeCourse.js';
+import TimeCourseFmri from './components/timecourse/TimeCourseFmri.js';
 import ViewOptionsTimeCourse from './components/timecourse/viewOptionsTimeCourse.js';
 // plot components
 import ColorBar from './plots/ColorBar.js';
@@ -203,7 +204,7 @@ class MainViewer{
             DOM_IDS.DISTANCE.METRIC_SELECT,
             DOM_IDS.DISTANCE.TIME_POINT_MESSAGE,
             DOM_IDS.DISTANCE.REMOVE_DISTANCE_BUTTON,
-            DOM_IDS.DISTANCE.PREPROCESS_ALERT,
+            DOM_IDS.DISTANCE.ERROR_MESSAGE,
             DOM_IDS.DISTANCE.PREPROCESS_ALERT
         );
 
@@ -231,6 +232,7 @@ class MainViewer{
         // initialize annotate component
         this.annotate = new Annotate(
             DOM_IDS.TIMECOURSE.TIME_COURSE_PLOT,
+            DOM_IDS.TIME_SLIDER.TIME_SLIDER,
             DOM_IDS.TIMECOURSE.ANNOTATE.ENABLE_ANNOTATE,
             DOM_IDS.TIMECOURSE.ANNOTATE.HIGHLIGHT_ANNOTATE,
             DOM_IDS.TIMECOURSE.ANNOTATE.RIGHT_MOVE_ANNOTATE,
@@ -264,12 +266,19 @@ class MainViewer{
             DOM_IDS.TIMECOURSE.LINE_PLOT_OPTIONS.SELECT_TIMECOURSE,
             DOM_IDS.TIMECOURSE.LINE_PLOT_OPTIONS.OPACITY_SLIDER,
             DOM_IDS.TIMECOURSE.LINE_PLOT_OPTIONS.WIDTH_SLIDER,
+            DOM_IDS.TIMECOURSE.LINE_PLOT_OPTIONS.SCALE_SHIFT_INCREASE,
+            DOM_IDS.TIMECOURSE.LINE_PLOT_OPTIONS.SCALE_SHIFT_DECREASE,
+            DOM_IDS.TIMECOURSE.LINE_PLOT_OPTIONS.SCALE_SHIFT_RESET,
+            DOM_IDS.TIMECOURSE.LINE_PLOT_OPTIONS.CONSTANT_SHIFT_INCREASE,
+            DOM_IDS.TIMECOURSE.LINE_PLOT_OPTIONS.CONSTANT_SHIFT_DECREASE,
+            DOM_IDS.TIMECOURSE.LINE_PLOT_OPTIONS.CONSTANT_SHIFT_RESET,
             DOM_IDS.TIMECOURSE.LINE_PLOT_OPTIONS.COLOR_SELECT,
             DOM_IDS.TIMECOURSE.LINE_PLOT_OPTIONS.MARKER_SELECT,
             DOM_IDS.TIMECOURSE.MARKER_PLOT_OPTIONS.WIDTH_SLIDER,
             DOM_IDS.TIMECOURSE.MARKER_PLOT_OPTIONS.OPACITY_SLIDER,
             DOM_IDS.TIMECOURSE.MARKER_PLOT_OPTIONS.MARKER_SELECT,
-            DOM_IDS.TIMECOURSE.MARKER_PLOT_OPTIONS.COLOR_SELECT,  
+            DOM_IDS.TIMECOURSE.MARKER_PLOT_OPTIONS.COLOR_SELECT, 
+            DOM_IDS.TIMECOURSE.LINE_PLOT_OPTIONS.CONVOLUTION_CHECKBOX
         );
 
         // initialize peak finder component
@@ -277,11 +286,13 @@ class MainViewer{
             DOM_IDS.TIMECOURSE.PEAK_FINDER.POPOVER,
             DOM_IDS.TIMECOURSE.PEAK_FINDER.SELECT_TIMECOURSE,
             DOM_IDS.TIMECOURSE.PEAK_FINDER.SUBMIT_PEAK_FINDER,
-            DOM_IDS.TIMECOURSE.PEAK_FINDER.PEAK_FORM
+            DOM_IDS.TIMECOURSE.PEAK_FINDER.PEAK_FORM,
+            DOM_IDS.TIMECOURSE.PEAK_FINDER.PEAK_PREP_ALERT
         );
 
         // initialize preprocessing timecourse component
         this.preprocessTimecourse = new PreprocessTimecourse(
+            DOM_IDS.TIMECOURSE.PREPROCESSING_OPTIONS.SELECT_TIMECOURSE,
             DOM_IDS.TIMECOURSE.PREPROCESSING_OPTIONS.ENABLE_NORMALIZATION,
             DOM_IDS.TIMECOURSE.PREPROCESSING_OPTIONS.ENABLE_FILTERING,
             DOM_IDS.TIMECOURSE.PREPROCESSING_OPTIONS.SUBMIT_PREPROCESS_BUTTON,
@@ -303,6 +314,14 @@ class MainViewer{
             DOM_IDS.TIMECOURSE.VISUALIZATION_OPTIONS.TOGGLE_CONVOLUTION
         );
 
+        // initialize timecourse fmri component
+        this.timecourseFmri = new TimeCourseFmri(
+            DOM_IDS.TIMECOURSE.FMRI.ENABLE_FMRI_TIMECOURSE,
+            DOM_IDS.TIMECOURSE.FMRI.REMOVE_FMRI_TIMECOURSE,
+            DOM_IDS.TIMECOURSE.FMRI.UNDO_FMRI_TIMECOURSE,
+            DOM_IDS.TIMECOURSE.FMRI.FREEZE_FMRI_TIMECOURSE,
+            DOM_IDS.TIMECOURSE.FMRI.FREEZE_ICON
+        );
     }
 
     /**
@@ -354,6 +373,7 @@ class MainViewer{
         }
         // initialize time course viewer
         this.timecourse = new TimeCourse(
+            DOM_IDS.TIMECOURSE.TIME_COURSE_CONTAINER,
             DOM_IDS.TIMECOURSE.TIME_COURSE_PLOT,
             this.timeCourseInput,
             this.taskDesignInput

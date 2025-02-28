@@ -2,6 +2,7 @@
 import { EVENT_TYPES } from '../../../constants/EventTypes.js';
 import eventBus from '../../events/ViewerEvents.js';
 import { getTimeCourseLabels, getTaskConditions } from '../../api/data.js';
+import { checkTsPreprocessed } from '../../api/plot.js';
 import { findPeaks } from '../../api/analysis.js';
 
 
@@ -12,27 +13,40 @@ class PeakFinder {
      * @param {string} peakFinderTimeCourseSelectId - The ID of the time course select for the peak finder
      * @param {string} submitPeakFinderId - The ID of the submit button for the peak finder
      * @param {string} peakFinderFormId - The ID of the form for the peak finder
+     * @param {string} peakFinderPrepAlertId - The ID of the preprocess alert for the peak finder
      */
     constructor(
         peakFinderPopOverId,
         peakFinderTimeCourseSelectId,
         submitPeakFinderId,
-        peakFinderFormId
+        peakFinderFormId,
+        peakFinderPrepAlertId
     ) {
+        // set ids
+        this.peakFinderPopOverId = peakFinderPopOverId;
+        this.peakFinderTimeCourseSelectId = peakFinderTimeCourseSelectId;
+        this.submitPeakFinderId = submitPeakFinderId;
+        this.peakFinderFormId = peakFinderFormId;
+        this.peakFinderPrepAlertId = peakFinderPrepAlertId;
+
+        // set elements
         this.peakFinderPopOver = $(`#${peakFinderPopOverId}`);
-        this.peakFinderTimeCourseSelect = $(`#${peakFinderTimeCourseSelectId}`);
-        this.submitPeakFinder = $(`#${submitPeakFinderId}`);
-        this.peakFinderForm = $(`#${peakFinderFormId}`);
 
         // time course types
         this.timeCourseTypes = {};
+        // initialize selected time course
+        this.selectedTimeCourse = null;
+        // initilize peak finder params
+        this.peakFinderParams = {
+            'peak_height': '',
+            'peak_threshold': '',
+            'peak_distance': '1.0',
+            'peak_prominence': '',
+            'peak_width': '',
+            'zscore': false
+        };
         // initialize peak finder popover
         this.initializePeakFinderPopOver();
-
-        // listen for addition of fmri time courses and update time course select
-        eventBus.subscribe(EVENT_TYPES.VISUALIZATION.TIMECOURSE.ADD_FMRI_TIMECOURSE, () => {
-            this.fillPeakFinderTimeCourseSelect();
-        });
     }
     /**
      * Get plot labels from all time courses and/or tasks
@@ -49,14 +63,14 @@ class PeakFinder {
                 this.timeCourseTypes[condition] = 'task';
             }
         });
-        await getTimeCourseLabels((labels) => {
-            for (const label of labels) {
+        await getTimeCourseLabels((ts_labels) => {
+            for (const label of ts_labels) {
                 labels.push(label);
                 this.timeCourseTypes[label] = 'timecourse';
             }
         });
         if (callback) {
-            callback();
+            callback(labels);
         }
         return labels;
     }
@@ -72,53 +86,123 @@ class PeakFinder {
                 html: true, // Enable HTML content in the tooltip
                 trigger : 'hover'
             });
+
+            const peakFinderTimeCourseSelect = $(`#${this.peakFinderTimeCourseSelectId}`);
+            const peakFinderSubmit = $(`#${this.submitPeakFinderId}`);
+            const peakFinderForm = $(`#${this.peakFinderFormId}`);
+
             // fill time course select with labels
-            this.fillPeakFinderTimeCourseSelect();
+            this.fillPeakFinderTimeCourseSelect(peakFinderTimeCourseSelect);
+
+            // fill peak finder form with current params
+            this.fillPeakFinderForm();
 
             // Hide popover when clicking outside
+            // Store reference to this
+            const self = this;
             $(document).on('click', function (e) {
                 // Check if the click is outside the popover and the button
-                if (!$(e.target).closest(`.popover, #${this.peakFinderPopOverId}`).length) {
-                  this.peakFinderPopOver.popover('hide');
+                if (!$(e.target).closest(`.popover, #${self.peakFinderPopOverId}`).length) {
+                    $(`#${self.peakFinderPopOverId}`).popover('hide');
                 }
             });
 
-            // initialize peak finder submit
-            this.peakFinderForm.on(
-                'submit', this.handlePeakFinderSubmit.bind(this)
+            // handle time course select change
+            peakFinderTimeCourseSelect.on('change', () => {
+                this.handleTimeCourseSelectChange(peakFinderTimeCourseSelect);
+            });
+
+            // initialize peak finder click compute button
+            peakFinderSubmit.on(
+                'click', 
+                this.handlePeakFinderSubmit.bind(
+                    this,
+                    peakFinderForm, 
+                    peakFinderTimeCourseSelect
+                )
             );
         });
     }
 
     /**
-     * Fill the peak finder time course select with labels
+     * Fill the peak finder form with the current peak finder params
      */
-    fillPeakFinderTimeCourseSelect() {
-        this.getPlotLabels((labels) => {
-            this.peakFinderTimeCourseSelect.empty();
-            for (const label of labels) {
-                this.peakFinderTimeCourseSelect.append(`<option value='${label}'>${label}</option>`);
+    fillPeakFinderForm() {
+        const peakFinderForm = $(`#${this.peakFinderFormId}`);
+        peakFinderForm.find('#peak-height').val(this.peakFinderParams['peak_height']);
+        peakFinderForm.find('#peak-threshold').val(this.peakFinderParams['peak_threshold']);
+        peakFinderForm.find('#peak-distance').val(this.peakFinderParams['peak_distance']);
+        peakFinderForm.find('#peak-prominence').val(this.peakFinderParams['peak_prominence']);
+        peakFinderForm.find('#peak-width').val(this.peakFinderParams['peak_width']);
+        peakFinderForm.find('#peak-z-score').prop('checked', this.peakFinderParams['zscore']);
+    }
+
+    /**
+     * Fill the peak finder time course select with labels
+     * @param {jQuery} peakFinderTimeCourseSelect - The peak finder time course select
+     */
+    fillPeakFinderTimeCourseSelect(peakFinderTimeCourseSelect) {
+        this.getPlotLabels((ts_labels) => {
+            peakFinderTimeCourseSelect.empty();
+            for (const label of ts_labels) {
+                peakFinderTimeCourseSelect.append(`<option value='${label}'>${label}</option>`);
             }
+            // select the last label as the selected time course
+            peakFinderTimeCourseSelect.val(ts_labels[ts_labels.length - 1]);
+            this.selectedTimeCourse = ts_labels[ts_labels.length - 1];
+            // check if time course is preprocessed
+            checkTsPreprocessed(
+                this.selectedTimeCourse, 
+                this.timeCourseTypes[this.selectedTimeCourse], 
+                (isPreprocessed) => {
+                    if (isPreprocessed.is_preprocessed) {
+                        $(`#${this.peakFinderPrepAlertId}`).show();
+                    }
+                }
+            );
         });
     }
 
     /**
+     * Handle time course select change
+     * @param {Event} event - The event object
+     * @param {jQuery} peakFinderTimeCourseSelect - The peak finder time course select
+     */
+    handleTimeCourseSelectChange(peakFinderTimeCourseSelect) {
+        console.log('time course select changed for peak finder');
+        // get selected time course
+        const timeCourse = peakFinderTimeCourseSelect.val();
+        this.selectedTimeCourse = timeCourse;
+        // check if time course is preprocessed
+        checkTsPreprocessed(timeCourse, this.timeCourseTypes[timeCourse], (isPreprocessed) => {
+            if (isPreprocessed.is_preprocessed) {
+                $(`#${this.peakFinderPrepAlertId}`).show();
+            } else {
+                $(`#${this.peakFinderPrepAlertId}`).hide();
+            }
+        });
+    }
+    /**
      * Handle the peak finder submit
      * @param {Event} event - The event object
+     * @param {jQuery} peakFinderTimeCourseSelect - The peak finder time course select
      */
-    handlePeakFinderSubmit(event) {
-        event.preventDefault();
+    handlePeakFinderSubmit(peakFinderForm, peakFinderTimeCourseSelect) {
         console.log('peak finder submit button clicked');
         // get selected time course
-        const timeCourse = this.peakFinderTimeCourseSelect.val();
+        const timeCourse = peakFinderTimeCourseSelect.val();
         const timeCourseType = this.timeCourseTypes[timeCourse];
         const peakFinderParams = {
-            'peak_height': this.peakFinderForm.find('#peak-height').val(),
-            'peak_threshold': this.peakFinderForm.find('#peak-threshold').val(),
-            'peak_distance': this.peakFinderForm.find('#peak-distance').val(),
-            'peak_prominence': this.peakFinderForm.find('#peak-prominence').val(),
-            'peak_width': this.peakFinderForm.find('#peak-width').val(),
+            'peak_height': peakFinderForm.find('#peak-height').val(),
+            'peak_threshold': peakFinderForm.find('#peak-threshold').val(),
+            'peak_distance': peakFinderForm.find('#peak-distance').val(),
+            'peak_prominence': peakFinderForm.find('#peak-prominence').val(),
+            'peak_width': peakFinderForm.find('#peak-width').val(),
+            'zscore': peakFinderForm.find('#peak-z-score').is(':checked')
         }
+        // update peak finder params
+        this.peakFinderParams = peakFinderParams;
+        // find peaks
         findPeaks(timeCourse, timeCourseType, peakFinderParams, () => {
             console.log('peak finder success');
             eventBus.publish(EVENT_TYPES.VISUALIZATION.ANNOTATE.ANNOTATE_MARKER_ADDED);

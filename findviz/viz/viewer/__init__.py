@@ -17,7 +17,6 @@ Example:
 """
 
 from findviz.viz.viewer.utils import (
-    get_minmax,
     package_gii_metadata,
     package_nii_metadata
 )
@@ -42,7 +41,6 @@ __all__ = [
     'ViewerDataGiftiDict',
     
     # Utility Functions
-    'get_minmax',
     'package_gii_metadata',
     'package_nii_metadata'
 ] 

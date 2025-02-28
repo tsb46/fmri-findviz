@@ -4,6 +4,7 @@ Routes:
     ADD_ANNOTATION_MARKER: Add annotation marker
     CHANGE_TASK_CONVOLUTION: Change task convolution
     CHANGE_TIMECOURSE_SCALE: Change timecourse scale
+    CHECK_TS_PREPROCESSED: Check if timecourse is preprocessed
     CLEAR_ANNOTATION_MARKERS: Clear annotation markers
     GET_ANNOTATION_MARKERS: Get annotation markers
     GET_DISTANCE_PLOT_OPTIONS: Get distance plot options
@@ -20,6 +21,7 @@ Routes:
     UPDATE_FMRI_PLOT_OPTIONS: Update fMRI plot options
     UPDATE_TIMECOURSE_GLOBAL_PLOT_OPTIONS: Update timecourse global plot options
     UPDATE_TIMECOURSE_PLOT_OPTIONS: Update timecourse plot options
+    UPDATE_TIMECOURSE_SHIFT: Update timecourse shift (scale or constant)
     UPDATE_TIMEMARKER_PLOT_OPTIONS: Update timemarker plot options
     UPDATE_NIFTI_VIEW_STATE: Update nifti view state (ortho or montage)
 """
@@ -40,14 +42,14 @@ plot_bp = Blueprint('plot', __name__)
     error_msg='Unknown error in add annotation marker request',
     log_msg='Added annotation marker successfully',
     route_parameters=['marker'],
-    fmri_file_type=data_manager.fmri_file_type,
+    fmri_file_type=lambda: data_manager.fmri_file_type,
     route=Routes.ADD_ANNOTATION_MARKER
 )
 def add_annotation_marker() -> dict:
     """Add annotation marker"""
     marker = convert_value(request.form['marker'])
     data_manager.add_annotation_markers(marker)
-    return {'status': 'success'}
+    return {'marker': marker}
 
 
 @plot_bp.route(Routes.CHANGE_TASK_CONVOLUTION.value, methods=['POST'])
@@ -55,7 +57,7 @@ def add_annotation_marker() -> dict:
     error_msg='Unknown error in change task convolution request',
     log_msg='Changed task convolution successfully',
     route_parameters=['convolution'],
-    fmri_file_type=data_manager.fmri_file_type,
+    fmri_file_type=lambda: data_manager.fmri_file_type,
     route=Routes.CHANGE_TASK_CONVOLUTION
 )
 def change_task_convolution() -> int:
@@ -64,10 +66,14 @@ def change_task_convolution() -> int:
     data_manager.update_timecourse_global_plot_options(
         {'global_convolution': convolution}
     )
+    if convolution:
+        conv_type = 'hrf'
+    else:
+        conv_type = 'block'
     # update all task design plot options
     for label in data_manager._state.task_plot_options:
         data_manager.update_task_design_plot_options(
-            label, {'convolution': convolution}
+            label, {'convolution': conv_type}
         )
     return {'status': 'success'}
 
@@ -77,7 +83,7 @@ def change_task_convolution() -> int:
     error_msg='Unknown error in change timecourse scale change request',
     log_msg='Timecourse scale change successful',
     route_parameters=['label', 'ts_type', 'scale_change'],
-    fmri_file_type=data_manager.fmri_file_type,
+    fmri_file_type=lambda: data_manager.fmri_file_type,
     route=Routes.CHANGE_TIMECOURSE_SCALE
 )
 def change_timecourse_scale() -> dict:
@@ -87,6 +93,26 @@ def change_timecourse_scale() -> dict:
     scale_change = convert_value(request.form['scale_change'])
     data_manager.change_timecourse_scale(label, ts_type, scale_change)
     return {'status': 'success'}
+
+
+@plot_bp.route(Routes.CHECK_TS_PREPROCESSED.value, methods=['POST'])
+@handle_route_errors(
+    error_msg='Unknown error in check timecourse preprocessed request',
+    log_msg='Checked timecourse preprocessed successfully',
+    route_parameters=['label', 'ts_type'],
+    route=Routes.CHECK_TS_PREPROCESSED
+)
+def check_ts_preprocessed() -> dict:
+    """Check if timecourse is preprocessed"""
+    label = convert_value(request.form['label'])
+    ts_type = convert_value(request.form['ts_type'])
+    if ts_type == 'timecourse':
+        is_preprocessed = data_manager.check_ts_preprocessed(label)
+    else:
+        # task design is not preprocessed
+        is_preprocessed = False
+
+    return {'is_preprocessed': is_preprocessed}
 
 
 @plot_bp.route(Routes.CLEAR_ANNOTATION_MARKERS.value, methods=['POST'])
@@ -106,7 +132,7 @@ def clear_annotation_markers() -> dict:
 @handle_route_errors(
     error_msg='Unknown error in annotation markers request',
     log_msg='Retrieved annotation markers successfully',
-    fmri_file_type=data_manager.fmri_file_type,
+    fmri_file_type=lambda: data_manager.fmri_file_type,
     route=Routes.GET_ANNOTATION_MARKERS
 )
 def get_annotation_markers() -> dict:
@@ -125,7 +151,7 @@ def get_annotation_markers() -> dict:
 @handle_route_errors(
     error_msg='Unknown error in distance plot options request',
     log_msg='Retrieved distance plot options successfully',
-    fmri_file_type=data_manager.fmri_file_type,
+    fmri_file_type=lambda: data_manager.fmri_file_type,
     route=Routes.GET_DISTANCE_PLOT_OPTIONS
 )
 def get_distance_plot_options() -> dict:
@@ -137,7 +163,7 @@ def get_distance_plot_options() -> dict:
 @handle_route_errors(
     error_msg='Unknown error in get fMRI plot options request',
     log_msg='Retrieved fMRI plot options successfully',
-    fmri_file_type=data_manager.fmri_file_type,
+    fmri_file_type=lambda: data_manager.fmri_file_type,
     route=Routes.GET_FMRI_PLOT_OPTIONS
 )
 def get_fmri_plot_options() -> dict:
@@ -149,7 +175,7 @@ def get_fmri_plot_options() -> dict:
 @handle_route_errors(
     error_msg='Unknown error in nifti view state request',
     log_msg='Retrieved nifti view state successfully',
-    fmri_file_type=data_manager.fmri_file_type,
+    fmri_file_type=lambda: data_manager.fmri_file_type,
     route=Routes.GET_NIFTI_VIEW_STATE
 )
 def get_nifti_view_state() -> dict:
@@ -161,7 +187,7 @@ def get_nifti_view_state() -> dict:
 @handle_route_errors(
     error_msg='Unknown error in task design plot options request',
     log_msg='Retrieved task design plot options successfully',
-    fmri_file_type=data_manager.fmri_file_type,
+    fmri_file_type=lambda: data_manager.fmri_file_type,
     route=Routes.GET_TASK_DESIGN_PLOT_OPTIONS,
     route_parameters=['label']
 )
@@ -175,7 +201,7 @@ def get_task_design_plot_options() -> dict:
 @handle_route_errors(
     error_msg='Unknown error in timecourse global plot options request',
     log_msg='Retrieved timecourse global plot options successfully',
-    fmri_file_type=data_manager.fmri_file_type,
+    fmri_file_type=lambda: data_manager.fmri_file_type,
     route=Routes.GET_TIMECOURSE_GLOBAL_PLOT_OPTIONS
 )
 def get_timecourse_global_plot_options() -> dict:
@@ -187,7 +213,7 @@ def get_timecourse_global_plot_options() -> dict:
 @handle_route_errors(
     error_msg='Unknown error in timecourse plot options request',
     log_msg='Retrieved timecourse plot options successfully',
-    fmri_file_type=data_manager.fmri_file_type,
+    fmri_file_type=lambda: data_manager.fmri_file_type,
     route=Routes.GET_TIMECOURSE_PLOT_OPTIONS,
     route_parameters=['label']
 )
@@ -197,11 +223,26 @@ def get_timecourse_plot_options() -> dict:
     return data_manager.get_timecourse_plot_options(label)
 
 
+@plot_bp.route(Routes.GET_TIMECOURSE_SHIFT_HISTORY.value, methods=['GET'])
+@handle_route_errors(
+    error_msg='Unknown error in timecourse shift history request',
+    log_msg='Retrieved timecourse shift history successfully',
+    fmri_file_type=lambda: data_manager.fmri_file_type,
+    route=Routes.GET_TIMECOURSE_SHIFT_HISTORY,
+    route_parameters=['label', 'source']
+)
+def get_timecourse_shift_history() -> dict:
+    """Get current timecourse shift history"""
+    label = convert_value(request.args.get('label'))
+    source = convert_value(request.args.get('source'))
+    return data_manager.get_timecourse_shift_history(label, source)
+
+
 @plot_bp.route(Routes.GET_TIMEMARKER_PLOT_OPTIONS.value, methods=['GET'])
 @handle_route_errors(
     error_msg='Unknown error in timemarker plot options request',
     log_msg='Retrieved timemarker plot options successfully',
-    fmri_file_type=data_manager.fmri_file_type,
+    fmri_file_type=lambda: data_manager.fmri_file_type,
     route=Routes.GET_TIMEMARKER_PLOT_OPTIONS
 )
 def get_timemarker_plot_options() -> dict:
@@ -213,7 +254,7 @@ def get_timemarker_plot_options() -> dict:
 @handle_route_errors(
     error_msg='Unknown error in move annotation selection request',
     log_msg='Moved annotation selection successfully',
-    fmri_file_type=data_manager.fmri_file_type,
+    fmri_file_type=lambda: data_manager.fmri_file_type,
     route=Routes.MOVE_ANNOTATION_SELECTION
 )
 def move_annotation_selection() -> dict:
@@ -227,7 +268,7 @@ def move_annotation_selection() -> dict:
 @handle_route_errors(
     error_msg='Unknown error in remove distance plot request',
     log_msg='Removed distance plot successfully',
-    fmri_file_type=data_manager.fmri_file_type,
+    fmri_file_type=lambda: data_manager.fmri_file_type,
     route=Routes.REMOVE_DISTANCE_PLOT
 )
 def remove_distance_plot() -> dict:
@@ -240,7 +281,7 @@ def remove_distance_plot() -> dict:
 @handle_route_errors(
     error_msg='Unknown error in reset fMRI color options request',
     log_msg='Reset fMRI color options successfully',
-    fmri_file_type=data_manager.fmri_file_type,
+    fmri_file_type=lambda: data_manager.fmri_file_type,
     route=Routes.RESET_FMRI_COLOR_OPTIONS
 )
 def reset_fmri_color_options() -> dict:
@@ -249,24 +290,49 @@ def reset_fmri_color_options() -> dict:
     return {'status': 'success'}
 
 
+@plot_bp.route(Routes.RESET_TIMECOURSE_SHIFT.value, methods=['POST'])
+@handle_route_errors(
+    error_msg='Unknown error in reset timecourse shift request',
+    log_msg='Reset timecourse shift successfully',
+    fmri_file_type=lambda: data_manager.fmri_file_type,
+    route=Routes.RESET_TIMECOURSE_SHIFT,
+    route_parameters=['label', 'source', 'change_type']
+)
+def reset_timecourse_shift() -> dict:
+    """Reset timecourse shift"""
+    label = convert_value(request.form['label'])
+    change_type = convert_value(request.form['change_type'])
+    source = convert_value(request.form['source'])
+    data_manager.reset_timecourse_shift(label, change_type, source)
+    return {'status': 'success'}
+
+
 @plot_bp.route(Routes.UNDO_ANNOTATION_MARKER.value, methods=['POST'])
 @handle_route_errors(
     error_msg='Unknown error in undo annotation marker request',
     log_msg='Undid annotation marker successfully',
-    fmri_file_type=data_manager.fmri_file_type,
+    fmri_file_type=lambda: data_manager.fmri_file_type,
     route=Routes.UNDO_ANNOTATION_MARKER
 )
 def undo_annotation_marker() -> dict:
     """Undo annotation marker"""
     data_manager.pop_annotation_marker()
-    return {'status': 'success'}
+    # get current annotation markers
+    markers = data_manager.annotation_markers
+    # check if there are any markers
+    if len(markers) > 0:
+        # get most recent marker
+        marker = markers[-1]
+    else:
+        marker = None
+    return {'marker': marker}
 
 
 @plot_bp.route(Routes.UPDATE_DISTANCE_PLOT_OPTIONS.value, methods=['POST'])
 @handle_route_errors(
     error_msg='Unknown error in distance plot options update request',
     log_msg='Updated distance plot options successfully',
-    fmri_file_type=data_manager.fmri_file_type,
+    fmri_file_type=lambda: data_manager.fmri_file_type,
     route=Routes.UPDATE_DISTANCE_PLOT_OPTIONS,
     route_parameters=['distance_plot_options']
 )
@@ -281,7 +347,7 @@ def update_distance_plot_options() -> dict:
 @handle_route_errors(
     error_msg='Unknown error in fMRI plot options update request',
     log_msg='Updated fMRI plot options successfully',
-    fmri_file_type=data_manager.fmri_file_type,
+    fmri_file_type=lambda: data_manager.fmri_file_type,
     route=Routes.UPDATE_FMRI_PLOT_OPTIONS,
     route_parameters=['fmri_plot_options']
 )
@@ -311,7 +377,7 @@ def update_nifti_view_state() -> dict:
 @handle_route_errors(
     error_msg='Unknown error in task design plot options update request',
     log_msg='Updated task design plot options successfully',
-    fmri_file_type=data_manager.fmri_file_type,
+    fmri_file_type=lambda: data_manager.fmri_file_type,
     route=Routes.UPDATE_TASK_DESIGN_PLOT_OPTIONS,
     route_parameters=['label']
 )
@@ -327,7 +393,7 @@ def update_task_design_plot_options() -> dict:
 @handle_route_errors(
     error_msg='Unknown error in timecourse global plot options update request',
     log_msg='Updated timecourse global plot options successfully',
-    fmri_file_type=data_manager.fmri_file_type,
+    fmri_file_type=lambda: data_manager.fmri_file_type,
     route=Routes.UPDATE_TIMECOURSE_GLOBAL_PLOT_OPTIONS,
     route_parameters=['timecourse_global_plot_options']
 )
@@ -346,7 +412,7 @@ def update_timecourse_global_plot_options() -> dict:
 @handle_route_errors(
     error_msg='Unknown error in timecourse plot options update request',
     log_msg='Updated timecourse plot options successfully',
-    fmri_file_type=data_manager.fmri_file_type,
+    fmri_file_type=lambda: data_manager.fmri_file_type,
     route=Routes.UPDATE_TIMECOURSE_PLOT_OPTIONS,
     route_parameters=['label', 'timecourse_plot_options']
 )
@@ -354,7 +420,30 @@ def update_timecourse_plot_options() -> dict:
     """Update timecourse plot options"""
     label = convert_value(request.form['label'])
     timecourse_plot_options = json.loads(request.form['timecourse_plot_options'])
+    # convert values
+    timecourse_plot_options = {
+        convert_value(key): convert_value(value)
+        for key, value in timecourse_plot_options.items()
+    }
     data_manager.update_timecourse_plot_options(label, timecourse_plot_options)
+    return {'status': 'success'}
+
+
+@plot_bp.route(Routes.UPDATE_TIMECOURSE_SHIFT.value, methods=['POST'])
+@handle_route_errors(
+    error_msg='Unknown error in timecourse shift update request',
+    log_msg='Updated timecourse shift successfully',
+    fmri_file_type=lambda: data_manager.fmri_file_type,
+    route=Routes.UPDATE_TIMECOURSE_SHIFT,
+    route_parameters=['label', 'source', 'change_type', 'change_direction']
+)
+def update_timecourse_shift() -> dict:
+    """Update timecourse shift"""
+    label = convert_value(request.form['label'])
+    source = convert_value(request.form['source'])
+    change_type = convert_value(request.form['change_type'])
+    change_direction = convert_value(request.form['change_direction'])
+    data_manager.update_timecourse_shift(label, source, change_type, change_direction)
     return {'status': 'success'}
 
 
@@ -362,7 +451,7 @@ def update_timecourse_plot_options() -> dict:
 @handle_route_errors(
     error_msg='Unknown error in timemarker plot options update request',
     log_msg='Updated timemarker plot options successfully',
-    fmri_file_type=data_manager.fmri_file_type,
+    fmri_file_type=lambda: data_manager.fmri_file_type,
     route=Routes.UPDATE_TIMEMARKER_PLOT_OPTIONS,
     route_parameters=['timemarker_plot_options']
 )

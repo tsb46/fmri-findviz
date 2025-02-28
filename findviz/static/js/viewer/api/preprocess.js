@@ -15,8 +15,8 @@ import { API_ENDPOINTS } from '../../constants/APIEndpoints.js';
  */
 export const getPreprocessedFMRI = async (
     preprocessParams, 
-    errorInlineId, 
-    callback, 
+    errorInlineId,
+    callback,
     errorCallback
 ) => {
     return makeRequest(
@@ -81,11 +81,16 @@ export const resetFMRIPreprocess = async (errorInlineId, callback) => {
  * @param {Function} callback - Callback function to handle successful response
  * @returns {Promise} Promise object representing the API call
  */
-export const resetTimeCoursePreprocess = async (errorInlineId, callback) => {
+export const resetTimeCoursePreprocess = async (selectedTimeCourses, errorInlineId, callback) => {
     return makeRequest(
         API_ENDPOINTS.PREPROCESS.RESET_TIMECOURSE_PREPROCESS,
-        { method: 'POST' },
         {
+            method: 'POST',
+            body: createFormData({ ts_labels: selectedTimeCourses })
+        },
+        {
+            errorId: errorInlineId,
+            isInline: true,
             errorPrefix: 'Error resetting timecourse preprocessing'
         },
         callback

@@ -63,8 +63,8 @@ class Correlate {
                 this.timeCourseTypes[condition] = 'task';
             }
         });
-        await getTimeCourseLabels((labels) => {
-            for (const label of labels) {
+        await getTimeCourseLabels((ts_labels) => {
+            for (const label of ts_labels) {
                 labels.push(label);
                 this.timeCourseTypes[label] = 'timecourse';
             }

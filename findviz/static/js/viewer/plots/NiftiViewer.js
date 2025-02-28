@@ -629,19 +629,19 @@ class NiftiViewer {
             hovermode: 'closest',
             xaxis: {
                 fixedrange: true,
-                visible: false,  // Hide the X axis
-                showgrid: false, // Hide grid lines
-                zeroline: false, // Hide zero lines
-                showline: false, // Hide axis lines
-                showticklabels: false, // Hide axis tick labels
+                visible: false,  
+                showgrid: false, 
+                zeroline: false, 
+                showline: false, 
+                showticklabels: false,
             },
             yaxis: {
                 fixedrange: true,
-                visible: false,  // Hide the X axis
-                showgrid: false, // Hide grid lines
-                zeroline: false, // Hide zero lines
-                showline: false, // Hide axis lines
-                showticklabels: false, // Hide axis tick labels
+                visible: false,  
+                showgrid: false, 
+                zeroline: false, 
+                showline: false, 
+                showticklabels: false, 
             },
             margin: { l: 0, r: 0, t: 0, b: 0 },  // Remove any margins
         };

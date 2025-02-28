@@ -151,7 +151,7 @@
     display: flex;
     width: 100%;
     align-items: center; /* Vertically center the slices and colorbar */
-    justify-content: space-between; /* Distribute space between slices */
+    justify-content: space-between;
     overflow: hidden;
     box-sizing: border-box; /* Include padding and border in the element's total width and height */
 }

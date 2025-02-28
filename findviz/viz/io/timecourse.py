@@ -20,14 +20,12 @@ from findviz.viz.io import utils
 # Type aliases
 FilePath = Union[str, Path]
 FileInput = Union[FilePath, FileStorage]
-NumericData = Union[int, float, str]  # str included for validation before conversion
-ArrayData = npt.NDArray[np.float64]
 
 
 # task design output fields
 class ConditionDict(TypedDict):
-    block: ArrayData
-    hrf: ArrayData
+    block: List[float]
+    hrf: List[float]
 
 class TaskDesignDict(TypedDict):
     task_regressors: Dict[str, ConditionDict]
@@ -36,7 +34,7 @@ class TaskDesignDict(TypedDict):
 
 # time course output fields
 class TimeCourseDict(TypedDict):
-    ts_label: ArrayData
+    ts_label: List[float]
 
 
 # Expected time course file upload inputs
@@ -130,19 +128,39 @@ class TaskDesignUpload:
         FileUploadError
             If there are issues reading the files
         """
-        if self.method == 'cli':
-            file_uploads = {
-                TaskDesignFiles.FILE.value: task_file,
-                TaskDesignFiles.TR.value: tr,
-                TaskDesignFiles.SLICETIME.value: slicetime_ref
-            }
-        elif self.method == 'browser':
-            file_uploads = self._get_browser_input()
+        try:
+            if self.method == 'cli':
+                file_uploads = {
+                    TaskDesignFiles.FILE.value: task_file,
+                    TaskDesignFiles.TR.value: tr,
+                    TaskDesignFiles.SLICETIME.value: slicetime_ref
+                }
+            elif self.method == 'browser':
+                file_uploads = self._get_browser_input()
+        except exception.FileInputError as e:
+            # propagate file input returned from get files function
+            raise e
 
-        # Validate tr and slicetime entries is numeric
         task_tr = file_uploads[TaskDesignFiles.TR.value]
         task_slicetime = file_uploads[TaskDesignFiles.SLICETIME.value]
-        # first, validate is numeric
+
+        # first, validate tr and slicetime values are provided
+        if task_tr == '' or task_tr is None:
+            raise exception.FileInputError(
+                'TR is required for task design file',
+                exception.ExceptionFileTypes.TASK.value,
+                self.method,
+                [browser_fields[TaskDesignFiles.TR.value]]
+            )
+        if task_slicetime == '' or task_slicetime is None:
+            raise exception.FileInputError(
+                'Slicetime reference is required for task design file',
+                exception.ExceptionFileTypes.TASK.value,
+                self.method,
+                [browser_fields[TaskDesignFiles.SLICETIME.value]]
+            )
+
+        # validate tr and slicetime values are numeric
         if not validate.validate_ts_numeric(task_tr):
             raise exception.FileValidationError(
                 'Provided TR for task design file is not numeric: '
@@ -196,7 +214,14 @@ class TaskDesignUpload:
                 exception.ExceptionFileTypes.TASK.value, self.method,
                 [browser_fields[TaskDesignFiles.FILE.value]]
             ) from e
-        task_reg = get_task_regressors(task_data, fmri_len)
+
+        # get task regressors
+        task_reg = get_task_regressors(
+            task_data, 
+            task_tr, 
+            task_slicetime, 
+            fmri_len
+        )
         task_out = {
             TaskDesignFiles.SLICETIME.value: task_slicetime,
             TaskDesignFiles.TR.value: task_tr,
@@ -235,7 +260,8 @@ class TaskDesignUpload:
             raise exception.FileInputError(
                 f'Unrecognized file extension for {task_file.filename}. '
                 'Only .csv or .tsv are allowed.',
-                exception.ExceptionFileTypes.TIMECOURSE.value, self.method,
+                exception.ExceptionFileTypes.TASK.value, 
+                self.method,
                 [browser_fields[TaskDesignFiles.FILE.value]]
             )
 
@@ -593,7 +619,7 @@ def read_ts_file(
     method: Literal['cli', 'browser'],
     index: Optional[int] = None,
     validate_numeric: bool = True
-) -> ArrayData:
+) -> List[float]:
     """
     Read time course file based on method of upload.
 
@@ -612,8 +638,8 @@ def read_ts_file(
 
     Returns
     -------
-    ArrayData
-        Time course as 2D numpy array
+    List[float]
+        Time course as list
 
     Raises
     ------
@@ -682,34 +708,36 @@ def read_ts_file(
                     [browser_fields[TimeCourseFiles.FILES.value]],
                     index=index
                 )
-        # if checks passed, append
-        ts_array.append(row[0])
+        # if checks passed, append float of first index of row
+        ts_array.append(float(row[0]))
     
-    # convert to 2D numpy array with one column
-    ts_array = np.array(ts_array)[:,np.newaxis]
-
     return ts_array
 
 def get_task_regressors(
-    task_events: TaskDesignDict, 
+    task_events: Dict[str, Any], 
+    task_tr: float,
+    task_slicetime_ref: float,
     fmri_len: int
-) -> Dict[str, Any]:
+) -> Dict[str, Dict[str, List[float]]]:
     """
     Get task design regressors from task events dataframe
 
     Arguments:
     ----------
-        task_events: task events 
+        task_events: task events dict with 'onset', 'duration', 'trial_type' keys
+            (optional: 'trial_type')
+        task_tr: float,
+            TR of task design file
+        task_slicetime_ref: float,
+            Slicetime reference of task design file
         fmri_len: length of fmri
     
     Returns:
     --------
         task_reg: task design regressors
     """
-    tr = task_events.pop('tr')
-    slicetime_ref = task_events.pop('slicetime_ref')
     # calculate frame times based on lenght of fmri, slicetime ref and tr
-    frame_times =  tr * (np.arange(fmri_len) + slicetime_ref)
+    frame_times =  task_tr * (np.arange(fmri_len) + task_slicetime_ref)
     # initialize task regressors dict
     task_reg = {}
 

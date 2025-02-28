@@ -22,7 +22,7 @@ color_bp = Blueprint('color', __name__)
 @handle_route_errors(
     error_msg='Error generating colormap data',
     log_msg='Generated colormap data successfully',
-    fmri_file_type=data_manager.fmri_file_type,
+    fmri_file_type=lambda: data_manager.fmri_file_type,
     route=Routes.GET_COLORMAPS
 )
 def get_colormaps() -> dict:

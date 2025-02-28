@@ -7,9 +7,9 @@ Routes:
     GET_DIRECTION_LABEL_COORDS: Get direction label coords
     GET_DISTANCE_DATA: Get distance data
     GET_FMRI_DATA: Get FMRI data
-    GET_FUNCTIONAL_TIMECOURSE: Get functional timecourse
+    GET_LAST_TIMECOURSE: Get last added fmri timecourse
     GET_MONTAGE_DATA: Get montage data
-    GET_SLICE_LENGTHS: Get slice lengths
+    GET_N_TIMEPOINTS: Get number of timepoints
     GET_TASK_CONDITIONS: Get task conditions
     GET_TIMECOURSE_DATA: Get timecourse data
     GET_TIMECOURSE_LABELS: Get timecourse labels
@@ -48,6 +48,7 @@ data_bp = Blueprint('data', __name__)
 @handle_route_errors(
     error_msg='Unknown error in timecourse scale change request',
     log_msg='Timecourse scale change request successful',
+    fmri_file_type=lambda: data_manager.fmri_file_type,
     route=Routes.CHANGE_TIMECOURSE_SCALE,
     route_parameters=['label', 'scale_change', 'scale_change_unit']
 )
@@ -64,6 +65,7 @@ def change_timecourse_scale() -> dict:
 @handle_route_errors(
     error_msg='Unknown error in click coords request',
     log_msg='Click coords request successful',
+    fmri_file_type=lambda: data_manager.fmri_file_type,
     route=Routes.GET_CLICK_COORDS
 )
 def get_click_coords() -> dict:
@@ -75,6 +77,7 @@ def get_click_coords() -> dict:
 @handle_route_errors(
     error_msg='Unknown error in crosshair data request',
     log_msg='Crosshair data request successful',
+    fmri_file_type=lambda: data_manager.fmri_file_type,
     route=Routes.GET_CROSSHAIR_COORDS
 )
 def get_crosshair_coords() -> dict:
@@ -86,6 +89,7 @@ def get_crosshair_coords() -> dict:
 @handle_route_errors(
     error_msg='Unknown error in direction label coords request',
     log_msg='Direction label coords request successful',
+    fmri_file_type=lambda: data_manager.fmri_file_type,
     route=Routes.GET_DIRECTION_LABEL_COORDS
 )
 def get_direction_label_coords() -> dict:
@@ -97,6 +101,7 @@ def get_direction_label_coords() -> dict:
 @handle_route_errors(
     error_msg='Unknown error in distance data request',
     log_msg='Distance data request successful',
+    fmri_file_type=lambda: data_manager.fmri_file_type,
     route=Routes.GET_DISTANCE_DATA
 )
 def get_distance_data() -> list[float]:
@@ -108,7 +113,7 @@ def get_distance_data() -> list[float]:
 @handle_route_errors(
     error_msg='Unknown error in data update request',
     log_msg='Data update request successful',
-    fmri_file_type=data_manager.fmri_file_type,
+    fmri_file_type=lambda: data_manager.fmri_file_type,
     route=Routes.GET_FMRI_DATA
 )
 def get_fmri_data() -> dict:
@@ -152,10 +157,23 @@ def get_fmri_data() -> dict:
     }
 
 
+@data_bp.route(Routes.GET_LAST_TIMECOURSE.value, methods=['GET'])
+@handle_route_errors(
+    error_msg='Unknown error in last fmri timecourse request',
+    log_msg='Last fmri timecourse request successful',
+    fmri_file_type=lambda: data_manager.fmri_file_type,
+    route=Routes.GET_LAST_TIMECOURSE
+)
+def get_last_timecourse() -> dict:
+    """Get last added fmri timecourse"""
+    return data_manager.get_last_timecourse()
+
+
 @data_bp.route(Routes.GET_MONTAGE_DATA.value, methods=['GET'])
 @handle_route_errors(
     error_msg='Unknown error in montage data request',
     log_msg='Montage data request successful',
+    fmri_file_type=lambda: data_manager.fmri_file_type,
     route=Routes.GET_MONTAGE_DATA
 )
 def get_montage_data() -> dict:
@@ -168,21 +186,23 @@ def get_montage_data() -> dict:
     return montage_data
 
 
-@data_bp.route(Routes.GET_SLICE_LENGTHS.value, methods=['GET'])
+@data_bp.route(Routes.GET_N_TIMEPOINTS.value, methods=['GET'])
 @handle_route_errors(
-    error_msg='Unknown error in slice lengths request',
-    log_msg='Slice lengths request successful',
-    route=Routes.GET_SLICE_LENGTHS
+    error_msg='Unknown error in number of timepoints request',
+    log_msg='Number of timepoints request successful',
+    fmri_file_type=lambda: data_manager.fmri_file_type,
+    route=Routes.GET_N_TIMEPOINTS
 )
-def get_slice_lengths() -> list[float]:
-    """Get slice lengths"""
-    return data_manager.slice_len
+def get_n_timepoints() -> dict:
+    """Get number of timepoints"""
+    return {'n_timepoints': data_manager.n_timepoints}
 
 
 @data_bp.route(Routes.GET_TASK_CONDITIONS.value, methods=['GET'])
 @handle_route_errors(
     error_msg='Unknown error in task conditions request',
     log_msg='Task conditions request successful',
+    fmri_file_type=lambda: data_manager.fmri_file_type,
     route=Routes.GET_TASK_CONDITIONS
 )
 def get_task_conditions() -> list[str]:
@@ -194,6 +214,7 @@ def get_task_conditions() -> list[str]:
 @handle_route_errors(
     error_msg='Unknown error in timecourse labels request',
     log_msg='Timecourse labels request successful',
+    fmri_file_type=lambda: data_manager.fmri_file_type,
     route=Routes.GET_TIMECOURSE_LABELS
 )
 def get_timecourse_labels() -> list[str]:
@@ -201,22 +222,49 @@ def get_timecourse_labels() -> list[str]:
     return data_manager.ts_labels
 
 
+@data_bp.route(Routes.GET_TIMECOURSE_LABELS_PREPROCESSED.value, methods=['GET'])
+@handle_route_errors(
+    error_msg='Unknown error in preprocessed timecourse labels request',
+    log_msg='Preprocessed timecourse labels request successful',
+    fmri_file_type=lambda: data_manager.fmri_file_type,
+    route=Routes.GET_TIMECOURSE_LABELS_PREPROCESSED
+)
+def get_timecourse_labels_preprocessed() -> list[str]:
+    """Get preprocessed timecourse labels"""
+    return data_manager.ts_labels_preprocessed
+
+
 @data_bp.route(Routes.GET_TIMECOURSE_DATA.value, methods=['GET'])
 @handle_route_errors(
     error_msg='Unknown error in timecourse data request',
     log_msg='Timecourse data request successful',
-    fmri_file_type=data_manager.fmri_file_type,
-    route=Routes.GET_TIMECOURSE_DATA
+    fmri_file_type=lambda: data_manager.fmri_file_type,
+    route=Routes.GET_TIMECOURSE_DATA,
+    route_parameters=['ts_labels']
 )
 def get_timecourse_data() -> dict:
     """Get timecourse data for the current location."""
+    ts_labels = json.loads(request.args['ts_labels'])
     viewer_data = data_manager.get_viewer_data(
         fmri_data=False,
         time_course_data=True,
         task_data=True,
     )
-    timecourse_data = viewer_data['ts']
-    timecourse_data.extend(viewer_data['task'])
+    timecourse_data = {}
+    # add timecourse data if it exists
+    if 'ts' in viewer_data:
+        timecourse_data.update(viewer_data['ts'])
+    # add task data if it exists
+    if 'task' in viewer_data:
+        timecourse_data.update(viewer_data['task'])
+        
+    # filter timecourse data to only include the requested ts_labels (if passed)
+    if len(ts_labels) > 0:
+        timecourse_data = {
+            ts_label: timecourse_data[ts_label]
+            for ts_label in ts_labels
+            if ts_label in timecourse_data
+        }
     return timecourse_data
 
 
@@ -224,6 +272,7 @@ def get_timecourse_data() -> dict:
 @handle_route_errors(
     error_msg='Unknown error in timecourse source request',
     log_msg='Timecourse source request successful',
+    fmri_file_type=lambda: data_manager.fmri_file_type,
     route=Routes.GET_TIMECOURSE_SOURCE
 )
 def get_timecourse_source() -> dict:
@@ -235,6 +284,7 @@ def get_timecourse_source() -> dict:
 @handle_route_errors(
     error_msg='Unknown error in timepoint request',
     log_msg='Timepoint request successful',
+    fmri_file_type=lambda: data_manager.fmri_file_type,
     route=Routes.GET_TIMEPOINT
 )
 def get_timepoint() -> dict:
@@ -246,6 +296,7 @@ def get_timepoint() -> dict:
 @handle_route_errors(
     error_msg='Unknown error in viewer metadata request',
     log_msg='Viewer metadata request successful',
+    fmri_file_type=lambda: data_manager.fmri_file_type,
     route=Routes.GET_VIEWER_METADATA
 )
 def get_viewer_metadata() -> dict:
@@ -257,31 +308,33 @@ def get_viewer_metadata() -> dict:
 @handle_route_errors(
     error_msg='Unknown error in fmri timecourse pop request',
     log_msg='Fmri timecourse pop request successful',
+    fmri_file_type=lambda: data_manager.fmri_file_type,
     route=Routes.POP_FMRI_TIMECOURSE
 )
 def pop_fmri_timecourse() -> dict:
     """Pop fmri timecourse"""
-    data_manager.pop_fmri_timecourse()
-    return {'status': 'success'}
+    label = data_manager.pop_fmri_timecourse()
+    return {'label': label}
 
 
 @data_bp.route(Routes.REMOVE_FMRI_TIMECOURSES.value, methods=['POST'])
 @handle_route_errors(
     error_msg='Unknown error in fmri timecourse remove request',
     log_msg='Fmri timecourse remove request successful',
+    fmri_file_type=lambda: data_manager.fmri_file_type,
     route=Routes.REMOVE_FMRI_TIMECOURSES
 )
 def remove_fmri_timecourses() -> dict:
     """Remove all fmri timecourses"""
-    data_manager.remove_fmri_timecourses()
-    return {'status': 'success'}
+    labels = data_manager.remove_fmri_timecourses()
+    return {'labels': labels}
 
 
 @data_bp.route(Routes.UPDATE_LOCATION.value, methods=['POST'])
 @handle_route_errors(
     error_msg='Unknown error in location update request',
     log_msg='Location update successful',
-    fmri_file_type=data_manager.fmri_file_type,
+    fmri_file_type=lambda: data_manager.fmri_file_type,
     route=Routes.UPDATE_LOCATION,
     route_parameters=['click_coords', 'slice_name']
 )
@@ -293,15 +346,15 @@ def update_location() -> dict:
     return {'status': 'success'}
 
 
-@data_bp.route(Routes.UPDATE_FUNCTIONAL_TIMECOURSE.value, methods=['POST'])
+@data_bp.route(Routes.UPDATE_FMRI_TIMECOURSE.value, methods=['POST'])
 @handle_route_errors(
-    error_msg='Unknown error in functional timecourse update request',
-    log_msg='Functional timecourse update request successful',
-    fmri_file_type=data_manager.fmri_file_type,
-    route=Routes.UPDATE_FUNCTIONAL_TIMECOURSE
+    error_msg='Unknown error in fmri timecourse update request',
+    log_msg='Fmri timecourse update request successful',
+    fmri_file_type=lambda: data_manager.fmri_file_type,
+    route=Routes.UPDATE_FMRI_TIMECOURSE
 )
-def update_functional_timecourse() -> dict:
-    """Update functional timecourse data for the current location."""
+def update_fmri_timecourse() -> dict:
+    """Update fmri timecourse data for the current location."""
     viewer_data = data_manager.get_viewer_data(
         fmri_data=True,
         time_course_data=False,
@@ -333,6 +386,7 @@ def update_functional_timecourse() -> dict:
 @handle_route_errors(
     error_msg='Unknown error in montage slice direction update request',
     log_msg='Montage slice direction update successful',
+    fmri_file_type=lambda: data_manager.fmri_file_type,
     route=Routes.UPDATE_MONTAGE_SLICE_DIR,
     route_parameters=['montage_slice_dir']
 )
@@ -347,6 +401,7 @@ def update_montage_slice_dir() -> dict:
 @handle_route_errors(
     error_msg='Unknown error in montage slice indices update request',
     log_msg='Montage slice indices update successful',
+    fmri_file_type=lambda: data_manager.fmri_file_type,
     route=Routes.UPDATE_MONTAGE_SLICE_IDX,
     route_parameters=['slice_name', 'slice_idx']
 )
@@ -362,7 +417,7 @@ def update_montage_slice_idx() -> dict:
 @handle_route_errors(
     error_msg='Unknown error in timepoint update request',
     log_msg='Timepoint update successful',
-    fmri_file_type=data_manager.fmri_file_type,
+    fmri_file_type=lambda: data_manager.fmri_file_type,
     route=Routes.UPDATE_TIMEPOINT,
     route_parameters=['time_point']
 )

@@ -92,6 +92,7 @@ class PreprocessFmri {
                     input.prop('disabled', false);
                     input.closest('.custom-control').removeClass('disabled');
                 } else {
+                    input.prop('checked', false);
                     input.prop('disabled', true); 
                     input.closest('.custom-control').addClass('disabled');
                 }

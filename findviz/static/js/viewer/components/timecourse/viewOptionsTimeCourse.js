@@ -1,6 +1,9 @@
 // viewOptionsTimeCourse.js
 import { EVENT_TYPES } from '../../../constants/EventTypes.js';
 import eventBus from '../../events/ViewerEvents.js';
+import {
+    getViewerMetadata,
+} from '../../api/data.js';
 import { 
     changeTaskConvolution,
     getTimeCourseGlobalPlotOptions,
@@ -19,7 +22,7 @@ class ViewOptionsTimeCourse {
         gridToggleId,
         hoverTextToggleId,
         timeMarkerVisibilityToggleId,
-        globalConvolutionToggleId
+        globalConvolutionToggleId,
     ) {
         this.gridToggle = $(`#${gridToggleId}`);
         this.hoverTextToggle = $(`#${hoverTextToggleId}`);
@@ -34,6 +37,15 @@ class ViewOptionsTimeCourse {
                 this.toggleState['hoverTextToggle'] = plotOptions.hover_text_on;
                 this.toggleState['timeMarkerVisibilityToggle'] = plotOptions.time_marker_on;
                 this.toggleState['globalConvolutionToggle'] = plotOptions.global_convolution;
+            }
+        );
+
+        getViewerMetadata(
+            (metadata) => {
+                // if no task data is passed, disable convolution toggle
+                if (!metadata.task_enabled) {
+                    this.globalConvolutionToggle.prop('disabled', true);
+                }
             }
         );
 
@@ -61,7 +73,7 @@ class ViewOptionsTimeCourse {
         changeTaskConvolution(this.toggleState['globalConvolutionToggle'], () => {
             eventBus.publish(
                 EVENT_TYPES.VISUALIZATION.TIMECOURSE.TOGGLE_CONVOLUTION_GLOBAL, 
-                { plotOptions: this.toggleState['globalConvolutionToggle'] }
+                { global_convolution: this.toggleState['globalConvolutionToggle'] }
             );
         });
     }
@@ -77,7 +89,7 @@ class ViewOptionsTimeCourse {
             () => {
                 eventBus.publish(
                     EVENT_TYPES.VISUALIZATION.TIMECOURSE.GRID_TOGGLE, 
-                    { plotOptions: this.toggleState['gridToggle'] }
+                    this.toggleState['gridToggle']
                 );
             }
         );
@@ -94,7 +106,7 @@ class ViewOptionsTimeCourse {
             () => {
                 eventBus.publish(
                     EVENT_TYPES.VISUALIZATION.TIMECOURSE.HOVER_TEXT_TOGGLE, 
-                    { plotOptions: this.toggleState['hoverTextToggle'] }
+                    this.toggleState['hoverTextToggle']
                 );
             }
         );
@@ -111,7 +123,7 @@ class ViewOptionsTimeCourse {
             () => {
                 eventBus.publish(
                     EVENT_TYPES.VISUALIZATION.TIMECOURSE.TIME_MARKER_VISIBILITY_TOGGLE, 
-                    { plotOptions: this.toggleState['timeMarkerVisibilityToggle'] }
+                    this.toggleState['timeMarkerVisibilityToggle']
                 );
             }
         );

@@ -39,49 +39,22 @@ class DistancePopover {
 
         // get elements
         this.distancePopOver = $(`#${distancePopOverId}`);
-        this.distanceColorRangeSlider = $(`#${distanceColorRangeSliderId}`);
-        this.distanceTimeMarkerWidthSlider = $(`#${distanceTimeMarkerWidthSliderId}`);
-        this.distanceTimeMarkerOpacitySlider = $(`#${distanceTimeMarkerOpacitySliderId}`);
         this.distancePrepAlert = $(`#${distancePrepAlertId}`);
 
         // initialize distance plot options popover
         this.initializeDistancePlotPopover();
 
-        // disable popover by default
-        this.distancePopOver.popover('disable');
+        // attach event listeners
+        this.attachEventListeners();
 
     }
 
     /**
-     * Attaches event listeners to the distance plot options popover
+     * Attaches event listeners to the distance plot
      */
     attachEventListeners() {
-        // Color Range Slider listener
-        this.distanceColorRangeSlider.on('change', (event) => {
-            updateDistancePlotOptions({
-                color_range: event.value.newValue,
-            });
-            eventBus.publish(EVENT_TYPES.VISUALIZATION.DISTANCE.TIME_MARKER_COLOR_MAP_CHANGE);
-        });
-
-        // Time Marker Width Slider listener
-        this.distanceTimeMarkerWidthSlider.on('change', (event) => {
-            updateDistancePlotOptions({
-                time_marker_width: event.value.newValue,
-            });
-            eventBus.publish(EVENT_TYPES.VISUALIZATION.DISTANCE.TIME_MARKER_WIDTH_CHANGE);
-        });
-
-        // Time Marker Opacity Slider listener
-        this.distanceTimeMarkerOpacitySlider.on('change', (event) => {
-            updateDistancePlotOptions({
-                time_marker_opacity: event.value.newValue,
-            });
-            eventBus.publish(EVENT_TYPES.VISUALIZATION.DISTANCE.TIME_MARKER_OPACITY_CHANGE);
-        });
-
         // listen for distance submit event and enable popover
-        eventBus.subscribe(EVENT_TYPES.ANALYSIS.DISTANCE_SUBMIT, 
+        eventBus.subscribe(EVENT_TYPES.ANALYSIS.DISTANCE, 
             () => {
                 this.distancePopOver.prop('disabled', false);
             }
@@ -95,14 +68,50 @@ class DistancePopover {
         );
     }
 
+    /**
+     * Attaches event listeners to the distance plot options popover
+     */
+    attachPopoverListeners() {
+        // Color Range Slider listener
+        $(`#${this.distanceColorRangeSliderId}`).on('change', (event) => {
+            updateDistancePlotOptions({
+                color_min: event.value.newValue[0],
+                color_max: event.value.newValue[1],
+            },
+            () => {
+                eventBus.publish(EVENT_TYPES.VISUALIZATION.DISTANCE.COLOR_RANGE_CHANGE);
+            });
+        });
+
+        // Time Marker Width Slider listener
+        $(`#${this.distanceTimeMarkerWidthSliderId}`).on('change', (event) => {
+            updateDistancePlotOptions({
+                time_marker_width: event.value.newValue,
+            }, () => {
+                eventBus.publish(EVENT_TYPES.VISUALIZATION.DISTANCE.TIME_MARKER_WIDTH_CHANGE);
+            });
+        });
+
+        // Time Marker Opacity Slider listener
+        $(`#${this.distanceTimeMarkerOpacitySliderId}`).on('change', (event) => {
+            updateDistancePlotOptions({
+                time_marker_opacity: event.value.newValue,
+            }, () => {
+                eventBus.publish(EVENT_TYPES.VISUALIZATION.DISTANCE.TIME_MARKER_OPACITY_CHANGE);
+            });
+        });
+    }
+
     initializeDistancePlotPopover() {
         // initialize tooltips on popup show
         this.distancePopOver.on('shown.bs.popover', () => {
             // Hide popover when clicking outside
+            // Store reference to this
+            const self = this;
             $(document).on('click', function (e) {
                 // Check if the click is outside the popover and the button
-                if (!$(e.target).closest(`.popover, #${this.distancePopOverId}`).length) {
-                  this.distancePopOver.popover('hide');
+                if (!$(e.target).closest(`.popover, #${self.distancePopOverId}`).length) {
+                    $(`#${self.distancePopOverId}`).popover('hide');
                 }
             });
 
@@ -141,10 +150,11 @@ class DistancePopover {
                     [0, 1], // hardcoded for now
                     0.01, // hardcoded for now
                 );
+
+                // attach event listeners
+                this.attachPopoverListeners();
             });
 
-            // attach event listeners
-            this.attachEventListeners();
         })
     }
 

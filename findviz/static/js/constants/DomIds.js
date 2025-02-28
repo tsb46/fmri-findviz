@@ -22,6 +22,7 @@ export const DOM_IDS = {
         COLORMAP_DROPDOWN_TOGGLE: 'distance-plot-colormap-dropdown-toggle',
         COLOR_RANGE_SLIDER: 'distance-plot-color-range',
         DISTANCE_FORM: 'distance-form',
+        ERROR_MESSAGE: 'error-message-distance',
         METRIC_SELECT: 'distance-metric-select',
         TIME_POINT_MESSAGE: 'timepoint-distance-label',
         TIME_MARKER_WIDTH_SLIDER: 'distance-plot-time-marker-width',
@@ -29,15 +30,9 @@ export const DOM_IDS = {
         PLOT: 'distance-plot',
         POPOVER: 'distance-popover',
         REMOVE_DISTANCE_BUTTON: 'remove-distance-plot',
-        PREPROCESS_ALERT: 'distance-prep-alert'
-    },
-    ERROR_MESSAGES: {
-        VIEWER: 'error-message-viewer',
-        AVERAGE: 'error-message-average',
-        CORRELATION: 'error-message-correlation',
-        DISTANCE: 'error-message-distance',
-        PREPROCESS: 'error-message-preprocess',
-        TIMECOURSE: 'error-message-timecourse'
+        PREPROCESS_ALERT: 'distance-prep-alert',
+        SPINNER_OVERLAY: 'distance-spinner-overlay',
+        SPINNER_WHEEL: 'distance-spinner-wheel'
     },
     FILE_UPLOAD: {
         ADD_TS: 'add-time-series',
@@ -146,12 +141,26 @@ export const DOM_IDS = {
             UNDO_ANNOTATE: 'undo-annotate',
             REMOVE_ANNOTATE: 'remove-annotate',
         },
+        FMRI: {
+            ENABLE_FMRI_TIMECOURSE: 'enable-fmri-time-course',
+            FREEZE_FMRI_TIMECOURSE: 'freeze-fmri-time-course',
+            FREEZE_ICON: 'freeze-icon',
+            REMOVE_FMRI_TIMECOURSE: 'remove-fmri-time-course',
+            UNDO_FMRI_TIMECOURSE: 'undo-fmri-time-course'
+        },
         LINE_PLOT_OPTIONS: {
-            SELECT_TIMECOURSE: 'ts-select',
             COLOR_SELECT: 'ts-color-select',
+            CONVOLUTION_CHECKBOX: 'ts-convolution-checkbox',
+            CONSTANT_SHIFT_INCREASE: 'ts-increase-constant',
+            CONSTANT_SHIFT_DECREASE: 'ts-decrease-constant',
+            CONSTANT_SHIFT_RESET: 'ts-reset-constant',
             MARKER_SELECT: 'ts-marker-select',
+            OPACITY_SLIDER: 'ts-opacity-slider',
+            SCALE_SHIFT_INCREASE: 'ts-increase-scale',
+            SCALE_SHIFT_DECREASE: 'ts-decrease-scale',
+            SCALE_SHIFT_RESET: 'ts-reset-scale',
+            SELECT_TIMECOURSE: 'ts-select',
             WIDTH_SLIDER: 'ts-width-slider',
-            OPACITY_SLIDER: 'ts-opacity-slider'
         },
         MARKER_PLOT_OPTIONS: {
             COLOR_SELECT: 'timepoint-color-select',
@@ -162,6 +171,7 @@ export const DOM_IDS = {
         PEAK_FINDER: {
             POPOVER: 'peak-finder-popover',
             PEAK_FORM: 'peak-finder-form',
+            PEAK_PREP_ALERT: 'peak-finder-prep-alert',
             SELECT_TIMECOURSE: 'ts-select-peak-finder',
             SUBMIT_PEAK_FINDER: 'submit-peak-finder'
         },
@@ -181,9 +191,6 @@ export const DOM_IDS = {
         PREPROCESS_ALERT: 'ts-preprocess-alert',
         TIME_COURSE_CONTAINER: 'time-course-container',
         TIME_COURSE_PLOT: 'time-course-plot',
-        FREEZE_TIME_COURSE: 'freeze-time-course',
-        UNDO_TIME_COURSE: 'undo-time-course',
-        REMOVE_TIME_COURSE: 'remove-time-course',
         VISUALIZATION_OPTIONS: {
             TOGGLE_CONVOLUTION: 'toggle-convolution',
             TOGGLE_GRID: 'toggle-grid',

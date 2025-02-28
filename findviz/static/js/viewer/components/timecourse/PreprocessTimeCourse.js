@@ -2,7 +2,7 @@
 import { EVENT_TYPES } from '../../../constants/EventTypes.js';
 import eventBus from '../../events/ViewerEvents.js';
 import { getPreprocessedTimeCourse, resetTimeCoursePreprocess } from '../../api/preprocess.js';
-import { getTimeCourseLabels } from '../../api/data.js';
+import { getTimeCourseLabels, getTimeCourseLabelsPreprocessed } from '../../api/data.js';
 
 class PreprocessTimeCourse {
     /**
@@ -64,6 +64,27 @@ class PreprocessTimeCourse {
         this.prepReset.on('click', (event) => this.handlePreprocessReset(event));
         // initialize time course preprocessing selection menu
         this.initializeTimeCoursePrepSelect();
+        // attach event listeners
+        this.attachEventListeners();
+    }
+
+    attachEventListeners() {
+        // Listen for addition and removal of fmri time courses
+        eventBus.subscribeMultiple(
+            [
+                EVENT_TYPES.VISUALIZATION.TIMECOURSE.ADD_FMRI_TIMECOURSE, 
+                EVENT_TYPES.VISUALIZATION.TIMECOURSE.REMOVE_FMRI_TIMECOURSE,
+                EVENT_TYPES.VISUALIZATION.TIMECOURSE.UNDO_FMRI_TIMECOURSE
+            ],
+            () => {
+                // clear all options from the select menu
+                this.timeCoursePrepMenu.empty();
+                // destroy and reinitialize bootstrap-select
+                this.timeCoursePrepMenu.selectpicker('destroy');
+                // initialize time course prep menu with fresh options
+                this.initializeTimeCoursePrepSelect();
+            }
+        );
     }
 
     initializeSwitches() {
@@ -71,18 +92,32 @@ class PreprocessTimeCourse {
         this.normSwitch.on('click', () => {
             this.normSwitchEnabled = !this.normSwitchEnabled
             const inputsNorm = [this.meanCenter, this.zScore];
-            inputsNorm.forEach(
-                input => this.normSwitchEnabled ? input.disabled = false : input.disabled = true
-            );
+            // Enable/disable bootstrap radio buttons
+            inputsNorm.forEach(input => {
+                if (this.normSwitchEnabled) {
+                    input.prop('disabled', false);
+                    input.closest('.custom-control').removeClass('disabled');
+                } else {
+                    input.prop('checked', false);
+                    input.prop('disabled', true); 
+                    input.closest('.custom-control').addClass('disabled');
+                }
+            });
         });
 
         // Enable filtering switch
         this.filterSwitch.on('click', () => {
             this.filterSwitchEnabled = !this.filterSwitchEnabled
             const inputsFilter = [this.lowCut, this.highCut, this.TR];
-            inputsFilter.forEach(
-                input => this.filterSwitchEnabled ? input.disabled = false : input.disabled = true
-            );
+            inputsFilter.forEach(input => {
+                if (this.filterSwitchEnabled) {
+                    input.prop('disabled', false);
+                    input.closest('.custom-control').removeClass('disabled');
+                } else {
+                    input.prop('disabled', true); 
+                    input.closest('.custom-control').addClass('disabled');
+                }
+            });
         });
     }
 
@@ -91,9 +126,9 @@ class PreprocessTimeCourse {
      */
     initializeTimeCoursePrepSelect() {
         // get time course labels
-        getTimeCourseLabels((response) => {
+        getTimeCourseLabels((labels) => {
             // Loop through time courses and append label to select dropdown menu
-            for (let ts of response) {
+            for (let ts of labels) {
                 const label = ts;
                 let newOption = $('<option>', { value: label, text: label });
                 this.timeCoursePrepMenu.append(newOption);
@@ -127,18 +162,22 @@ class PreprocessTimeCourse {
             ts_labels: selectedTimeCourses
         }
         // preprocess timecourse
-        getPreprocessedTimeCourse(preprocessParams, this.errorInlineId, (response) => {
-            eventBus.publish(EVENT_TYPES.PREPROCESSING.PREPROCESS_TIMECOURSE_SUCCESS);
+        getPreprocessedTimeCourse(preprocessParams, this.errorInlineId, () => {
+            eventBus.publish(
+                EVENT_TYPES.PREPROCESSING.PREPROCESS_TIMECOURSE_SUCCESS, 
+                selectedTimeCourses
+            );
+            // show preprocess alert
+            this.preprocessAlert.css("display", "block");
         });
-        // show preprocess alert
-        this.preprocessAlert.css("display", "block");
+        
     }
 
     /**
      * Handle preprocessing reset button event
      * @param {Event} event - event object
      */
-    handlePreprocessReset(event) {
+    async handlePreprocessReset(event) {
         event.preventDefault();
         console.log('preprocess reset button clicked');
         // Set switches to disabled
@@ -148,13 +187,28 @@ class PreprocessTimeCourse {
         this.filterSwitchEnabled = false;
         // clear parameters
         this.meanCenter.prop('checked', false);
+        this.meanCenter.prop('disabled', true);
         this.zScore.prop('checked', false);
+        this.zScore.prop('disabled', true);
         this.TR.val('');
+        this.TR.prop('disabled', true);
         this.lowCut.val('');
+        this.lowCut.prop('disabled', true);
         this.highCut.val('');
+        this.highCut.prop('disabled', true);
+        
+        // clear error message (if any)
+        const errorInline = $(`#${this.errorInlineId}`);
+        errorInline.text('');
+        errorInline.hide();
+        // get selected time courses
+        const selectedTimeCourses = this.timeCoursePrepMenu.val();
         // reset preprocess
-        resetTimeCoursePreprocess(this.errorInlineId, () => {
-            eventBus.publish(EVENT_TYPES.PREPROCESSING.PREPROCESS_TIMECOURSE_RESET);
+        resetTimeCoursePreprocess(selectedTimeCourses, this.errorInlineId, () => {
+            eventBus.publish(
+                EVENT_TYPES.PREPROCESSING.PREPROCESS_TIMECOURSE_RESET,
+                selectedTimeCourses
+            );
             // hide preprocess alert
             this.preprocessAlert.css("display", "none");
         });

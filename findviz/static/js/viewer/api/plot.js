@@ -1,6 +1,7 @@
 // plot.js
 // API calls for modifying plot display
 // Fetch functions:
+// - checkTsPreprocessed
 // - getAnnotationMarkers
 // - getDistancePlotOptions
 // - getColormapData
@@ -26,7 +27,7 @@
 // - updateTaskDesignPlotOptions
 // - updateTimeCoursePlotOptions
 // - updateTimeCourseGlobalPlotOptions
-// - updateTimeCourseScale
+// - updateTimeCourseShift
 // - updateTimeMarkerPlotOptions
 
 
@@ -83,9 +84,24 @@ export const changeTaskConvolution = async (convolution, callback) => {
         API_ENDPOINTS.PLOT_OPTIONS.CHANGE_TASK_CONVOLUTION,
         {
             method: 'POST',
-            body: createFormData({ convolution })
+            body: createFormData({ convolution: convolution })
         },
         { errorPrefix: 'Error changing task convolution' },
+        callback
+    );
+};
+
+/**
+ * Check if time course is preprocessed
+ * @param {string} label - Label of the time course to check
+ * @param {string} ts_type - Type of the time course to check (timecourse or task)
+ * @param {Function} callback - Callback function to handle successful response
+ */
+export const checkTsPreprocessed = async (label, ts_type, callback) => {
+    return makeRequest(
+        API_ENDPOINTS.PLOT_OPTIONS.CHECK_TS_PREPROCESSED,
+        { method: 'POST', body: createFormData({ label, ts_type }) },
+        { errorPrefix: 'Error checking time course preprocessed' },
         callback
     );
 };
@@ -182,11 +198,12 @@ export const getSelectedTimePoint = async (callback) => {
 
 /**
  * Get task design plot options
- * @param {string} label - Label of the task design to get plot options for
+ * @param {string} label - Label of the task design to get plot options for.
+ *      All plot options are returned if label is not provided
  * @param {Function} callback - Callback function to handle successful response
  * @returns {Promise} Promise object representing the API call
  */
-export const getTaskDesignPlotOptions = async (label, callback) => {
+export const getTaskDesignPlotOptions = async (label=null, callback) => {
     return makeRequest(
         API_ENDPOINTS.PLOT_OPTIONS.GET_TASK_DESIGN_PLOT_OPTIONS,
         {
@@ -229,9 +246,23 @@ export const getTimeCourseGlobalPlotOptions = async(callback) => {
         { errorPrefix: 'Error fetching global time course plot options' },
         callback
     );
-}
+};
 
-
+/**
+ * Get time course shift history
+ * @param {string} label - Label of the time course to get shift history for
+ * @param {string} source - Source of the time course to get shift history for (timecourse or task)
+ * @param {Function} callback - Callback function to handle successful response
+ * @returns {Promise} Promise object representing the API call
+ */
+export const getTimeCourseShiftHistory = async (label, source, callback) => {
+    return makeRequest(
+        API_ENDPOINTS.PLOT_OPTIONS.GET_TIMECOURSE_SHIFT_HISTORY,
+        { method: 'GET', body: createFormData({ label, source }) },
+        { errorPrefix: 'Error fetching time course shift history' },
+        callback
+    );
+};
 
 
 /**
@@ -285,6 +316,21 @@ export const resetFmriColorOptions = async (callback) => {
     );
 };
 
+/**
+ * Reset time course shift
+ * @param {string} label - Label of the time course to reset shift for
+ * @param {string} source - Source of the time course to reset shift for (timecourse or task)
+ * @param {string} change_type - Type of the shift to reset (constant or scale)
+ * @param {Function} callback - Callback function to handle successful response
+ */
+export const resetTimeCourseShift = async (label, source, change_type, callback) => {
+    return makeRequest(
+        API_ENDPOINTS.PLOT_OPTIONS.RESET_TIMECOURSE_SHIFT,
+        { method: 'POST', body: createFormData({ label, source, change_type }) },
+        { errorPrefix: 'Error resetting time course shift' },
+        callback
+    );
+};
 /**
  * Remove distance plot
  * @param {Function} callback - Callback function to handle successful response
@@ -405,7 +451,7 @@ export const updateTimeCoursePlotOptions = async (label, timeCoursePlotOptions, 
             method: 'POST',
             body: createFormData({
                 label,
-                time_course_plot_options: timeCoursePlotOptions
+                timecourse_plot_options: timeCoursePlotOptions
             })
         },
         { errorPrefix: 'Error updating time course plot options' },
@@ -424,7 +470,7 @@ export const updateTimeCourseGlobalPlotOptions = async (timeCourseGlobalPlotOpti
         API_ENDPOINTS.PLOT_OPTIONS.UPDATE_TIMECOURSE_GLOBAL_PLOT_OPTIONS,
         {
             method: 'POST',
-            body: createFormData({ time_course_global_plot_options: timeCourseGlobalPlotOptions })
+            body: createFormData({ timecourse_global_plot_options: timeCourseGlobalPlotOptions })
         },
         { errorPrefix: 'Error updating global time course plot options' },
         callback
@@ -432,21 +478,28 @@ export const updateTimeCourseGlobalPlotOptions = async (timeCourseGlobalPlotOpti
 };
 
 /**
- * Update time course scale
- * @param {string} label - Label of the time course to update scale for
- * @param {string} ts_type - Type of the time course to update scale for
- * @param {string} scale_change - Direction of the scale change
+ * Update time course shift
+ * @param {string} label - Label of the time course to update shift for
+ * @param {string} source - Source of the time course to update shift for (task or timecourse)
+ * @param {string} change_type - Type of the shift to update (constant or scale)
+ * @param {string} change_direction - Direction of the shift change (increase or decrease)
  * @param {Function} callback - Callback function to handle successful response
  * @returns {Promise} Promise object representing the API call
  */
-export const updateTimeCourseScale = async (label, ts_type, scale_change, callback) => {
+export const updateTimeCourseShift = async (
+    label, 
+    source, 
+    change_type, 
+    change_direction,
+    callback
+) => {
     return makeRequest(
-        API_ENDPOINTS.PLOT_OPTIONS.UPDATE_TIMECOURSE_SCALE,
+        API_ENDPOINTS.PLOT_OPTIONS.UPDATE_TIMECOURSE_SHIFT,
         {
             method: 'POST',
-            body: createFormData({ label, ts_type, scale_change })
+            body: createFormData({ label, source, change_type, change_direction })
         },
-        { errorPrefix: 'Error updating time course scale' },
+        { errorPrefix: 'Error updating time course shift' },
         callback
     );
 };
@@ -462,7 +515,7 @@ export const updateTimeMarkerPlotOptions = async (timeMarkerPlotOptions, callbac
         API_ENDPOINTS.PLOT_OPTIONS.UPDATE_TIMEMARKER_PLOT_OPTIONS,
         {
             method: 'POST',
-            body: createFormData({ time_marker_plot_options: timeMarkerPlotOptions })
+            body: createFormData({ timemarker_plot_options: timeMarkerPlotOptions })
         },
         { errorPrefix: 'Error updating time marker plot options' },
         callback

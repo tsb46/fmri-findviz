@@ -2,6 +2,23 @@
 
 This module provides helper functions for processing NIFTI and GIFTI data,
 including metadata extraction and value range calculations.
+
+Functions:
+    - apply_mask_nifti: Apply a mask to a NIfTI image
+    - extend_color_range: Extend color range by a given percentage
+    - get_coord_labels: Get coordinate labels for NIFTI data as a 3D array
+    - get_fmri_minmax: Calculate global minimum and maximum values for fmri data
+    - get_ts_minmax: Calculate global minimum and maximum values for time series data
+    - get_ortho_slice_coords: Get initial orthogonal view slice coordinates for NIFTI data
+    - get_ortho_slice_idx: Get initial orthogonal view slice indices for NIFTI data
+    - get_montage_slice_coords: Get initial montage slice coordinates for NIFTI data
+    - get_montage_slice_idx: Get initial montage slice indices for NIFTI data
+    - get_slider_step_size: Calculate slider step size
+    - get_precision: Calculate precision for slider step size
+    - package_distance_metadata: Package metadata for distance visualization
+    - package_gii_metadata: Package metadata for GIFTI visualization
+    - package_nii_metadata: Package metadata for NIFTI visualization
+    - requires_state: Decorator to check if state exists before executing method
 """
 import decimal
 
@@ -112,11 +129,11 @@ def get_coord_labels(
     return coord_labels
 
 
-def get_minmax(
+def get_fmri_minmax(
     data: Union[np.ndarray, GiftiImage], 
     file_type: Literal['gifti', 'nifti']
 ) -> Tuple[float, float]:
-    """Calculate global minimum and maximum values for neuroimaging data.
+    """Calculate global minimum and maximum values for fmri data.
     
     Parameters:
     -----------
@@ -280,6 +297,18 @@ def get_montage_slice_idx(
     return montage_slice_idx
 
 
+def get_precision(
+    data_range: float,
+    max_precision: int = 6
+) -> int:
+    """Calculate precision for slider step size"""
+    data_range_dec = decimal.Decimal(data_range)
+    precision = abs(data_range_dec.as_tuple().exponent)
+    if precision > max_precision:
+        return max_precision
+    return precision
+
+
 def get_slider_step_size(
     data_range: float,
     slider_steps: int,
@@ -300,16 +329,48 @@ def get_slider_step_size(
     return round(data_range/slider_steps, precision)
 
 
-def get_precision(
-    data_range: float,
-    max_precision: int = 6
-) -> int:
-    """Calculate precision for slider step size"""
-    data_range_dec = decimal.Decimal(data_range)
-    precision = abs(data_range_dec.as_tuple().exponent)
-    if precision > max_precision:
-        return max_precision
-    return precision
+def get_ts_minmax(
+    default_min: float,
+    default_max: float,
+    ts_data: Optional[Dict[str, np.ndarray]] = None,
+    task_data: Optional[Dict[str, np.ndarray]] = None
+) -> Tuple[float, float]:
+    """Calculate global minimum and maximum values for time series data. If 
+    no ts data or task data is provided, return default_min and default_max.
+    
+    Parameters:
+    -----------
+    default_min: Default minimum value
+    default_max: Default maximum value
+    ts_data: Dictionary containing time series data
+    task_data: Dictionary containing task data
+    
+    Returns:
+    --------
+    Tuple containing (global_minimum, global_maximum)
+    """
+    ts_min = np.nan
+    ts_max = np.nan
+    task_min = np.nan
+    task_max = np.nan
+
+    if ts_data is not None:
+        ts_min = float(np.nanmin([ts_data[ts] for ts in ts_data]))
+        ts_max = float(np.nanmax([ts_data[ts] for ts in ts_data]))
+
+    if task_data is not None:
+        task_min = float(np.nanmin([task_data[task] for task in task_data]))
+        task_max = float(np.nanmax([task_data[task] for task in task_data]))
+    
+    global_min = float(np.nanmin([ts_min, task_min]))
+    global_max = float(np.nanmax([ts_max, task_max]))
+
+    if np.isnan(global_min):
+        global_min = default_min
+    if np.isnan(global_max):
+        global_max = default_max
+
+    return global_min, global_max
 
 
 def package_distance_metadata(
@@ -392,11 +453,11 @@ def package_gii_metadata(
     global_max_right = np.nan
     
     if left_img is not None:
-        global_min_left, global_max_left = get_minmax(left_img, 'gifti')
+        global_min_left, global_max_left = get_fmri_minmax(left_img, 'gifti')
         timepoints = list(range(len(left_img.darrays)))
         
     if right_img is not None:
-        global_min_right, global_max_right = get_minmax(right_img, 'gifti')
+        global_min_right, global_max_right = get_fmri_minmax(right_img, 'gifti')
         if timepoints is None:
             timepoints = list(range(len(right_img.darrays)))
 
@@ -455,7 +516,7 @@ def package_nii_metadata(
     """
     data = nii_img.get_fdata()
     # Calculate global min and max
-    data_min, data_max = get_minmax(data, 'nifti')
+    data_min, data_max = get_fmri_minmax(data, 'nifti')
     # Calculate precision for slider step size
     precision = get_precision(data_range=data_max - data_min)
     # Get initial orthogonal view slice indices

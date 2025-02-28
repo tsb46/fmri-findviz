@@ -1,5 +1,5 @@
 // utils.js
-import { displayInlineError, displayModalError, clearInlineError } from '../error.js';
+import { displayInlineError, clearInlineError, modalErrorHandler } from '../error.js';
 
 /**
  * Makes an API request with standardized error handling
@@ -52,7 +52,7 @@ export const makeRequest = async (url, options, errorConfig, callback, errorCall
             if (errorConfig.isInline && errorConfig.errorId) {
                 displayInlineError(errorText, errorConfig.errorId);
             } else {
-                displayModalError(errorText);
+                modalErrorHandler.displayError(errorText);
             }
 
             // Call error callback if provided
@@ -69,25 +69,32 @@ export const makeRequest = async (url, options, errorConfig, callback, errorCall
             clearInlineError(errorConfig.errorId);
         }
 
+        // get data from response (if any)
+        const data = await response.json();
+
         // For GET requests, parse and return data
         if (options.method === 'GET') {
-            const data = await response.json();
             if (callback && data) {
                 callback(data);
             }
             return data;
         }
 
-        // For POST requests, execute callback and return true
+        // For POST requests, if callback, execute call back and return true 
         if (callback) {
-            callback();
+            callback(data)
+            return true;
+        } else {
+            // if no callback, return data or true
+            if (data) {
+                return data;
+            } else {
+                return true;
+            }
         }
-        return true;
 
     } catch (error) {
         console.error(`${errorConfig.errorPrefix}:`, error);
-        // always display modal for catch-all error
-        displayModalError(error.message);
         // Call error callback if provided
         if (errorCallback) {
             errorCallback();

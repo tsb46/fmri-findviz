@@ -164,7 +164,7 @@ def validate_nii_brain_mask(nii_mask: nib.Nifti1Image) -> bool:
 
 def validate_task_ext(fp: str) -> bool:
     """
-    validate task design file extension (.csv or .txt)
+    validate task design file extension (.csv or .tsv)
     """
     base, ext = os.path.splitext(fp)
     if ext == '.csv':

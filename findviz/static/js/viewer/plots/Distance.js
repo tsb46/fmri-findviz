@@ -15,6 +15,12 @@ class Distance {
     constructor(distancePlotId, distanceContainerId){
         this.distancePlotId = distancePlotId;
         this.distanceContainerId = distanceContainerId;
+
+        // attach event listeners
+        this.attachEventListeners();
+
+        // set plot state
+        this.plotState = false;
     }
 
     /**
@@ -25,11 +31,16 @@ class Distance {
         eventBus.subscribe(EVENT_TYPES.ANALYSIS.DISTANCE, 
             async () => {
                 console.log('plotting distance');
+                // get distance data
                 const distanceVector = await getDistanceData();
-                const timeIndex = await getTimePoint();
+                const timePoint = await getTimePoint();
                 const plotOptions = await getDistancePlotOptions();
-                this.plotDistance(distanceVector, timeIndex, plotOptions);
-                this.plotTimePointMarker(timeIndex, plotOptions);
+                // plot distance vector
+                this.plotDistance(distanceVector, timePoint.timepoint, plotOptions);
+                // plot time point marker
+                this.plotTimePointMarker(timePoint.timepoint, plotOptions);
+                // initiate a resize event
+                this.onWindowResize();
                 // show container
                 document.getElementById(this.distanceContainerId).style.display = 'block';
             }
@@ -40,6 +51,7 @@ class Distance {
             () => {
                 console.log('removing distance plot');
                 Plotly.purge(this.distancePlotId);
+                this.plotState = false;
                 // hide container
                 document.getElementById(this.distanceContainerId).style.display = 'none';
             }
@@ -47,24 +59,41 @@ class Distance {
 
         // listen for time point change event and plot time point marker
         eventBus.subscribe(EVENT_TYPES.VISUALIZATION.FMRI.TIME_SLIDER_CHANGE, 
-            async (timeIndex) => {
-                const plotOptions = await getDistancePlotOptions();
-                this.plotTimePointMarker(timeIndex, plotOptions);
+            async (timePoint) => {
+                if (this.plotState) {
+                    console.log('replotting time marker on distance plot for time point change event');
+                    const plotOptions = await getDistancePlotOptions();
+                    this.plotTimePointMarker(timePoint, plotOptions);
+                }
             }
         );
 
         // listen for time marker plot changes and replot time point marker
         eventBus.subscribeMultiple(
             [
-                EVENT_TYPES.VISUALIZATION.DISTANCE.TIME_MARKER_COLOR_MAP_CHANGE,
                 EVENT_TYPES.VISUALIZATION.DISTANCE.TIME_MARKER_WIDTH_CHANGE, 
                 EVENT_TYPES.VISUALIZATION.DISTANCE.TIME_MARKER_OPACITY_CHANGE
             ] , 
             async () => {
-                console.log('replotting time point marker');
+                console.log('replotting time point marker on distance plot for time marker change event');
                 const plotOptions = await getDistancePlotOptions();
-                const timeIndex = await getTimePoint();
-                this.plotTimePointMarker(timeIndex, plotOptions);
+                const timePoint = await getTimePoint();
+                this.plotTimePointMarker(timePoint.timepoint, plotOptions);
+            }
+        );
+
+        // listen for color range and color map change event and replot distance plot
+        eventBus.subscribeMultiple(
+            [
+                EVENT_TYPES.VISUALIZATION.DISTANCE.COLOR_RANGE_CHANGE,
+                EVENT_TYPES.VISUALIZATION.DISTANCE.COLOR_MAP_CHANGE
+            ], 
+            async () => {
+                console.log('replotting distance plot for color range and color map change event');
+                const plotOptions = await getDistancePlotOptions();
+                const timePoint = await getTimePoint();
+                const distanceVector = await getDistanceData();
+                this.plotDistance(distanceVector, timePoint.timepoint, plotOptions);
             }
         );
 
@@ -114,6 +143,7 @@ class Distance {
         }
 
         Plotly.react(this.distancePlotId, distPlot, layout);
+        this.plotState = true;
     }
 
     // resize plotly plots to window resizing

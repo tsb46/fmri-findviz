@@ -24,29 +24,29 @@ class PreprocessTimecourseInputs(TypedDict):
     tr: float
     low_cut: float
     high_cut: float
-    order: int
-    ts_labels: List[str]
     
 
 def preprocess_timecourse(
-    timecourse_data: np.ndarray,
-    inputs: PreprocessTimecourseInputs,
-) -> np.ndarray:
+    timecourse_data: List[float],
+    inputs: PreprocessTimecourseInputs
+) -> List[float]:
     """
     Preprocess time course data
 
-    Arguments:
+    Parameters
     ----------
-        timecourse_data: time course data
-        inputs: inputs for preprocess_timecourse
+    timecourse_data: List[float]
+        time course data
+    inputs: PreprocessTimecourseInputs
+        inputs for preprocess_timecourse
 
-    Returns:
-    --------
-        timecourse_data: preprocessed time course data  
+    Returns
+    -------
+    List[float]
+        preprocessed time course data  
     """
-    # if timecourse_data is 1D, add a new axis
-    if timecourse_data.ndim == 1:
-        timecourse_data = timecourse_data[:, np.newaxis]
+    # convert to 2D numpy array with one column
+    timecourse_data = np.array(timecourse_data)[:, np.newaxis]
 
     # Detrend the data
     if inputs['detrend']:
@@ -69,7 +69,8 @@ def preprocess_timecourse(
     
     # Z-score the data
     if inputs['zscore']:
-        timecourse_data = utils.zscore(timecourse_data)
+        timecourse_data = utils.z_score(timecourse_data)
 
-    return timecourse_data
+    # return to list
+    return timecourse_data.flatten().tolist()
 

@@ -26,14 +26,27 @@ export const correlate = async (label, time_course_type, correlateParams, callba
  * Calculate distance between fmri time points
  * 
  * @param {Object} distanceParams - Parameters for distance calculation
+ * @param {string} errorInlineId - ID of inline error element
  * @param {Function} callback - Callback function to handle successful response
+ * @param {Function} [errorCallback] - Callback function for error response
  * @returns {Promise} Promise object representing the API call
  */
-export const distance = async (distanceParams, callback) => {
+export const distance = async (
+    distanceParams, 
+    errorInlineId, 
+    callback, 
+    errorCallback
+) => {
     return makeRequest(
         API_ENDPOINTS.ANALYSIS.DISTANCE,
         { method: 'POST', body: createFormData(distanceParams) },
-        callback
+        {
+            errorPrefix: 'Error calculating distance',
+            errorId: errorInlineId,
+            isInline: true,
+        },
+        callback,
+        errorCallback
     );
 };
 
@@ -41,6 +54,7 @@ export const distance = async (distanceParams, callback) => {
  * Find peaks on selected time course
  * 
  * @param {string} label - Label of time course to find peaks on
+ * @param {string} time_course_type - Type of time course (timecourse or task)
  * @param {Object} peakFinderParams - Parameters for peak finder
  * @param {Function} callback - Callback function to handle successful response
  * @returns {Promise} Promise object representing the API call
@@ -49,7 +63,7 @@ export const findPeaks = async (label, time_course_type, peakFinderParams, callb
     return makeRequest(
         API_ENDPOINTS.ANALYSIS.FIND_PEAKS,
         { method: 'POST', body: createFormData(
-            { label, time_course_type, ...peakFinderParams }
+            { label, time_course_type, peak_finder_params: peakFinderParams }
             ) 
         },
         {

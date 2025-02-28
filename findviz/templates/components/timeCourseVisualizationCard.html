@@ -21,16 +21,8 @@
           <i class="fa-solid fa-message"></i>
         </button>
         <!-- Toggle task design convolution -->
-        <button class="btn btn-outline-secondary btn-sm toggle-wait" id='toggle-convolution' data-toggle="tooltip" data-placement="top" title="Toggle convolution">
+        <button class="btn btn-outline-secondary btn-sm toggle-wait" id='toggle-convolution' data-toggle="tooltip" data-placement="top" title="Toggle hrf convolution for all task design regressors">
           <i class="fa-solid fa-wave-square"></i>
-        </button>
-        <!-- Increase task design scale -->
-        <button class="btn btn-outline-secondary btn-sm toggle-wait" id='task-increase-scale' data-toggle="tooltip" data-placement="top" title="Increase task regressor scale">
-          <i class="fa-solid fa-arrow-up"></i>
-        </button>
-        <!-- Decrease task design scale -->
-        <button class="btn btn-outline-secondary btn-sm toggle-wait" id='task-decrease-scale' data-toggle="tooltip" data-placement="top" title="Decrease task regressor scale">
-          <i class="fa-solid fa-arrow-down"></i>
         </button>
       </div>
       <div class='col-3 pr-1 pl-1'>
@@ -62,13 +54,24 @@
         </div>
       </div>
       <div class='col-2'>
-        <button id="peak-finder-popover" title="Peak Finder" type="button" class="btn btn-outline-secondary btn-sm" data-container="body" data-toggle="popover" data-placement="top" disabled
+        <button id="peak-finder-popover" title="Peak Finder" type="button" class="btn btn-outline-secondary btn-sm" data-container="body" data-toggle="popover" data-placement="top"
         data-content= "
           <form id='peak-finder-form'>
             <div class='row mb-2'>
               <div class='col'>
-                <h5>Select Time Course</h5>
-                <div id='ts-select-peak-finder'></div>
+                <div class='row'>
+                  <div class='col'>
+                    <h5>Select Time Course</h5>
+                    <select class='custom-select' id='ts-select-peak-finder'>
+                    </select>
+                  </div>
+                </div>
+                <div class='row'>
+                  <div class='alert alert-secondary mt-3 ml-3' id='peak-finder-prep-alert' role='alert' style=' display: none;'>
+                    <i class='fa-solid fa-triangle-exclamation'></i>
+                    <span class='mr-2'>Using Preprocessed Time Course</span>
+                  </div>
+                </div>
               </div>
             </div>
             <div class='form-row mt-2'>
@@ -99,8 +102,13 @@
                 <span class='fa-solid fa-circle-info ml-1 toggle-immediate' data-toggle='tooltip' data-placement='top' title='Required width of peaks in number of time points.' aria-hidden='true'></span>
                 <input type='number' class='form-control' id='peak-width' step='0.01'>
               </div>
+              <div class='form-group col-sm-4'>
+                <label for='peak-z-score'>Z-Score</label>
+                <span class='fa-solid fa-circle-info ml-1 toggle-immediate' data-toggle='tooltip' data-placement='top' title='Whether to apply z-score normalization to time-course before peak detection (note: parameters should be specified in z-score units).' aria-hidden='true'></span>
+                <input type='checkbox' class='form-control w-75 h-25' id='peak-z-score'>
+              </div>
             </div>
-            <button type='submit' id='submit-peak-finder' class='btn btn-primary'>Compute</button>
+            <button type='button' id='submit-peak-finder' class='btn btn-primary'>Compute</button>
           </form>
         ">
           Find Peaks

@@ -29,6 +29,7 @@ export class NiftiClickHandler {
      * Attach click listeners to the slice containers
      */
     attachClickListeners() {
+        // handle click events
         this.slice1Container.on('plotly_click', (event) => this.clickHandler(event, 'slice_1'));
         this.slice2Container.on('plotly_click', (event) => this.clickHandler(event, 'slice_2'));
         this.slice3Container.on('plotly_click', (event) => this.clickHandler(event, 'slice_3'));

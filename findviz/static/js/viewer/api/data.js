@@ -7,10 +7,11 @@
 // - getFMRIData
 // - getClickCoords
 // - getMontageData
-// - getSliceLengths
+// - getNTimepoints
 // - getTaskConditions
-// - getTimeCourseLabels
 // - getTimeCourseData
+// - getTimeCourseLabels
+// - getTimeCourseLabelsPreprocessed
 // - getTimeCourseSource
 // - getTimePoint
 // - getViewerMetadata
@@ -130,6 +131,22 @@ export const getFMRIData = async (callback) => {
 };
 
 /**
+ * Fetches last added fmri timecourse from the server
+ * @param {Function} callback - Callback function to handle successful response
+ * @returns {Promise} Promise object representing the API call
+ */
+export const getLastTimecourse = async (callback) => {
+    return makeRequest(
+        API_ENDPOINTS.DATA.GET_LAST_TIMECOURSE,
+        { method: 'GET' },
+        {
+            errorPrefix: 'Error fetching last fmri timecourse'
+        },
+        callback
+    );
+};
+
+/**
  * Fetches montage slice direction and montage slice indices from the server
  * @param {Function} callback - Callback function to handle successful response
  * @returns {Promise} Promise object representing the API call
@@ -146,16 +163,16 @@ export const getMontageData = async (callback) => {
 };
 
 /**
- * Fetches slice lengths from the server
+ * Fetches number of timepoints from the server
  * @param {Function} callback - Callback function to handle successful response
  * @returns {Promise} Promise object representing the API call
  */
-export const getSliceLengths = async (callback) => {
+export const getNTimepoints = async (callback) => {
     return makeRequest(
-        API_ENDPOINTS.DATA.GET_SLICE_LENGTHS,
+        API_ENDPOINTS.DATA.GET_N_TIMEPOINTS,
         { method: 'GET' },
         {
-            errorPrefix: 'Error fetching slice lengths'
+            errorPrefix: 'Error fetching number of timepoints'
         },
         callback
     );
@@ -178,6 +195,26 @@ export const getTaskConditions = async (callback) => {
 };
 
 /**
+ * Fetches timecourse data from the server
+ * @param {Array} ts_labels - Array of timecourse labels to fetch
+ * @param {Function} callback - Callback function to handle successful response
+ * @returns {Promise} Promise object representing the API call
+ */
+export const getTimeCourseData = async (ts_labels = [], callback) => {
+    return makeRequest(
+        API_ENDPOINTS.DATA.GET_TIMECOURSE_DATA,
+        {
+            method: 'GET',
+            body: createFormData({ ts_labels })
+        },
+        {
+            errorPrefix: 'Error fetching timecourse data'
+        },
+        callback
+    );
+};
+
+/**
  * Fetches timecourse labels from the server
  * @param {Function} callback - Callback function to handle successful response
  * @returns {Promise} Promise object representing the API call
@@ -194,16 +231,16 @@ export const getTimeCourseLabels = async (callback) => {
 };
 
 /**
- * Fetches timecourse data from the server
+ * Fetches preprocessed timecourse labels from the server
  * @param {Function} callback - Callback function to handle successful response
  * @returns {Promise} Promise object representing the API call
  */
-export const getTimeCourseData = async (callback) => {
+export const getTimeCourseLabelsPreprocessed = async (callback) => {
     return makeRequest(
-        API_ENDPOINTS.DATA.GET_TIMECOURSE_DATA,
+        API_ENDPOINTS.DATA.GET_TIMECOURSE_LABELS_PREPROCESSED,
         { method: 'GET' },
         {
-            errorPrefix: 'Error fetching timecourse data'
+            errorPrefix: 'Error fetching preprocessed timecourse labels'
         },
         callback
     );

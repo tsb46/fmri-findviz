@@ -3,6 +3,9 @@
 import { EVENT_TYPES } from '../../constants/EventTypes.js';
 import eventBus from '../events/ViewerEvents.js';
 import { 
+    getLastTimecourse,
+    getNTimepoints,
+    getTaskConditions,
     getTimeCourseData, 
     getTimePoint,
     popFmriTimeCourse,
@@ -16,26 +19,40 @@ import {
     getTimeCoursePlotOptions,
     getTimeMarkerPlotOptions
 } from '../api/plot.js';
+import TraceManager from './TraceManager.js';
 
 class TimeCourse {
     /**
      * Constructor for TimeCourse
+     * @param {string} timeCourseContainerId - The ID of the parent time course container
      * @param {string} timeCoursePlotContainerId - The ID of the time course plot container
      * @param {boolean} timeCourseInput - Whether the time course input is provided
      * @param {boolean} taskDesignInput - Whether the task design input is provided
      */
     constructor(
+        timeCourseContainerId,
         timeCoursePlotContainerId,
         timeCourseInput,
         taskDesignInput
     ) {
+        this.timeCourseContainerId = timeCourseContainerId;
+        this.timeCourseContainer = $(`#${timeCourseContainerId}`);
         this.timeCoursePlotContainerId = timeCoursePlotContainerId;
         this.timeCoursePlotContainer = $(`#${timeCoursePlotContainerId}`);
         this.timeCourseInput = timeCourseInput;
         this.taskDesignInput = taskDesignInput;
+
+        // get number of timepoints
+        getNTimepoints( (nTimepoints) => {
+            this.timeCourseLength = nTimepoints.n_timepoints;
+        });
+
+        // initialize empty plot with default layout
+        this.initEmptyPlot();
+
         // Show time course container if time course or task design input is provided
         if (this.timeCourseInput || this.taskDesignInput) {
-            this.timeCoursePlotContainer.css("visibility", "visible");
+            this.timeCourseContainer.css("visibility", "visible");
             // create flag for whether user input time courses are present
             this.userInput = true;
         } else {
@@ -49,8 +66,13 @@ class TimeCourse {
         // attach event listeners
         this.attachEventListeners();
 
-        // initialize plot state - i.e. whether time course is plotted
-        this.plotState = false;
+        // Initialize TraceManager with startIndex of 1 to account for dummy data
+        this.traceManager = new TraceManager({ startIndex: 1 });
+
+        // initialize shapes
+        this.annotationShapes = [];
+        this.timeMarkerShape = null;
+
     }
 
     attachEventListeners() {
@@ -62,11 +84,11 @@ class TimeCourse {
                 // state is true and no user input, make time course container visible
                 if (state && !this.userInput) {
                     console.log('making time course container visible');
-                    this.timeCoursePlotContainer.css("visibility", "visible");
+                    this.timeCourseContainer.css("visibility", "visible");
                 // state is false and no user input, make time course container hidden
                 } else if (!state && !this.userInput) {
                     console.log('making time course container hidden');
-                    this.timeCoursePlotContainer.css("visibility", "hidden");
+                    this.timeCourseContainer.css("visibility", "hidden");
                 }
             }
         );
@@ -82,10 +104,8 @@ class TimeCourse {
         // listen for time slider change event - replot time marker
         eventBus.subscribe(
             EVENT_TYPES.VISUALIZATION.FMRI.TIME_SLIDER_CHANGE, (timePoint) => {
-                if (this.plotState) {
-                    console.log('replotting time marker');
-                    this.plotTimeMarker(timePoint);
-                }
+                console.log('replotting time marker');
+                this.plotTimeMarker(timePoint);
             }
         );
 
@@ -99,16 +119,14 @@ class TimeCourse {
                 // if fmri time course enabled, update functional timecourse
                 if (this.timeCourseEnabled) {
                     console.log('updating functional timecourse on plotly click');
-                    // set plot state to true
-                    this.plotState = true;
                     // if previous selection was frozen, update functional timecourse
                     if (this.timeCourseFreeze) {
                         console.log('adding functional timecourse due to freeze');
                         await updateFmriTimeCourse();
                         // get time course data and plot
-                        const timeCourseData = await getTimeCourseData();
+                        const timeCourseData = await getLastTimecourse();
                         const plotOptions = await this.getPlotOptions();
-                        this.plotTimeCourseDataUpdate(timeCourseData, plotOptions);
+                        this.plotTimeCourseData(timeCourseData, plotOptions);
                         // publish event that fmri time course has been added
                         eventBus.publish(
                             EVENT_TYPES.VISUALIZATION.TIMECOURSE.ADD_FMRI_TIMECOURSE
@@ -117,17 +135,25 @@ class TimeCourse {
                         // if previous selection was not frozen, remove most recent 
                         // fmri timecourse and replace with current selection
                         console.log('removing most recent fmri timecourse and replacing with current selection');
-                        await popFmriTimeCourse();
+                        const lastFmriLabel = await popFmriTimeCourse();
+                        // remove most recent fmri timecourse from plot
+                        if (lastFmriLabel.label !== null) {
+                            this.removeTimeCourse(lastFmriLabel.label);
+                        }
+                        // add currently selected voxel fmri timecourse to plot
                         await updateFmriTimeCourse();
                         // get time course data and plot
-                        const timeCourseData = await getTimeCourseData();
+                        const timeCourseData = await getLastTimecourse();
                         const plotOptions = await this.getPlotOptions();
-                        this.plotTimeCourseDataUpdate(timeCourseData, plotOptions);
+                        this.plotTimeCourseData(timeCourseData, plotOptions);
                         // publish event that fmri time course has been added
                         eventBus.publish(
                             EVENT_TYPES.VISUALIZATION.TIMECOURSE.ADD_FMRI_TIMECOURSE
                         );
                     }
+                    // update axis range
+                    const timeCourseGlobalPlotOptions = await getTimeCourseGlobalPlotOptions();
+                    this.updateYAxisRange(timeCourseGlobalPlotOptions);
                 }
             }
         );
@@ -135,44 +161,36 @@ class TimeCourse {
         // listen for undo fmri time course event
         // remove most recent fmri timecourse and replot
         eventBus.subscribe(
-            EVENT_TYPES.VISUALIZATION.TIMECOURSE.UNDO_FMRI_TIMECOURSE, async () => {
-                if (this.plotState) {
-                    console.log('removing most recently added fmri timecourse');
-                    // set plot state to false
-                    this.plotState = false;
-                    // remove most recent fmri timecourse
-                    await popFmriTimeCourse();
-                    // get time course data and plot
-                    const timeCourseData = await getTimeCourseData();
-                    const plotOptions = await this.getPlotOptions();
-                    this.plotTimeCourseDataUpdate(timeCourseData, plotOptions);
-                    // publish event that most recentfmri time course has been removed
-                    eventBus.publish(
-                        EVENT_TYPES.VISUALIZATION.TIMECOURSE.UNDO_FMRI_TIMECOURSE
-                    );
+            EVENT_TYPES.VISUALIZATION.TIMECOURSE.UNDO_FMRI_TIMECOURSE,
+            async (label) => {
+                console.log('removing most recently added fmri timecourse');
+                // remove most recent fmri timecourse from plot
+                if (label !== null) {
+                    this.removeTimeCourse(label);
                 }
+                // update axis range
+                const timeCourseGlobalPlotOptions = await getTimeCourseGlobalPlotOptions();
+                this.updateYAxisRange(timeCourseGlobalPlotOptions);
             }
         );
 
         // listen for remove all fmri time course event
         // remove all fmri timecourses and replot
         eventBus.subscribe(
-            EVENT_TYPES.VISUALIZATION.TIMECOURSE.REMOVE_FMRI_TIMECOURSE, async () => {
-                if (this.plotState) {
-                    console.log('removing all fmri timecourses');
-                    // set plot state to false
-                    this.plotState = false;
-                    // remove all fmri timecourses
-                    await removeFmriTimeCourses();
-                    // get time course data and plot
-                    const timeCourseData = await getTimeCourseData();
-                    const plotOptions = await this.getPlotOptions();
-                    this.plotTimeCourseDataUpdate(timeCourseData, plotOptions);
-                    // publish event that all fmri time courses have been removed
-                    eventBus.publish(
-                        EVENT_TYPES.VISUALIZATION.TIMECOURSE.REMOVE_FMRI_TIMECOURSE
-                    );
+            EVENT_TYPES.VISUALIZATION.TIMECOURSE.REMOVE_FMRI_TIMECOURSE,
+            async (labels) => {
+                console.log('removing all fmri timecourses');
+                // reverse labels to remove in reverse order
+                labels.reverse();
+                // remove fmri timecourses from plot
+                if (labels.length > 0) {
+                    for (const label of labels) {
+                        this.removeTimeCourse(label);
+                    }
                 }
+                // update axis range
+                const timeCourseGlobalPlotOptions = await getTimeCourseGlobalPlotOptions();
+                this.updateYAxisRange(timeCourseGlobalPlotOptions);
             }
         );
 
@@ -184,18 +202,69 @@ class TimeCourse {
                 EVENT_TYPES.VISUALIZATION.TIMECOURSE.TIMECOURSE_MODE_CHANGE,
                 EVENT_TYPES.VISUALIZATION.TIMECOURSE.TIMECOURSE_OPACITY_SLIDER_CHANGE,
                 EVENT_TYPES.VISUALIZATION.TIMECOURSE.TIMECOURSE_LINE_WIDTH_SLIDER_CHANGE,
-                EVENT_TYPES.VISUALIZATION.TIMECOURSE.TIMECOURSE_SCALE_CHANGE
             ], async (label) => {
-                console.log('updating time course property');
+                console.log('updating time course property for label', label);
+                const ts_label = label.label;
                 const plotOptions = await this.getPlotOptions();
-                this.plotTimeCoursePropertyUpdate(
-                    label, 
-                    plotOptions[label].mode, 
-                    plotOptions[label].color, 
-                    plotOptions[label].width, 
-                    plotOptions[label].visibility, 
-                    plotOptions[label].opacity
+                this.updateTimeCourseProperty(
+                    ts_label, 
+                    plotOptions[ts_label].mode, 
+                    plotOptions[ts_label].color, 
+                    plotOptions[ts_label].width, 
+                    plotOptions[ts_label].visibility, 
+                    plotOptions[ts_label].opacity
                 );
+            }
+        );
+
+        // listen for time course scale or constant shift slider change event
+        eventBus.subscribeMultiple(
+            [
+                EVENT_TYPES.VISUALIZATION.TIMECOURSE.TIMECOURSE_SHIFT_CHANGE, 
+                EVENT_TYPES.VISUALIZATION.TIMECOURSE.TIMECOURSE_SHIFT_RESET
+            ], 
+            async (shiftParams) => {
+                console.log(
+                    're-plotting time course due to scale or constant shift for', shiftParams.label
+                );
+                // get time course data and plot
+                const timeCourseData = await getTimeCourseData([shiftParams.label]);
+                this.updateTimeCourseData(shiftParams.label, timeCourseData);
+                // update axis range
+                const timeCourseGlobalPlotOptions = await getTimeCourseGlobalPlotOptions();
+                this.updateYAxisRange(timeCourseGlobalPlotOptions);
+            }
+        );
+
+        // listen for local convolution toggle event
+        // update time course data and plot
+        eventBus.subscribe(
+            EVENT_TYPES.VISUALIZATION.TIMECOURSE.TOGGLE_CONVOLUTION,
+            async (label) => {
+                console.log('replotting task design plot due to convolution toggle for label', label);
+                // get time course data and plot
+                const timeCourseData = await getTimeCourseData([label.label]);
+                this.updateTimeCourseData(label.label, timeCourseData);
+                // update axis range
+                const timeCourseGlobalPlotOptions = await getTimeCourseGlobalPlotOptions();
+                this.updateYAxisRange(timeCourseGlobalPlotOptions);
+            }
+        );
+
+        // Listen for global convolution toggle event
+        eventBus.subscribe(
+            EVENT_TYPES.VISUALIZATION.TIMECOURSE.TOGGLE_CONVOLUTION_GLOBAL,
+            async () => {
+                console.log('replotting time course due to global convolution toggle');
+                // get time course data and plot
+                const taskConditions = await getTaskConditions();
+                const timeCourseData = await getTimeCourseData(taskConditions);
+                for (const ts_label of taskConditions) {
+                    this.updateTimeCourseData(ts_label, timeCourseData);
+                }
+                // update axis range
+                const timeCourseGlobalPlotOptions = await getTimeCourseGlobalPlotOptions();
+                this.updateYAxisRange(timeCourseGlobalPlotOptions);
             }
         );
 
@@ -211,22 +280,50 @@ class TimeCourse {
                 console.log('updating time marker property');
                 const timeMarkerPlotOptions = await getTimeMarkerPlotOptions();
                 const timePoint = await getTimePoint();
-                this.plotTimeMarker(timePoint, timeMarkerPlotOptions);
+                this.plotTimeMarker(timePoint.timepoint, timeMarkerPlotOptions);
             }
         );
 
-        // listen for local and global convolution toggle events
-        // update time course data and plot
-        eventBus.subscribeMultiple(
-            [
-                EVENT_TYPES.VISUALIZATION.TIMECOURSE.TOGGLE_CONVOLUTION,
-                EVENT_TYPES.VISUALIZATION.TIMECOURSE.TOGGLE_CONVOLUTION_GLOBAL
-            ], async () => {
-                console.log('replotting time course due to convolution toggle');
-                // get time course data and plot
-                const timeCourseData = await getTimeCourseData();
-                const plotOptions = await this.getPlotOptions();
-                this.plotTimeCourseDataUpdate(timeCourseData, plotOptions);
+        // listen for time marker visibility toggle event
+        eventBus.subscribe(
+            EVENT_TYPES.VISUALIZATION.TIMECOURSE.TIME_MARKER_VISIBILITY_TOGGLE, 
+            async (state) => {
+                if (state) {
+                    console.log('plotting time marker');
+                    const timeMarkerPlotOptions = await getTimeMarkerPlotOptions();
+                    const timePoint = await getTimePoint();
+                    this.plotTimeMarker(timePoint.timepoint, timeMarkerPlotOptions);
+                } else {
+                    console.log('hiding time marker');
+                    this.timeMarkerShape = null;
+                    this.updateShapes();
+                }
+            }
+        );
+
+        // listen for hover text toggle event
+        eventBus.subscribe(
+            EVENT_TYPES.VISUALIZATION.TIMECOURSE.HOVER_TEXT_TOGGLE, (state) => {
+                if (state) {
+                    console.log('plotting hover text');
+                    this.plotHoverText();
+                } else {
+                    console.log('removing hover text');
+                    this.removeHoverText();
+                }
+            }
+        );
+
+        // listen for grid lines toggle event
+        eventBus.subscribe(
+            EVENT_TYPES.VISUALIZATION.TIMECOURSE.GRID_TOGGLE, (state) => {
+                if (state) {
+                    console.log('plotting grid lines');
+                    this.plotGridLines();
+                } else {
+                    console.log('removing grid lines');
+                    this.removeGridLines();
+                }
             }
         );
 
@@ -242,38 +339,172 @@ class TimeCourse {
                 console.log('replotting time course due to annotation marker change');
                 // get annnotation markers and plot
                 getAnnotationMarkers( (annotationData) => {
-                    // if no annotation markers, don't plot
-                    if (annotationData.markers.length > 0) {
-                        this.plotAnnotationMarkers(
-                            annotationData.markers, 
-                            annotationData.selection,
-                            annotationData.highlight
-                        );
+                    // if no annotation markers, change highlight to false
+                    if (annotationData.markers.length === 0) {
+                        annotationData.highlight = false;
                     }
+                    this.plotAnnotationMarkers(
+                        annotationData.markers, 
+                        annotationData.selection,
+                        annotationData.highlight
+                    );
                 });
             }
         );
+
+        // listen for preprocess time course event
+        eventBus.subscribe(
+            EVENT_TYPES.PREPROCESSING.PREPROCESS_TIMECOURSE_SUCCESS, 
+            async (selectedTimeCourses) => {
+                console.log('replotting time course due to preprocess time course');
+                // replace raw time courses with preprocessed time courses
+                for (const ts_label of selectedTimeCourses) {
+                    this.removeTimeCourse(ts_label);
+                }
+                // get time course data and plot
+                const timeCourseData = await getTimeCourseData(selectedTimeCourses);
+                const plotOptions = await this.getPlotOptions();
+                this.plotTimeCourseData(timeCourseData, plotOptions);
+                // update axis range
+                const timeCourseGlobalPlotOptions = await getTimeCourseGlobalPlotOptions();
+                this.updateYAxisRange(timeCourseGlobalPlotOptions);
+            }
+        );
+
+        // listen for reset fmri preprocessing event
+        eventBus.subscribe(
+            EVENT_TYPES.PREPROCESSING.PREPROCESS_TIMECOURSE_RESET, 
+            async (preprocessedLabels) => {
+                console.log('replotting time course due to reset fmri preprocessing');
+                // replace preprocessed time courses with raw time courses
+                for (const ts_label of preprocessedLabels) {
+                    this.removeTimeCourse(ts_label);
+                }
+                // get time course data and plot
+                const timeCourseData = await getTimeCourseData(preprocessedLabels);
+                const plotOptions = await this.getPlotOptions();
+                this.plotTimeCourseData(timeCourseData, plotOptions);
+                // update axis range
+                const timeCourseGlobalPlotOptions = await getTimeCourseGlobalPlotOptions();
+                this.updateYAxisRange(timeCourseGlobalPlotOptions);
+            }
+        );
+    }
+
+    /**
+     * Create layout for time course plot
+     */
+    createLayout(globalPlotOptions, axisPadding=0.05) {
+        // create layout
+        const layout = {
+            height: 500,
+            xaxis: {
+                title: 'Time Point',
+                range: [0, this.timeCourseLength],
+                autorange: true
+            },
+            yaxis: {
+                title: 'Signal Intensity',
+                range: [
+                    globalPlotOptions.global_min - axisPadding, 
+                    globalPlotOptions.global_max + axisPadding
+                ],
+                autorange: true
+            },
+            uirevision: true,
+            autosize: true,  // Enable autosizing
+            responsive: true, // Make the plot responsive
+            margin: {
+                l: 50,  // left margin
+                r: 30,  // right margin
+                t: 40,  // top margin
+                b: 40   // bottom margin
+            },
+            // always show legend, even with one trace
+            showlegend: true,
+            // Place legend at bottom of the plot
+            legend: {
+                xanchor: 'center',     // Centers the legend horizontally
+                x: 0.5,                // Centers it in the middle (x: 50%)
+                yanchor: 'top',        // Anchors the legend to the top of its container
+                y: -0.25                // Places the legend below the plot (-0.1 moves it just below the plot)
+            }
+        };
+        return layout;
     }
 
     async initPlot() {
         // if time course or task design input, plot time course
         if (this.timeCourseInput || this.taskDesignInput) {
             console.log('plotting time course with user-provided input');
-            // set plot state to true
-            this.plotState = true;
             // get plot options
             const plotOptions = await this.getPlotOptions();
+            // get timecourse data
+            const timeCourseData = await getTimeCourseData();
+            this.plotTimeCourseData(timeCourseData, plotOptions);
+        }
+    }
+
+    /**
+     * Initialize empty time course plot
+     */
+    async initEmptyPlot() {
+        try {
+            console.log('initializing empty time course plot');
             // get time marker and global plot options
             const timeMarkerPlotOptions = await getTimeMarkerPlotOptions();
             const timeCourseGlobalPlotOptions = await getTimeCourseGlobalPlotOptions();
             // combine all plot options into one object
             const globalPlotOptions = {
-                ...timeMarkerPlotOptions,
-                ...timeCourseGlobalPlotOptions
+            ...timeMarkerPlotOptions,
+            ...timeCourseGlobalPlotOptions
             };
-            // get timecourse data
-            const timeCourseData = await getTimeCourseData();
-            this.plotTimeCourseFullUpdate(timeCourseData, plotOptions, globalPlotOptions);
+            // create layout
+            const layout = this.createLayout(globalPlotOptions);
+
+            // Create dummy data to force axis range and plot time marker
+            const dummyData = [{
+                x: [0, this.timeCourseLength - 1],
+                y: [timeCourseGlobalPlotOptions.global_min, timeCourseGlobalPlotOptions.global_max],
+                type: 'scatter',
+                mode: 'lines',
+                line: { width: 0 },  // Make line invisible
+                opacity: 0,          // Make fully transparent
+                showlegend: false,   // Hide from legend
+                hoverinfo: 'none'    // Disable hover effects
+            }];
+            // create plot
+            Plotly.react(this.timeCoursePlotContainerId, dummyData, layout);
+
+            // emit event to indicate initialization of plot is complete
+            eventBus.publish(EVENT_TYPES.VISUALIZATION.TIMECOURSE.INIT_TIMECOURSE_PLOT);
+
+            // if grid lines on, plot grid lines
+            if (globalPlotOptions.grid_on) {
+                this.plotGridLines();
+            }
+
+            // get time point marker and plot
+            if (globalPlotOptions.time_marker_on) {
+                getTimePoint( (timePoint) => {
+                    this.plotTimeMarker(timePoint.timepoint, timeMarkerPlotOptions);
+                });
+            }
+
+            // get annnotation markers and plot
+            getAnnotationMarkers( (annotationData) => {
+                // if no annotation markers, don't plot
+                if (annotationData.markers.length > 0) {
+                    this.plotAnnotationMarkers(
+                        annotationData.markers, 
+                        annotationData.selection,
+                        annotationData.highlight
+                    );
+                }
+            });
+
+        } catch (error) {
+            console.error('Error initializing empty time course plot', error);
         }
     }
 
@@ -365,71 +596,22 @@ class TimeCourse {
     }
 
     /**
-     * Update time course plot options
-     */
-    plotTimeCoursePropertyUpdate(
-        traceIndex, 
-        mode=null, 
-        color=null, 
-        width=null, 
-        visibility=null, 
-        opacity=null
-    ) {
-        let timeCourseUpdate
-        if (mode) {
-            timeCourseUpdate = {
-                mode: mode
-            }
-        }
-        if (color) {
-            timeCourseUpdate = {
-                marker: {color: color}
-            }
-        }
-        if (width) {
-            timeCourseUpdate = {
-                line: {width: width}
-            }
-        }
-        if (visibility) {
-            timeCourseUpdate = {
-                visible: visibility
-            }
-        }
-        if (opacity) {
-            timeCourseUpdate = {
-                opacity: opacity
-            }
-        }
-        // update time course plot
-        Plotly.restyle(this.timeCoursePlotContainerId, timeCourseUpdate, traceIndex);
-    }
-
-    /**
      * Plot time course data
      * @param {Object} timeCourseData - The time course data
      * @param {Object} timeCoursePlotOptions - Plot options for each time course
-     * @param {boolean} layoutUpdate[false] - Whether to update the layout
      */
-    plotTimeCourseDataUpdate(timeCourseData, timeCoursePlotOptions, layoutUpdate=false) {
-        // initialize plot arrays
-        let plotData = []
-        this.traceIndex = {}
-        // add input time courses to plot, if any
-        let index = 0;
-        for (ts in timeCourseData){
-            // keep up with trace labels
-            traceIndex[ts] = index;
-            index++;
-            // get length of time course data
-            const timeCourseLength = timeCourseData[ts].length;
+    plotTimeCourseData(timeCourseData, timeCoursePlotOptions) {
+        // loop through each time course and add to plot
+        for (const ts in timeCourseData){
+            // Add new trace and get its index
+            const traceIndex = this.traceManager.addTrace(ts);
             // create a line plot trace
             const tsTrace = {
-                x: Array.from({ length: timeCourseLength }, (_, i) => i),
+                x: Array.from({ length: this.timeCourseLength }, (_, i) => i),
                 y: timeCourseData[ts],
                 type: 'scatter',
                 mode: timeCoursePlotOptions[ts]['mode'],
-                name: timeCoursePlotOptions[ts]['name'],
+                name: timeCoursePlotOptions[ts]['label'],
                 marker: { color: timeCoursePlotOptions[ts]['color'] },
                 line: {
                     shape: 'linear',
@@ -438,90 +620,13 @@ class TimeCourse {
                 visible: timeCoursePlotOptions[ts]['visibility'],
                 opacity: timeCoursePlotOptions[ts]['opacity'],
             }
-            plotData.push(tsTrace)
+            console.log(`adding trace ${ts} to plot`);
+            // add data to plot
+            Plotly.addTraces(this.timeCoursePlotContainerId, [tsTrace], traceIndex);
         }
-
-        // create layout
-        if (layoutUpdate) {
-            const layout = {
-                height: 500,
-                xaxis: {
-                title: 'Time Point',
-                range: [0, timeCourseLength],
-            },
-            yaxis: {
-                title: 'Signal Intensity',
-            },
-            uirevision: true,
-            autosize: true,  // Enable autosizing
-            responsive: true, // Make the plot responsive
-            margin: {
-                l: 50,  // left margin
-                r: 30,  // right margin
-                t: 40,  // top margin
-                b: 40   // bottom margin
-            },
-            // always show legend, even with one trace
-            showlegend: true,
-            // Place legend at bottom of the plot
-            legend: {
-                xanchor: 'center',     // Centers the legend horizontally
-                x: 0.5,                // Centers it in the middle (x: 50%)
-                yanchor: 'top',        // Anchors the legend to the top of its container
-                    y: -0.25                // Places the legend below the plot (-0.1 moves it just below the plot)
-                }
-            };
-            // create plot
-            Plotly.react(this.timeCoursePlotContainerId, plotData, layout);
-        } else {
-            // restyle data in plot
-            Plotly.restyle(this.timeCoursePlotContainerId, plotData);
-        }
+        
     }
 
-    /**
-     * Plot all time course data
-     * @param {Object} timeCourseData - The time course data
-     * @param {Object} timeCoursePlotOptions - Plot options for each time course
-     * @param {Object} globalPlotOptions - Global plot options
-     */
-    plotTimeCourseFullUpdate(
-        timeCourseData,
-        timeCoursePlotOptions,
-        globalPlotOptions
-    ) {
-        // plot time course data
-        this.plotTimeCourseDataUpdate(timeCourseData, timeCoursePlotOptions, true);
-
-        // if hover text on, enable hover text
-        if (globalPlotOptions.hover_text_on) {
-            this.plotHoverText();
-        }
-
-        // if grid lines on, plot grid lines
-        if (globalPlotOptions.grid_on) {
-            this.plotGridLines();
-        }
-
-        // get time point marker and plot
-        if (globalPlotOptions.time_marker_on) {
-            getTimePoint( (timePoint) => {
-                this.plotTimeMarker(timePoint, timeMarkerPlotOptions);
-            });
-        }
-
-        // get annnotation markers and plot
-        getAnnotationMarkers( (annotationData) => {
-            // if no annotation markers, don't plot
-            if (annotationData.markers.length > 0) {
-                this.plotAnnotationMarkers(
-                    annotationData.markers, 
-                    annotationData.selection,
-                    annotationData.highlight
-                );
-            }
-        });
-    }
 
     /**
      * Plot time point marker
@@ -574,8 +679,21 @@ class TimeCourse {
     }
 
     /**
-     * Update shapes and plot
+     * Remove time course from plot
      */
+    removeTimeCourse(tsLabel) {
+        try {
+            let traceIndex = this.traceManager.getTraceIndex(tsLabel);
+            // remove trace from plot
+            console.log(`removing trace ${tsLabel} from plot`);
+            Plotly.deleteTraces(this.timeCoursePlotContainerId, traceIndex);
+            // remove trace index from trace index
+            this.traceManager.removeTrace(tsLabel);
+        } catch (error) {
+            console.error(`Error removing time course ${tsLabel} from plot: ${error.message}`);
+        }
+    }
+
     /**
      * Helper method to combine and update all shapes
      */
@@ -584,10 +702,71 @@ class TimeCourse {
         if (this.timeMarkerShape) {
             allShapes.push(this.timeMarkerShape);
         }
-        
         Plotly.relayout(this.timeCoursePlotContainerId, {
             shapes: allShapes
         });
+    }
+
+    /**
+     * Update time course data
+     */
+    updateTimeCourseData(tsLabel, timeCourseData) {
+        // get trace index
+        const traceIndex = this.traceManager.getTraceIndex(tsLabel);
+        const dataUpdate = {
+            x: [Array.from({ length: this.timeCourseLength }, (_, i) => i)],
+            y: [timeCourseData[tsLabel]],
+        }
+        console.log('updating time course data for traceIndex', traceIndex);
+        // update time course data
+        Plotly.restyle(
+            this.timeCoursePlotContainerId, 
+            dataUpdate, 
+            traceIndex
+        );
+    }
+
+    /**
+     * Update time course plot options
+     */
+    updateTimeCourseProperty(
+        tsLabel, 
+        mode=null, 
+        color=null, 
+        width=null, 
+        visibility=null, 
+        opacity=null
+    ) {
+        let traceIndex = this.traceManager.getTraceIndex(tsLabel);
+        let timeCourseUpdate = {};
+        if (mode) {
+            timeCourseUpdate.mode = mode;
+        }
+        if (color) {
+            timeCourseUpdate.marker = {color: color};
+        }
+        if (width) {
+            timeCourseUpdate.line = {width: width};
+        }
+        if (visibility) {
+            timeCourseUpdate.visible = visibility;
+        }
+        if (opacity) {
+            timeCourseUpdate.opacity = opacity;
+        }
+        // update time course plot
+        Plotly.restyle(this.timeCoursePlotContainerId, timeCourseUpdate, traceIndex);
+    }
+
+
+    /**
+     * Update axis range
+     */
+    updateYAxisRange(timeCourseGlobalPlotOptions) {
+        let axisRangeUpdate = {
+            yaxis: { range: [timeCourseGlobalPlotOptions.global_min, timeCourseGlobalPlotOptions.global_max] }
+        }
+        Plotly.relayout(this.timeCoursePlotContainerId, axisRangeUpdate);
     }
 
 

@@ -384,7 +384,7 @@ class FileUploader {
 
     try {
         const response = await fetch(
-            UPLOAD_ENDPOINTS.HEADER, 
+            API_ENDPOINTS.UPLOAD.HEADER, 
             { method: 'POST', body: formData }
         );
 

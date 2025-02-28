@@ -7,6 +7,7 @@ Routes:
     RESET_FMRI_PREPROCESS: Reset fmri preprocessing
     RESET_TIMECOURSE_PREPROCESS: Reset timecourse preprocessing
 """
+import json
 
 from flask import Blueprint, request, make_response
 
@@ -28,12 +29,11 @@ preprocess_bp = Blueprint('preprocess', __name__)
 @handle_route_errors(
     error_msg='Unknown error in preprocess FMRI request',
     log_msg='FMRI preprocessing successful',
-    fmri_file_type=data_manager.fmri_file_type,
+    fmri_file_type=lambda: data_manager.fmri_file_type,
     route=Routes.GET_PREPROCESSED_FMRI,
     route_parameters=list(PreprocessFMRIInputs.__annotations__.keys()),
     custom_exceptions=[NiftiMaskError, PreprocessInputError]
 )
-
 def get_preprocessed_fmri() -> dict:
     """Get preprocessed FMRI data"""
     if data_manager.fmri_preprocessed:
@@ -82,37 +82,39 @@ def get_preprocessed_fmri() -> dict:
     error_msg='Unknown error in preprocess timecourse request',
     log_msg='Timecourse preprocessing successful',
     route=Routes.GET_PREPROCESSED_TIMECOURSE,
-    fmri_file_type=data_manager.fmri_file_type,
+    fmri_file_type=lambda:  data_manager.fmri_file_type,
     route_parameters=list(PreprocessTimecourseInputs.__annotations__.keys()),
     custom_exceptions=[PreprocessInputError]
 )
 def get_preprocessed_timecourse() -> dict:
     """Get preprocessed timecourse data"""
-    if data_manager.ts_preprocessed:
-        logger.info("Timecourse data already preprocessed, clearing it")
-        data_manager.clear_timecourse_preprocessed()
-
-    inputs = PreprocessTimecourseInputs(**request.form)
+    ts_labels = json.loads(request.form['ts_labels'])
+    params = {
+        key: convert_value(value) for key, value in request.form.items()
+        if key != 'ts_labels'
+    }
+    inputs = PreprocessTimecourseInputs(**params)
     logger.info(f"Preprocessing timecourse data with inputs: {inputs}")
 
     # Validate inputs
     timecourse_input_validator = TimecoursePreprocessInputValidator()
-    timecourse_input_validator.validate_preprocess_input(inputs)
+    timecourse_input_validator.validate_preprocess_input(
+        inputs, ts_labels
+    )
 
     # get timecourse data
     viewer_data = data_manager.get_viewer_data(
         fmri_data=False,
-        use_preprocess=False,
         time_course_data=True,
         task_data=False,
     )
 
     # preprocess timecourse data
     ts_data = {}
-    for ts_label in inputs['ts_labels']:
+    for ts_label in ts_labels:
         ts_proc = preprocess_timecourse(
-            inputs=inputs,
-            viewer_data=viewer_data['ts_data'][ts_label]
+            timecourse_data=viewer_data['ts'][ts_label],
+            inputs=inputs
         )
         ts_data[ts_label] = ts_proc
 
@@ -125,7 +127,7 @@ def get_preprocessed_timecourse() -> dict:
 @handle_route_errors(
     error_msg='Unknown error in reset FMRI preprocessing request',
     log_msg='FMRI preprocessing reset successful',
-    fmri_file_type=data_manager.fmri_file_type,
+    fmri_file_type=lambda: data_manager.fmri_file_type,
     route=Routes.RESET_FMRI_PREPROCESS
 )
 def reset_fmri_preprocess() -> dict:
@@ -138,10 +140,27 @@ def reset_fmri_preprocess() -> dict:
 @handle_route_errors(
     error_msg='Unknown error in reset timecourse preprocessing request',
     log_msg='Timecourse preprocessing reset successful',
-    fmri_file_type=data_manager.fmri_file_type,
-    route=Routes.RESET_TIMECOURSE_PREPROCESS
+    fmri_file_type=lambda: data_manager.fmri_file_type,
+    route=Routes.RESET_TIMECOURSE_PREPROCESS,
+    route_parameters=['ts_labels'],
+    custom_exceptions=[PreprocessInputError]
 )
 def reset_timecourse_preprocess() -> dict:
     """Reset timecourse preprocessing"""
-    data_manager.clear_timecourse_preprocessed()
+    ts_labels = json.loads(request.form['ts_labels'])
+    # check if no timecourse labels provided
+    if len(ts_labels) == 0:
+        raise PreprocessInputError(
+            'No timecourses selected', 
+            preprocess_method='reset'
+        )
+    # check if time course label is in preprocessed data
+    for ts_label in ts_labels:
+        if ts_label not in data_manager.ts_labels_preprocessed:
+            raise PreprocessInputError(
+                f'Timecourse {ts_label} is not preprocessed',
+                preprocess_method='reset'
+            )
+    # clear timecourse preprocessed data
+    data_manager.clear_timecourse_preprocessed(ts_labels)
     return {'status': 'success'}

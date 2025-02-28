@@ -8,8 +8,8 @@ class Spinner {
      * @param {string} spinnerDivId - ID of spinner div
      */
     constructor(
-        spinnerOverlayId = 'spinner-overlay',
-        spinnerDivId = 'spinner'
+        spinnerOverlayId,
+        spinnerDivId
     ) {
         this.spinnerOverlay = document.getElementById(spinnerOverlayId);
         this.spinnerDiv = document.getElementById(spinnerDivId);

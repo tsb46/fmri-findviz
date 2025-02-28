@@ -61,8 +61,8 @@
         <button class="btn btn-outline-secondary btn-sm toggle-wait" id='toggle-colorbar' data-toggle="tooltip" data-placement="top" title="Toggle colorbar">
           <i class="fa-solid fa-ruler-vertical"></i>
         </button>
-        <!-- Reverse colorbar -->
-        <button class="btn btn-outline-secondary btn-sm toggle-wait" id='reverse-colorbar' data-toggle="tooltip" data-placement="top" title="Reverse colorbar">
+        <!-- Reverse colorscale -->
+        <button class="btn btn-outline-secondary btn-sm toggle-wait" id='reverse-colorbar' data-toggle="tooltip" data-placement="top" title="Reverse colorscale">
           <i class="fa-solid fa-arrows-up-down"></i>
         </button>
         <!-- Take screenshot of visualization container -->
@@ -137,22 +137,22 @@
         <div class='row'>
           <div class="custom-control custom-switch mr-3">
             <!-- Enable fmri time course -->
-            <input type="checkbox" class="custom-control-input" id="enable-time-course">
-            <label class="custom-control-label small" for="enable-time-course">Enable Time Course</label>
+            <input type="checkbox" class="custom-control-input" id="enable-fmri-time-course">
+            <label class="custom-control-label small" for="enable-fmri-time-course">Enable Time Course</label>
             <span class="fa-solid fa-circle-info toggle-immediate mr-2" data-toggle="tooltip" data-placement="top" title="Plot time course of selected voxel/vertex" aria-hidden="true"></span>
           </div>
           <div class="fa-solid fa-unlock pt-1 pr-1 toggle-immediate" id='freeze-icon' data-toggle="tooltip" data-placement="top" title="Freeze/unfreeze fmri time course selection"></div>
           <div class="custom-control custom-switch">
             <!-- Freeze fmri time course -->
-            <input type="checkbox" class="custom-control-input" id="freeze-time-course" disabled>
-            <label class="custom-control-label small" for="freeze-time-course"></label>
+            <input type="checkbox" class="custom-control-input" id="freeze-fmri-time-course" disabled>
+            <label class="custom-control-label small" for="freeze-fmri-time-course"></label>
           </div>
           <!-- Undo fmri time course -->
-          <button class="btn btn-outline-secondary btn-sm toggle-wait" id='undo-time-course' data-toggle="tooltip" data-placement="top" title="Remove most recent frozen fmri time course in plot" disabled>
+          <button class="btn btn-outline-secondary btn-sm toggle-wait" id='undo-fmri-time-course' data-toggle="tooltip" data-placement="top" title="Remove most recent frozen fmri time course in plot" disabled>
             <i class="fa-solid fa-rotate-left"></i>
           </button>
           <!-- Remove all fmri time course -->
-          <button class="btn btn-outline-secondary btn-sm toggle-wait" id='remove-time-course' data-toggle="tooltip" data-placement="top" title="Remove all fmri time courses from plot" disabled>
+          <button class="btn btn-outline-secondary btn-sm toggle-wait" id='remove-fmri-time-course' data-toggle="tooltip" data-placement="top" title="Remove all fmri time courses from plot" disabled>
             <i class="fa-solid fa-xmark"></i>
           </button>
         </div>
@@ -205,6 +205,8 @@
 <!-- Time Point Distance Modal-->
 <div class="modal fade" id="distance-modal" tabindex="-1" aria-labelledby="distance-modal-label" aria-hidden="true">
   <div id='distance-modal-dialog' class="modal-dialog modal-dialog-centered">
+  <!-- Distance spinner overlay-->
+  <div class='spinner-overlay' id="distance-spinner-overlay"></div>
     <div class="modal-content">
       <div class="modal-header">
         <h5 class="modal-title" id="distance-modal-label">Compute Time Point Distance</h5>
@@ -214,6 +216,11 @@
       </div>
       <form id="distance-form" enctype="multipart/form-data">
         <div class="modal-body">
+          <!-- Distance Spinner Wheel -->
+           <!-- Spinner Wheel -->
+           <div class="spinner-container d-flex justify-content-center">
+            <div id='distance-spinner-wheel' class="spinner-wheel" role="status"></div>
+          </div>
           <div class="row">
             <div class='col ml-3 mr-3'>
               <div class='row'>

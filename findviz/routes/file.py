@@ -79,7 +79,7 @@ def get_header():
         }, 500)
 
     return make_response({
-            "header": header.item()
+            "header": header
         }, 201)
 
 # Upload file input
@@ -160,7 +160,7 @@ def upload():
     # if task data, add to viewer data
     if file_upload.task_status:
         data_manager.add_task_design(
-            task_data=uploads['task']['task_regressor'], 
+            task_data=uploads['task']['task_regressors'], 
             tr=uploads['task']['tr'], 
             slicetime_ref=uploads['task']['slicetime_ref']
         )

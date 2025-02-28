@@ -4,11 +4,12 @@ This module defines the visualization state classes for the FIND viewer.
 
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Literal, Optional, List, Dict, Tuple
+from typing import Literal, Optional, List, Dict, Tuple, Union
 
 import nibabel as nib
 import numpy as np
 
+from findviz.viz.analysis.scaler import SignalScaler, SignalShifter
 from findviz.viz.viewer.types import (
     DistancePlotOptionsDict, NiftiDataDict, NiftiDataPreprocessedDict,
     GiftiDataDict, GiftiDataPreprocessedDict, ColorOptions,
@@ -88,7 +89,7 @@ class DistancePlotOptions:
     def to_dict(self) -> DistancePlotOptionsDict:
         """Convert to dictionary."""
         return {
-            'color_map': self.color_map,
+            'color_map': self.color_map.value,
             'color_min': self.color_min,
             'color_max': self.color_max,
             'color_range': self.color_range,
@@ -193,19 +194,59 @@ class FmriPlotOptions:
 
 @dataclass
 class TimeCourseGlobalPlotOptions:
-    """Global time course plot options."""
+    """Global time course plot options.
+    
+    Attributes:
+        global_min: Global minimum value for time course plot - 
+            computed from all time courses. Default is None
+        global_max: Global maximum value for time course plot - 
+            computed from all time courses. Default is None
+        default_global_min: Default global minimum value for time course plot. 
+            Default is -1.0
+        default_global_max: Default global maximum value for time course plot.
+             Default is 1.0
+        grid_on: Whether grid is enabled for time course plot. Default is True
+        hover_text_on: Whether hover text is enabled for time course plot. 
+            Default is True
+        time_marker_on: Whether time marker is enabled for time course plot. 
+            Default is True
+        global_convolution: Whether global convolution is enabled for time course plot. 
+            Default is True
+        shift_unit: Constant shift unit applied to time course data on constant shift changes. 
+            Default is 1.0. This value is updated when global min and max are updated.
+        shift_update_ratio: Ratio of shift unit updates. 
+            Default is 10.
+        scale_unit: Scale unit applied to time course data on scale change. 
+            Default is 0.1. This value is updated when global min and max are updated.
+        scale_update_granularity: Granularity of scale unit updates. 
+            Default is 10.
+    """
+    global_min: Optional[float] = None
+    global_max: Optional[float] = None
+    default_global_min: float = -1.0
+    default_global_max: float = 1.0
     grid_on: bool = True
+    global_convolution: bool = True
     hover_text_on: bool = True
     time_marker_on: bool = True
-    global_convolution: bool = True
+    shift_unit: float = 1.0
+    shift_update_ratio: int = 10
+    scale_unit: float = 0.1
+    scale_update_granularity: int = 10
 
     def to_dict(self) -> Dict[str, float]:
         """Convert to dictionary."""
         return {
+            'global_min': self.global_min,
+            'global_max': self.global_max,
             'grid_on': self.grid_on,
             'hover_text_on': self.hover_text_on,
             'time_marker_on': self.time_marker_on,
-            'global_convolution': self.global_convolution
+            'global_convolution': self.global_convolution,
+            'shift_unit': self.shift_unit,
+            'shift_update_ratio': self.shift_update_ratio,
+            'scale_unit': self.scale_unit,
+            'scale_update_granularity': self.scale_update_granularity
         }
     
     def update_from_dict(self, data: Dict[str, float]) -> None:
@@ -218,17 +259,27 @@ class TimeCoursePlotOptions:
     """Time course plot options.
     
     Attributes:
+        label: Label of the time course. Default is None
         visibility: whether the time course is visible in the plot. Default is True.
         color: Color of the time course. Default is RED
         width: Width of the time course. Default is 2.0
-        scale: Scale of the time course. Default is 1.0
+        constant: History of constant shifts to the time course handled by SignalShifter.
+        scale: History of scale changes to the time course handled by SignalScaler.
+        preprocess_constant: History of constant shifts to the preprocessed time course 
+            handled by SignalShifter.
+        preprocess_scale: History of scale changes to the preprocessed time course 
+            handled by SignalScaler.
         opacity: Opacity of the time course. Default is 1.0
         mode: Mode of the time course. Default is 'lines'
     """
+    label: str = None
     visibility: bool = True
     color: TimeCourseColor = TimeCourseColor.RED
     width: float = 2.0
-    scale: float = 1.0
+    constant: SignalShifter = field(default_factory=SignalShifter)
+    scale: SignalScaler = field(default_factory=SignalScaler)
+    preprocess_constant: SignalShifter = field(default_factory=SignalShifter)
+    preprocess_scale: SignalScaler = field(default_factory=SignalScaler)
     opacity: float = 1.0
     mode: Literal['lines', 'markers', 'lines+markers'] = 'lines'
 
@@ -256,12 +307,22 @@ class TimeCoursePlotOptions:
             next_color = list(available_colors)[0]
         return cls(color=next_color, **kwargs)
     
+    def clear_preprocess_history(self) -> None:
+        """Clear preprocess history."""
+        self.preprocess_constant.clear_history()
+        self.preprocess_scale.clear_history()
+
     def to_dict(self) -> Dict[str, float]:
         """Convert to dictionary."""
         return {
+            'label': self.label,
+            'visibility': self.visibility,
             'color': self.color.value,
             'width': self.width,
-            'scale': self.scale,
+            'constant': self.constant.shift_history,
+            'scale': self.scale.scale_history,
+            'preprocess_constant': self.preprocess_constant.shift_history,
+            'preprocess_scale': self.preprocess_scale.scale_history,
             'opacity': self.opacity,
             'mode': self.mode
         }
@@ -307,15 +368,20 @@ class TaskDesignPlotOptions:
     """Task design plot options.
     
     Attributes:
-        convolution: Whether convolution of task design with hrf is enabled. Default is True
-        scale: Scale of the task design. Default is 1.0
+        label: Label of the task design. Default is None
+        convolution: Whether convolution of task design with hrf is enabled, 
+            otherwise block structure is plotted. Default is hrf.
+        scale: History of scale changes to the task design handled by SignalScaler.
+        constant: History of constant shifts to the task design handled by SignalShifter.
         color: Color of the task design. Default is RED
         width: Width of the task design. Default is 2.0
         opacity: Opacity of the task design. Default is 1.0
         mode: Mode of the task design. Default is 'lines'
     """
-    convolution: bool = True
-    scale: float = 1.0
+    label: str = None
+    convolution: Literal['hrf', 'block'] = 'hrf'
+    scale: SignalScaler = field(default_factory=SignalScaler)
+    constant: SignalShifter = field(default_factory=SignalShifter)
     color: TimeCourseColor = TimeCourseColor.RED
     width: float = 2.0
     opacity: float = 1.0
@@ -348,9 +414,11 @@ class TaskDesignPlotOptions:
     def to_dict(self) -> Dict[str, float]:
         """Convert to dictionary."""
         return {
+            'label': self.label,
             'convolution': self.convolution,
-            'scale': self.scale,
-            'color': self.color,
+            'scale': self.scale.scale_history,
+            'constant': self.constant.shift_history,
+            'color': self.color.value,
             'width': self.width,
             'opacity': self.opacity,
             'mode': self.mode
@@ -396,6 +464,9 @@ class VisualizationState:
             Default is None
         ts_labels: Labels for timeseries. Default is empty list [].
         ts_type: Type of timeseries - fmri or user. Default is empty dict {}.
+        ts_labels_preprocessed: Labels for preprocessed timeseries. 
+            Default is empty list [].
+        ts_fmri_plotted: Whether fmri time course is plotted. Default is False.
         ts_plot_options: Dictionary of time course plot options.
             Default is empty dict {}
         task_data: Task design information. Default is None
@@ -433,7 +504,7 @@ class VisualizationState:
     ts_enabled: bool = False
     task_enabled: bool = False
     fmri_preprocessed: bool = False
-    ts_preprocessed: bool = False
+    ts_preprocessed: Dict[str, bool] = field(default_factory=dict)
 
     # time course and task design
     used_colors: set[TimeCourseColor] = field(default_factory=set)
@@ -441,9 +512,12 @@ class VisualizationState:
         default_factory=TimeCourseGlobalPlotOptions
     )
     ts_data: Dict[str, List[float]] = field(default_factory=dict)
-    ts_data_preprocessed: Optional[Dict[str, List[float]]] = None
-    ts_labels: List[str] = field(default_factory=list)
+    # set ts_labels as a private property
+    _ts_labels: List[str] = field(default_factory=list)
     ts_type: Dict[str, Literal['fmri', 'user']] = field(default_factory=dict)
+    ts_data_preprocessed: Dict[str, Union[List[float], None]] = field(default_factory=dict)
+    ts_labels_preprocessed: List[str] = field(default_factory=list)
+    ts_fmri_plotted: bool = False
     ts_plot_options: dict[str, TimeCoursePlotOptions] = field(default_factory=dict)
     task_data: Dict[str, Dict[Literal['block', 'hrf'], np.ndarray]] = field(default_factory=dict)
     task_conditions: List[str] = field(default_factory=list)
@@ -457,6 +531,34 @@ class VisualizationState:
     # outputs from distance analysis
     distance_data: Optional[np.ndarray] = None
     distance_plot_options: Optional[DistancePlotOptions] = None
+
+    @property
+    def ts_labels(self) -> List[str]:
+        """Get the time series labels."""
+        return self._ts_labels
+
+    @ts_labels.setter
+    def ts_labels(self, value: List[str]) -> None:
+        """Set the time series labels and update preprocessing state."""
+        # get the current ts_labels
+        current_ts_labels = self._ts_labels
+        # set the new ts_labels
+        self._ts_labels = value
+        # get the newly added ts_labels
+        new_ts_labels = set(value) - set(current_ts_labels)
+        # get the newly removed ts_labels
+        removed_ts_labels = set(current_ts_labels) - set(value)
+        # set preprocess state for the new ts_labels
+        for ts_label in new_ts_labels:
+            self.ts_preprocessed[ts_label] = False
+            # set the ts_data_preprocessed to None
+            self.ts_data_preprocessed[ts_label] = None
+
+        # remove the removed ts_labels from preprocess state
+        for ts_label in removed_ts_labels:
+            self.ts_preprocessed.pop(ts_label)
+            self.ts_data_preprocessed.pop(ts_label)
+    
 
 @dataclass
 class NiftiVisualizationState(VisualizationState):
@@ -508,11 +610,11 @@ class NiftiVisualizationState(VisualizationState):
     montage_slice_idx: MontageSliceIndexDict = field(default_factory=dict)
 
     # ortho view slice coordinates
-    ortho_slice_coords: Optional[SliceCoordsDict] = None
+    ortho_slice_coords: Optional[SliceCoordsDict] = field(default_factory=dict)
 
     # montage view slice coordinates
     montage_slice_dir: Optional[Literal['x', 'y', 'z']] = 'z'
-    montage_slice_coords: Optional[MontageSliceCoordsDict] = None
+    montage_slice_coords: Optional[MontageSliceCoordsDict] = field(default_factory=dict)
     
 
 @dataclass

@@ -42,10 +42,10 @@ class DataRequestError(Exception):
         self.route = route
 
     def __str__(self):
-        if self.input_field:    
+        if self.input_field:
             return (f"{self.message} - missing input field: "
                    f"{self.input_field} for {self.fmri_file_type} "
-                   f"via {self.route.value}")
+                   f"via {self.route}")
 
 class FileInputError(Exception):
     """
@@ -105,7 +105,7 @@ class FileInputError(Exception):
                 self.index = index
 
     def __str__(self):
-        return f"{self.message} - {self.file_type.value} via {self.method}"
+        return f"{self.message} - {self.file_type} via {self.method}"
 
 
 class FileUploadError(Exception):
@@ -166,7 +166,7 @@ class FileUploadError(Exception):
                 self.index = index
 
     def __str__(self):
-        return f"{self.message} - {self.file_type.value} via {self.method}"
+        return f"{self.message} - {self.file_type} via {self.method}"
 
 
 class FileValidationError(Exception):
@@ -226,7 +226,7 @@ class FileValidationError(Exception):
                 self.index = index
 
     def __str__(self):
-        return f"{self.message} - validation error in {self.func_name} for {self.file_type.value} file"
+        return f"{self.message} - validation error in {self.func_name} for {self.file_type} file"
         
 
 class NiftiMaskError(Exception):
@@ -290,7 +290,8 @@ class PreprocessInputError(Exception):
             'normalization', 
             'filtering', 
             'detrending', 
-            'smoothing'
+            'smoothing',
+            'reset'
         ]] = None
     ):
         super().__init__(message)
