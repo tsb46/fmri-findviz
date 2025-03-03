@@ -1,6 +1,5 @@
 // PreprocessTimeCourse.js - Preprocessing for timecourse data
 import { EVENT_TYPES } from '../../../constants/EventTypes.js';
-import eventBus from '../../events/ViewerEvents.js';
 import { getPreprocessedTimeCourse, resetTimeCoursePreprocess } from '../../api/preprocess.js';
 import { getTimeCourseLabels, getTimeCourseLabelsPreprocessed } from '../../api/data.js';
 
@@ -19,6 +18,7 @@ class PreprocessTimeCourse {
      * @param {string} highCutId - ID of high cut input
      * @param {string} errorInlineId - ID of error message inline
      * @param {string} preprocessAlertId - ID of preprocess alert div
+     * @param {ViewerEvents} eventBus - The event bus
      */
     constructor(
         timeCoursePrepMenuId,
@@ -32,7 +32,8 @@ class PreprocessTimeCourse {
         lowCutId,
         highCutId,
         errorInlineId,
-        preprocessAlertId
+        preprocessAlertId,
+        eventBus
     ) {
         // get time course prep menu
         this.timeCoursePrepMenu = $(`#${timeCoursePrepMenuId}`);
@@ -53,6 +54,8 @@ class PreprocessTimeCourse {
         this.errorInlineId = errorInlineId;
         // get preprocess alert div
         this.preprocessAlert = $(`#${preprocessAlertId}`);
+        // get event bus
+        this.eventBus = eventBus;
         // Set states of preprocessing switches
         this.normSwitchEnabled = false;
         this.filterSwitchEnabled = false;
@@ -70,7 +73,7 @@ class PreprocessTimeCourse {
 
     attachEventListeners() {
         // Listen for addition and removal of fmri time courses
-        eventBus.subscribeMultiple(
+        this.eventBus.subscribeMultiple(
             [
                 EVENT_TYPES.VISUALIZATION.TIMECOURSE.ADD_FMRI_TIMECOURSE, 
                 EVENT_TYPES.VISUALIZATION.TIMECOURSE.REMOVE_FMRI_TIMECOURSE,
@@ -163,7 +166,7 @@ class PreprocessTimeCourse {
         }
         // preprocess timecourse
         getPreprocessedTimeCourse(preprocessParams, this.errorInlineId, () => {
-            eventBus.publish(
+            this.eventBus.publish(
                 EVENT_TYPES.PREPROCESSING.PREPROCESS_TIMECOURSE_SUCCESS, 
                 selectedTimeCourses
             );
@@ -205,7 +208,7 @@ class PreprocessTimeCourse {
         const selectedTimeCourses = this.timeCoursePrepMenu.val();
         // reset preprocess
         resetTimeCoursePreprocess(selectedTimeCourses, this.errorInlineId, () => {
-            eventBus.publish(
+            this.eventBus.publish(
                 EVENT_TYPES.PREPROCESSING.PREPROCESS_TIMECOURSE_RESET,
                 selectedTimeCourses
             );

@@ -66,5 +66,4 @@ class ViewerEvents {
 }
 
 // Create and export a single instance
-const eventBus = new ViewerEvents();
-export default eventBus;
+export default ViewerEvents;

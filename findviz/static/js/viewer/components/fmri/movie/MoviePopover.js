@@ -1,15 +1,20 @@
 // moviePopover.js - movie play options popover
 
-import eventBus from '../../../events/ViewerEvents.js';
 import { EVENT_TYPES } from '../../../../constants/EventTypes.js';
 import { initializeSingleSlider } from '../../sliders.js';
 import { getFmriPlotOptions, updateFmriPlotOptions } from '../../../api/plot.js';
 
 class MoviePopover {
-    constructor(playMoviePopoverId, playMovieSpeedSliderId) {
+    /**
+     * @param {string} playMoviePopoverId - The id of the play movie popover
+     * @param {string} playMovieSpeedSliderId - The id of the play movie speed slider
+     * @param {ViewerEvents} eventBus - The event bus
+     */
+    constructor(playMoviePopoverId, playMovieSpeedSliderId, eventBus) {
         this.playMoviePopoverId = playMoviePopoverId;
         this.playMoviePopover = $(`#${playMoviePopoverId}`);
         this.playMovieSpeedSliderId = playMovieSpeedSliderId;
+        this.eventBus = eventBus;
 
         // initialize popover
         this.initializePlayMoviePopover();
@@ -47,7 +52,7 @@ class MoviePopover {
     updatePlayMovieSpeed(playMovieSpeedSlider) {
         const speed = playMovieSpeedSlider.val();
         updateFmriPlotOptions({ play_movie_speed: speed }, () => {
-            eventBus.publish(EVENT_TYPES.VISUALIZATION.FMRI.PLAY_MOVIE_SPEED_CHANGE, speed);
+            this.eventBus.publish(EVENT_TYPES.VISUALIZATION.FMRI.PLAY_MOVIE_SPEED_CHANGE, speed);
         });
     }
 }

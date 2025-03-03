@@ -1,7 +1,6 @@
 // LinePlotOptions.js - Options for line plot (timecourse plot)
 import {initializeSingleSlider } from '../sliders.js';
 import { EVENT_TYPES } from '../../../constants/EventTypes.js';
-import eventBus from '../../events/ViewerEvents.js';
 import { 
     getTaskConditions,
     getTimeCourseLabels
@@ -37,6 +36,7 @@ class LinePlotOptions {
      * @param {string} timeMarkerSelectShapeId - ID of the time marker shape select (solid, dashed, dotted)
      * @param {string} timeMarkerSelectColorId - ID of the time marker color picker
      * @param {string} toggleConvolutionId - ID of the toggle convolution checkbox
+     * @param {ViewerEvents} eventBus - The event bus
      */
     constructor(
         timeCourseSelectMenuId,
@@ -54,7 +54,8 @@ class LinePlotOptions {
         timeMarkerOpacitySliderId,
         timeMarkerSelectShapeId,
         timeMarkerSelectColorId,
-        toggleConvolutionId
+        toggleConvolutionId,
+        eventBus
     ) {
         // get ids
         this.timeCourseSelectMenuId = timeCourseSelectMenuId;
@@ -73,7 +74,8 @@ class LinePlotOptions {
         this.timeMarkerSelectColorId = timeMarkerSelectColorId;
         this.timeMarkerSelectShapeId = timeMarkerSelectShapeId;
         this.toggleConvolutionId = toggleConvolutionId;
-
+        // get event bus
+        this.eventBus = eventBus;
         // get div elements
         this.timeCourseSelectMenu = $(`#${timeCourseSelectMenuId}`);
         this.timeCourseOpacitySlider = $(`#${timeCourseOpacitySliderId}`);
@@ -102,7 +104,10 @@ class LinePlotOptions {
         this.getPlotLabels((labels) => {
             // if no labels, initialize sliders with default values
             if (labels.length === 0) {
+                // initialize sliders with default values
                 this.initializePlotSliders(1, 2);
+                // disable all buttons
+                this.disableButtons();
                 return;
             }
             // initialize time course select menu
@@ -176,7 +181,7 @@ class LinePlotOptions {
             'click', this.handleToggleConvolutionChangeListener.bind(this)
         );
         // attach listener for fmri time course added or removed from plot
-        eventBus.subscribeMultiple(
+        this.eventBus.subscribeMultiple(
             [
                 EVENT_TYPES.VISUALIZATION.TIMECOURSE.ADD_FMRI_TIMECOURSE,
                 EVENT_TYPES.VISUALIZATION.TIMECOURSE.UNDO_FMRI_TIMECOURSE,
@@ -185,7 +190,7 @@ class LinePlotOptions {
             this.handleFmriTimecourseChangeListener.bind(this)
         );
         // attach listener for preprocess and reset of timecourse
-        eventBus.subscribeMultiple(
+        this.eventBus.subscribeMultiple(
             [
                 EVENT_TYPES.PREPROCESSING.PREPROCESS_TIMECOURSE_SUCCESS,
                 EVENT_TYPES.PREPROCESSING.PREPROCESS_TIMECOURSE_RESET,
@@ -194,12 +199,47 @@ class LinePlotOptions {
             this.modifyShiftResetButtons.bind(this)
         );
         // attach listener for global convolution toggle
-        eventBus.subscribe(
+        this.eventBus.subscribe(
             EVENT_TYPES.VISUALIZATION.TIMECOURSE.TOGGLE_CONVOLUTION_GLOBAL,
             this.changeLinePlotComponents.bind(this)
         );
     }
 
+    /**
+     * Disable all buttons
+     */
+    disableButtons() {
+        this.timeCourseSelectMenu.prop('disabled', true);
+        this.timeCourseSelectColor.prop('disabled', true);
+        this.timeCourseLineWidthSlider.slider('disable');
+        this.timeCourseOpacitySlider.slider('disable');
+        this.timeCourseScaleIncrease.prop('disabled', true);
+        this.timeCourseScaleDecrease.prop('disabled', true);
+        this.timeCourseScaleReset.prop('disabled', true);
+        this.timeCourseSelectMode.prop('disabled', true);
+        this.timeCourseConstantIncrease.prop('disabled', true);
+        this.timeCourseConstantDecrease.prop('disabled', true);
+        this.timeCourseConstantReset.prop('disabled', true);
+        this.toggleConvolution.prop('disabled', true);
+    }
+
+    /**
+     * Enable all buttons
+     */
+    enableButtons() {
+        this.timeCourseSelectMenu.prop('disabled', false);
+        this.timeCourseSelectColor.prop('disabled', false);
+        this.timeCourseLineWidthSlider.slider('enable');
+        this.timeCourseOpacitySlider.slider('enable');
+        this.timeCourseScaleIncrease.prop('disabled', false);
+        this.timeCourseScaleDecrease.prop('disabled', false);
+        this.timeCourseScaleReset.prop('disabled', false);
+        this.timeCourseSelectMode.prop('disabled', false);
+        this.timeCourseConstantIncrease.prop('disabled', false);
+        this.timeCourseConstantDecrease.prop('disabled', false);
+        this.timeCourseConstantReset.prop('disabled', false);
+        this.toggleConvolution.prop('disabled', false);
+    }
     /**
      * Get plot labels from all time courses and/or tasks
      * @param {Function} callback - Callback function to handle successful response
@@ -385,13 +425,21 @@ class LinePlotOptions {
     handleFmriTimecourseChangeListener() {
         // if time course is added to the plot, update time course select menu
         this.getPlotLabels((labels) => {
+            // enable all buttons if there are time courses
+            if (labels.length > 0) {
+                this.enableButtons();
+            } else {
+                this.disableButtons();
+            }
             // set selected time course to the last label - this is 
             // the most recent fmri time course
             this.selectedTimeCourse = labels[labels.length - 1];
             this.initializeTimeCourseSelectMenu(labels, false);
             this.changeLinePlotComponents();
             // modify the shift reset buttons for the time course
-            this.modifyShiftResetButtons();
+            if (labels.length > 0) {
+                this.modifyShiftResetButtons();
+            }
         });
     }
 
@@ -401,7 +449,7 @@ class LinePlotOptions {
     handleTimeCourseColorChangeListener() {
         console.log('timeCourseSelectColor change');
         const callback = () => {
-            eventBus.publish(
+            this.eventBus.publish(
                 EVENT_TYPES.VISUALIZATION.TIMECOURSE.TIMECOURSE_COLOR_CHANGE,
                 { label: this.selectedTimeCourse, color: this.timeCourseSelectColor.val() }
             );
@@ -427,7 +475,7 @@ class LinePlotOptions {
     handleTimeCourseLineWidthSliderChangeListener() {
         console.log('timeCourseLineWidthSlider change');
         const callback = () => {
-            eventBus.publish(
+            this.eventBus.publish(
                 EVENT_TYPES.VISUALIZATION.TIMECOURSE.TIMECOURSE_LINE_WIDTH_SLIDER_CHANGE,
                 { label: this.selectedTimeCourse, width: this.timeCourseLineWidthSlider.val() }
             );
@@ -460,7 +508,7 @@ class LinePlotOptions {
             changeType,
             changeDirection,
             () => {
-                eventBus.publish(
+                this.eventBus.publish(
                     EVENT_TYPES.VISUALIZATION.TIMECOURSE.TIMECOURSE_SHIFT_CHANGE,
                     { 
                         label: this.selectedTimeCourse, 
@@ -488,7 +536,7 @@ class LinePlotOptions {
             changeType,
             () => {
                 if (emitEvent) {
-                    eventBus.publish(
+                    this.eventBus.publish(
                         EVENT_TYPES.VISUALIZATION.TIMECOURSE.TIMECOURSE_SHIFT_RESET,
                         { label: this.selectedTimeCourse, changeType: changeType }
                     );
@@ -505,7 +553,7 @@ class LinePlotOptions {
     handleTimeCourseOpacitySliderChangeListener() {
         console.log('timeCourseOpacitySlider change');
         const callback = () => {
-            eventBus.publish(
+            this.eventBus.publish(
                 EVENT_TYPES.VISUALIZATION.TIMECOURSE.TIMECOURSE_OPACITY_SLIDER_CHANGE,
                 { label: this.selectedTimeCourse, opacity: this.timeCourseOpacitySlider.val() }
             );
@@ -545,7 +593,7 @@ class LinePlotOptions {
                 this.selectedTimeCourse,
                 { mode: this.timeCourseSelectMode.val() },
                 () => {
-                    eventBus.publish(
+                    this.eventBus.publish(
                         EVENT_TYPES.VISUALIZATION.TIMECOURSE.TIMECOURSE_MODE_CHANGE,
                         { label: this.selectedTimeCourse, mode: this.timeCourseSelectMode.val() }
                     );
@@ -556,7 +604,7 @@ class LinePlotOptions {
                 this.selectedTimeCourse,
                 { mode: this.timeCourseSelectMode.val() },
                 () => {
-                    eventBus.publish(
+                    this.eventBus.publish(
                         EVENT_TYPES.VISUALIZATION.TIMECOURSE.TIMECOURSE_MODE_CHANGE,
                         { label: this.selectedTimeCourse, mode: this.timeCourseSelectMode.val() }
                     );
@@ -573,7 +621,7 @@ class LinePlotOptions {
         updateTimeMarkerPlotOptions(
             { color: this.timeMarkerSelectColor.val() },
             () => {
-                eventBus.publish(
+                this.eventBus.publish(
                     EVENT_TYPES.VISUALIZATION.TIMECOURSE.TIME_MARKER_COLOR_CHANGE,
                     { color: this.timeMarkerSelectColor.val() }
                 );
@@ -589,7 +637,7 @@ class LinePlotOptions {
         updateTimeMarkerPlotOptions(
             { shape: this.timeMarkerSelectShape.val() },
             () => {
-                eventBus.publish(
+                this.eventBus.publish(
                     EVENT_TYPES.VISUALIZATION.TIMECOURSE.TIME_MARKER_SHAPE_CHANGE,
                     { shape: this.timeMarkerSelectShape.val() }
                 );
@@ -605,7 +653,7 @@ class LinePlotOptions {
         updateTimeMarkerPlotOptions(
             { opacity: this.timeMarkerOpacitySlider.val() },
             () => {
-                eventBus.publish(
+                this.eventBus.publish(
                     EVENT_TYPES.VISUALIZATION.TIMECOURSE.TIME_MARKER_OPACITY_SLIDER_CHANGE,
                     { opacity: this.timeMarkerOpacitySlider.val() }
                 );
@@ -621,7 +669,7 @@ class LinePlotOptions {
         updateTimeMarkerPlotOptions(
             { width: this.timeMarkerWidthSlider.val() },
             () => {
-                eventBus.publish(
+                this.eventBus.publish(
                     EVENT_TYPES.VISUALIZATION.TIMECOURSE.TIME_MARKER_WIDTH_SLIDER_CHANGE,
                     { width: this.timeMarkerWidthSlider.val() }
                 );
@@ -645,7 +693,7 @@ class LinePlotOptions {
             this.selectedTimeCourse,
             { convolution: convolution },
             () => {
-                eventBus.publish(
+                this.eventBus.publish(
                     EVENT_TYPES.VISUALIZATION.TIMECOURSE.TOGGLE_CONVOLUTION,
                     { label: this.selectedTimeCourse, convolution: convolution }
                 );

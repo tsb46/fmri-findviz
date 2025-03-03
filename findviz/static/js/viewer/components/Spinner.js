@@ -5,14 +5,14 @@ class Spinner {
     /**
      * Create spinner instance
      * @param {string} spinnerOverlayId - ID of spinner overlay div
-     * @param {string} spinnerDivId - ID of spinner div
+     * @param {string} spinnerWheelId - ID of spinner wheel div
      */
     constructor(
         spinnerOverlayId,
-        spinnerDivId
+        spinnerWheelId
     ) {
         this.spinnerOverlay = document.getElementById(spinnerOverlayId);
-        this.spinnerDiv = document.getElementById(spinnerDivId);
+        this.spinnerWheel = document.getElementById(spinnerWheelId);
     }
 
     /**
@@ -21,7 +21,7 @@ class Spinner {
     show() {
         console.log('showing spinner');
         this.spinnerOverlay.style.display = 'block';
-        this.spinnerDiv.style.display = 'block';
+        this.spinnerWheel.style.display = 'block';
     }
 
     /**
@@ -30,7 +30,7 @@ class Spinner {
     hide() {
         console.log('hiding spinner');
         this.spinnerOverlay.style.display = 'none';
-        this.spinnerDiv.style.display = 'none';
+        this.spinnerWheel.style.display = 'none';
     }
 }
 

@@ -1,7 +1,6 @@
 // ClickHandler.js
 // Handles click events for NiftiViewer and GiftiViewer
 import { EVENT_TYPES } from '../../constants/EventTypes.js';
-import eventBus from '../events/ViewerEvents.js';
 import { updateLocation } from '../api/data.js';
 
 export class NiftiClickHandler {
@@ -9,18 +8,20 @@ export class NiftiClickHandler {
      * @param {string} slice1ContainerId - The ID of the first slice container
      * @param {string} slice2ContainerId - The ID of the second slice container
      * @param {string} slice3ContainerId - The ID of the third slice container
+     * @param {ViewerEvents} eventBus - The event bus
      */
     constructor(
         slice1ContainerId,
         slice2ContainerId,
         slice3ContainerId,
+        eventBus
     ) {
         this.slice1Container = document.getElementById(slice1ContainerId);
         this.slice2Container = document.getElementById(slice2ContainerId);
         this.slice3Container = document.getElementById(slice3ContainerId);
-
+        this.eventBus = eventBus;
         // Attach click listeners after initialization of viewer is complete
-        eventBus.subscribe(EVENT_TYPES.VISUALIZATION.FMRI.INIT_NIFTI_VIEWER, () => {
+        this.eventBus.subscribe(EVENT_TYPES.VISUALIZATION.FMRI.INIT_NIFTI_VIEWER, () => {
             this.attachClickListeners();
         });
     }
@@ -45,7 +46,7 @@ export class NiftiClickHandler {
         const x = Math.round(eventData.points[0].x);
         const y = Math.round(eventData.points[0].y);
         updateLocation({ x, y }, sliceName, () => {
-            eventBus.publish(EVENT_TYPES.VISUALIZATION.FMRI.NIFTIVIEWER_CLICK, { x, y, sliceName });
+            this.eventBus.publish(EVENT_TYPES.VISUALIZATION.FMRI.NIFTIVIEWER_CLICK, { x, y, sliceName });
         });
     }
 }
@@ -55,11 +56,14 @@ export class GiftiClickHandler {
     /**
      * @param {string} leftSurfaceId - The ID of the left surface. May be null if not present
      * @param {string} rightSurfaceId - The ID of the right surface. May be null if not present
+     * @param {ViewerEvents} eventBus - The event bus
      */
     constructor(
         leftSurfaceId = null,
         rightSurfaceId = null,
+        eventBus
     ) {
+        this.eventBus = eventBus;
         if (leftSurfaceId) {
             this.leftSurface = document.getElementById(leftSurfaceId);
         }
@@ -68,7 +72,7 @@ export class GiftiClickHandler {
         }
 
         // Attach click listeners after initialization of viewer is complete
-        eventBus.subscribe(EVENT_TYPES.VISUALIZATION.FMRI.INIT_GIFTIVIEWER, () => {
+        this.eventBus.subscribe(EVENT_TYPES.VISUALIZATION.FMRI.INIT_GIFTIVIEWER, () => {
             this.attachClickListeners();
         });
     }
@@ -94,7 +98,7 @@ export class GiftiClickHandler {
         console.log('click event on gifti viewer');
         const vertexIndex = eventData.points[0].pointNumber;
         updateLocation({ click_coords: { selected_vertex: vertexIndex, selected_hemi: hemisphere }}, null, () => {
-            eventBus.publish(EVENT_TYPES.VISUALIZATION.FMRI.GIFTIVIEWER_CLICK, { vertexIndex, hemisphere });
+            this.eventBus.publish(EVENT_TYPES.VISUALIZATION.FMRI.GIFTIVIEWER_CLICK, { vertexIndex, hemisphere });
         });
     }
 }

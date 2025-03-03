@@ -82,6 +82,14 @@ class OrthoSliceIndexDict(TypedDict):
     y: int
     z: int
 
+class MarkerPlotOptionsDict(TypedDict):
+    """Dictionary of marker plot options"""
+    opacity: Optional[float]
+    width: Optional[float]
+    shape: Optional[Literal['solid', 'dashed', 'dotted']]
+    color: Optional[str]
+    highlight: Optional[bool]
+
 class MontageSliceDirectionIndexDict(TypedDict):
     """Dictionary of x,y,z slice indices for a direction in montage view"""
     slice_1: Dict[Literal['x', 'y', 'z'], int]

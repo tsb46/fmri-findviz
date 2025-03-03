@@ -1,6 +1,5 @@
 // viewOptionsTimeCourse.js
 import { EVENT_TYPES } from '../../../constants/EventTypes.js';
-import eventBus from '../../events/ViewerEvents.js';
 import {
     getViewerMetadata,
 } from '../../api/data.js';
@@ -17,13 +16,18 @@ class ViewOptionsTimeCourse {
      * @param {string} hoverTextToggleId - ID of the hover text toggle button
      * @param {string} timeMarkerVisibilityToggleId - ID of the time marker visibility toggle button
      * @param {string} globalConvolutionToggleId - ID of the global convolution toggle button
+     * @param {ViewerEvents} eventBus - The event bus
      */
     constructor(
         gridToggleId,
         hoverTextToggleId,
         timeMarkerVisibilityToggleId,
         globalConvolutionToggleId,
+        eventBus
     ) {
+        // get event bus
+        this.eventBus = eventBus;
+        // get elements
         this.gridToggle = $(`#${gridToggleId}`);
         this.hoverTextToggle = $(`#${hoverTextToggleId}`);
         this.timeMarkerVisibilityToggle = $(`#${timeMarkerVisibilityToggleId}`);
@@ -71,7 +75,7 @@ class ViewOptionsTimeCourse {
         console.log('global convolution toggle change');
         this.toggleState['globalConvolutionToggle'] = !this.toggleState['globalConvolutionToggle'];
         changeTaskConvolution(this.toggleState['globalConvolutionToggle'], () => {
-            eventBus.publish(
+            this.eventBus.publish(
                 EVENT_TYPES.VISUALIZATION.TIMECOURSE.TOGGLE_CONVOLUTION_GLOBAL, 
                 { global_convolution: this.toggleState['globalConvolutionToggle'] }
             );
@@ -87,7 +91,7 @@ class ViewOptionsTimeCourse {
         updateTimeCourseGlobalPlotOptions(
             { grid_on: this.toggleState['gridToggle'] },
             () => {
-                eventBus.publish(
+                this.eventBus.publish(
                     EVENT_TYPES.VISUALIZATION.TIMECOURSE.GRID_TOGGLE, 
                     this.toggleState['gridToggle']
                 );
@@ -104,7 +108,7 @@ class ViewOptionsTimeCourse {
         updateTimeCourseGlobalPlotOptions(
             { hover_text_on: this.toggleState['hoverTextToggle'] },
             () => {
-                eventBus.publish(
+                this.eventBus.publish(
                     EVENT_TYPES.VISUALIZATION.TIMECOURSE.HOVER_TEXT_TOGGLE, 
                     this.toggleState['hoverTextToggle']
                 );
@@ -121,7 +125,7 @@ class ViewOptionsTimeCourse {
         updateTimeCourseGlobalPlotOptions(
             { time_marker_on: this.toggleState['timeMarkerVisibilityToggle'] },
             () => {
-                eventBus.publish(
+                this.eventBus.publish(
                     EVENT_TYPES.VISUALIZATION.TIMECOURSE.TIME_MARKER_VISIBILITY_TOGGLE, 
                     this.toggleState['timeMarkerVisibilityToggle']
                 );

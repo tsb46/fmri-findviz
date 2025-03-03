@@ -1,7 +1,6 @@
 // set montage box popup options
 import { EVENT_TYPES } from '../../../constants/EventTypes.js';
 import { initializeSingleSlider } from '../sliders.js';
-import eventBus from '../../events/ViewerEvents.js';
 import { 
     getMontageData, 
     getViewerMetadata, 
@@ -21,6 +20,7 @@ class Montage {
      * @param {string} slice1SliderId - The ID of the first slice slider
      * @param {string} slice2SliderId - The ID of the second slice slider
      * @param {string} slice3SliderId - The ID of the third slice slider
+     * @param {ViewerEvents} eventBus - The event bus
      */
     constructor(
         fmriFileType,
@@ -29,6 +29,7 @@ class Montage {
         slice1SliderId,
         slice2SliderId,
         slice3SliderId,
+        eventBus
     ) {
         // get fmri slice length from viewer metadata
         getViewerMetadata(
@@ -47,6 +48,7 @@ class Montage {
             [slice2SliderId]: 'slice_2',
             [slice3SliderId]: 'slice_3',
         };
+        this.eventBus = eventBus;
 
         if (this.fmriFileType === 'gifti') {
             // remove popover for gifti
@@ -125,7 +127,7 @@ class Montage {
                 montageData.montage_slice_idx,
             );
             // trigger a montage slice direction change event
-            eventBus.publish(
+            this.eventBus.publish(
                 EVENT_TYPES.VISUALIZATION.FMRI.MONTAGE_SLICE_DIRECTION_CHANGE, 
                 {
                     sliceDirection: event.target.value,
@@ -162,7 +164,7 @@ class Montage {
         // update plot options
         updateMontageSliceIdx(montageSliceParams, () => {
             // trigger a montage slice change event
-            eventBus.publish(
+            this.eventBus.publish(
                 EVENT_TYPES.VISUALIZATION.FMRI.MONTAGE_SLICE_CHANGE, 
                 {
                     slice_name: sliceName,

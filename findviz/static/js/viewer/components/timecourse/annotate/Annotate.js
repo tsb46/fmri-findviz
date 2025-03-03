@@ -1,34 +1,34 @@
 // Annotate.js - handles annotation of time courses
-import { EVENT_TYPES } from '../../../constants/EventTypes.js';
-import eventBus from '../../events/ViewerEvents.js';
+import { EVENT_TYPES } from '../../../../constants/EventTypes.js';
 import { 
     addAnnotationMarker, 
     clearAnnotationMarkers, 
     moveAnnotationSelection,
     undoAnnotationMarker
-} from '../../api/plot.js';
+} from '../../../api/plot.js';
 
 class Annotate {
     /**
      * @param {string} plotlyPlotId - The id of the plotly plot
      * @param {string} timeSliderId - The id of the time slider
      * @param {string} annotateSwitchId - The id of the annotate switch
-     * @param {string} highlightToggleId - The id of the highlight toggle
      * @param {string} rightMoveAnnotateId - The id of the right move annotate
      * @param {string} leftMoveAnnotateId - The id of the left move annotate
      * @param {string} undoAnnotateId - The id of the undo annotate
      * @param {string} removeAnnotateId - The id of the remove annotate
+     * @param {ViewerEvents} eventBus - The event bus
      */
     constructor(
         plotlyPlotId,
         timeSliderId,
         annotateSwitchId,
-        highlightToggleId,
         rightMoveAnnotateId,
         leftMoveAnnotateId,
         undoAnnotateId,
         removeAnnotateId,
+        eventBus
     ) {
+        this.eventBus = eventBus;
         // check that plotlyPlotId is plotted
         this.plotlyPlot = document.getElementById(plotlyPlotId);
         if (!this.plotlyPlot) {
@@ -36,18 +36,15 @@ class Annotate {
         }
         this.timeSlider = $(`#${timeSliderId}`);
         this.annotateSwitch = $(`#${annotateSwitchId}`);
-        this.highlightToggle = $(`#${highlightToggleId}`);
         this.rightMoveAnnotate = $(`#${rightMoveAnnotateId}`);
         this.leftMoveAnnotate = $(`#${leftMoveAnnotateId}`);
         this.undoAnnotate = $(`#${undoAnnotateId}`);
         this.removeAnnotate = $(`#${removeAnnotateId}`);
         // set annotate state as false
         this.annotateState = false;
-        // set highlight state as false
-        this.highlightState = false;
 
         // listen for initialization of time course plot and attach listeners
-        eventBus.subscribe(
+        this.eventBus.subscribe(
             EVENT_TYPES.VISUALIZATION.TIMECOURSE.INIT_TIMECOURSE_PLOT,
             () => {
                 this.attachListeners();
@@ -56,16 +53,14 @@ class Annotate {
     }
 
     /**
-     * Attaches event listeners to the annotate switch, highlight toggle,
-     * right move annotate, left move annotate, undo annotate, and remove annotate
+     * Attaches event listeners to the annotate switch, right move annotate,
+     * left move annotate, undo annotate, and remove annotate
      */
     attachListeners() {
         // initialize annotation switch listener
         this.initializeAnnotateSwitchListener();
         // initialize plotly click listener
         this.initializePlotlyClickListener();
-        // initialize highlight toggle listener
-        this.initializeHighlightToggleListener();
         // initialize right move highlight listener
         this.initializeRightMoveAnnotateListener();
         // initialize left move highlight listener
@@ -84,19 +79,17 @@ class Annotate {
             this.annotateState = !this.annotateState;
             // enable annotate/disable buttons
             if (this.annotateState) {
-                this.highlightToggle.prop('disabled', false);
                 this.rightMoveAnnotate.prop('disabled', false);
                 this.leftMoveAnnotate.prop('disabled', false);
                 this.undoAnnotate.prop('disabled', false);
                 this.removeAnnotate.prop('disabled', false);
             } else {
-                this.highlightToggle.prop('disabled', true);
                 this.rightMoveAnnotate.prop('disabled', true);
                 this.leftMoveAnnotate.prop('disabled', true);
                 this.undoAnnotate.prop('disabled', true);
                 this.removeAnnotate.prop('disabled', true);
             }
-            eventBus.publish(
+            this.eventBus.publish(
                 EVENT_TYPES.VISUALIZATION.ANNOTATE.ANNOTATE_STATE_CHANGED, 
                 this.annotateState
             );
@@ -115,7 +108,7 @@ class Annotate {
                     // update time slider to the x value
                     this.timeSlider.slider('setValue', marker.marker);
                     this.timeSlider.trigger('change');
-                    eventBus.publish(
+                    this.eventBus.publish(
                         EVENT_TYPES.VISUALIZATION.ANNOTATE.ANNOTATE_MARKER_ADDED, 
                         marker
                     );
@@ -125,27 +118,20 @@ class Annotate {
     }
 
     /**
-     * Initializes the highlight toggle listener
-     */
-    initializeHighlightToggleListener() {
-        this.highlightToggle.on('click', () => {
-            this.highlightState = !this.highlightState;
-            console.log('highlight toggle clicked');
-            eventBus.publish(
-                EVENT_TYPES.VISUALIZATION.ANNOTATE.ANNOTATE_HIGHLIGHT_TOGGLE, 
-                this.highlightState
-            );
-        });
-    }
-
-    /**
      * Initializes the right move annotate listener
      */
     initializeRightMoveAnnotateListener() {
         this.rightMoveAnnotate.on('click', () => {
             console.log('right move annotate clicked');
-            moveAnnotationSelection('right', () => {
-                eventBus.publish(
+            moveAnnotationSelection('right', (selectedMarker) => {
+                console.log(
+                    'selected marker moved to right: ', 
+                    selectedMarker.selected_marker
+                );
+                // update time slider to the x value
+                this.timeSlider.slider('setValue', selectedMarker.selected_marker);
+                this.timeSlider.trigger('change');
+                this.eventBus.publish(
                     EVENT_TYPES.VISUALIZATION.ANNOTATE.ANNOTATE_MARKER_MOVED, 
                     'right'
                 );
@@ -159,10 +145,17 @@ class Annotate {
     initializeLeftMoveAnnotateListener() {
         this.leftMoveAnnotate.on('click', () => {
             console.log('left move annotate clicked');
-            moveAnnotationSelection('left', () => {
-                eventBus.publish(
+            moveAnnotationSelection('left', (selectedMarker) => {
+                console.log(
+                    'selected marker moved to left: ', 
+                    selectedMarker.selected_marker
+                );
+                // update time slider to the x value
+                this.timeSlider.slider('setValue', selectedMarker.selected_marker);
+                this.timeSlider.trigger('change');
+                this.eventBus.publish(
                     EVENT_TYPES.VISUALIZATION.ANNOTATE.ANNOTATE_MARKER_MOVED, 
-                    'left'
+                    selectedMarker
                 );
             });
         });
@@ -180,7 +173,7 @@ class Annotate {
                     this.timeSlider.slider('setValue', marker.marker);
                     this.timeSlider.trigger('change');
                 }
-                eventBus.publish(
+                this.eventBus.publish(
                     EVENT_TYPES.VISUALIZATION.ANNOTATE.ANNOTATE_MARKER_UNDONE, 
                     marker
                 );
@@ -195,7 +188,7 @@ class Annotate {
         this.removeAnnotate.on('click', () => {
             console.log('remove annotate clicked');
             clearAnnotationMarkers(() => {
-                eventBus.publish(
+                this.eventBus.publish(
                     EVENT_TYPES.VISUALIZATION.ANNOTATE.ANNOTATE_MARKER_REMOVED, 
                     true
                 );

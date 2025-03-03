@@ -1,6 +1,5 @@
 // PeakFinder.js
 import { EVENT_TYPES } from '../../../constants/EventTypes.js';
-import eventBus from '../../events/ViewerEvents.js';
 import { getTimeCourseLabels, getTaskConditions } from '../../api/data.js';
 import { checkTsPreprocessed } from '../../api/plot.js';
 import { findPeaks } from '../../api/analysis.js';
@@ -14,13 +13,15 @@ class PeakFinder {
      * @param {string} submitPeakFinderId - The ID of the submit button for the peak finder
      * @param {string} peakFinderFormId - The ID of the form for the peak finder
      * @param {string} peakFinderPrepAlertId - The ID of the preprocess alert for the peak finder
+     * @param {ViewerEvents} eventBus - The event bus
      */
     constructor(
         peakFinderPopOverId,
         peakFinderTimeCourseSelectId,
         submitPeakFinderId,
         peakFinderFormId,
-        peakFinderPrepAlertId
+        peakFinderPrepAlertId,
+        eventBus
     ) {
         // set ids
         this.peakFinderPopOverId = peakFinderPopOverId;
@@ -28,6 +29,7 @@ class PeakFinder {
         this.submitPeakFinderId = submitPeakFinderId;
         this.peakFinderFormId = peakFinderFormId;
         this.peakFinderPrepAlertId = peakFinderPrepAlertId;
+        this.eventBus = eventBus;
 
         // set elements
         this.peakFinderPopOver = $(`#${peakFinderPopOverId}`);
@@ -205,7 +207,7 @@ class PeakFinder {
         // find peaks
         findPeaks(timeCourse, timeCourseType, peakFinderParams, () => {
             console.log('peak finder success');
-            eventBus.publish(EVENT_TYPES.VISUALIZATION.ANNOTATE.ANNOTATE_MARKER_ADDED);
+            this.eventBus.publish(EVENT_TYPES.VISUALIZATION.ANNOTATE.ANNOTATE_MARKER_ADDED);
         });
 
         // hide popover

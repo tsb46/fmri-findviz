@@ -2,9 +2,10 @@
 // Class for handling windowed average analysis
 
 import { EVENT_TYPES } from '../../../constants/EventTypes.js';
-import eventBus from '../../events/ViewerEvents.js';
+import { DOM_IDS } from '../../../constants/DomIds.js';
 import { windowedAverage } from '../../api/analysis.js';
 import { getAnnotationMarkers } from '../../api/plot.js';
+import Spinner from '../../components/Spinner.js';
 
 class Average {
     /**
@@ -14,6 +15,8 @@ class Average {
      * @param {string} submitAverageId - The id of the submit average button
      * @param {string} averageFormId - The id of the average form
      * @param {string} annotationWarningId - The id of the annotation warning
+     * @param {string} errorMessageId - The id of the error message
+     * @param {ViewerEvents} eventBus - The event bus
      */
     constructor(
         averageModalId,
@@ -22,6 +25,8 @@ class Average {
         submitAverageId,
         averageFormId,
         annotationWarningId,
+        errorMessageId,
+        eventBus
     ) {
         // get elements
         this.averageModal = $(`#${averageModalId}`);
@@ -30,24 +35,36 @@ class Average {
         this.submitAverage = $(`#${submitAverageId}`);
         this.averageForm = $(`#${averageFormId}`);
         this.annotationWarning = $(`#${annotationWarningId}`);
-
+        // error message
+        this.errorMessageId = errorMessageId;
+        this.eventBus = eventBus;
         // initialize average form
         this.averageForm.on('submit', this.handleAverageSubmit.bind(this));
 
         // on modal show, check if any annotation markers are selected
         this.averageModal.on('show.bs.modal', this.checkAnnotationMarkers.bind(this));
+
+        // initialize spinner
+        this.spinner = new Spinner(
+            DOM_IDS.AVERAGE.SPINNER_OVERLAY,
+            DOM_IDS.AVERAGE.SPINNER_WHEEL
+        );
     }
 
     /**
      * Check if any annotation markers are selected
      */
     checkAnnotationMarkers() {
-        getAnnotationMarkers((response) => {
-            if (response.length === 0) {
+        // clear error message
+        $(`#${this.errorMessageId}`).css('display', 'none');
+        getAnnotationMarkers((annotationMarkers) => {
+            if (annotationMarkers.markers.length === 0) {
                 this.annotationWarning.show();
+                this.submitAverage.prop('disabled', true);
             }
             else {
                 this.annotationWarning.hide();
+                this.submitAverage.prop('disabled', false);
             }
         });
     }
@@ -58,16 +75,23 @@ class Average {
      */
     handleAverageSubmit(event) {
         event.preventDefault();
+        // show spinner
+        this.spinner.show();
         console.log('average submit button clicked');
         const windowedAverageParams = {
-            leftEdge: this.leftEdge.val(),
-            rightEdge: this.rightEdge.val(),
+            left_edge: this.leftEdge.val(),
+            right_edge: this.rightEdge.val(),
         };
-        windowedAverage(windowedAverageParams, () => {
-            eventBus.publish(EVENT_TYPES.ANALYSIS.WINDOWED_AVERAGE);
+        windowedAverage(windowedAverageParams, this.errorMessageId, () => {
+            this.eventBus.publish(EVENT_TYPES.ANALYSIS.WINDOWED_AVERAGE);
+            // hide spinner
+            this.spinner.hide();
+            // hide modal
+            this.averageModal.modal('hide');
+        }, () => {
+            // hide spinner
+            this.spinner.hide();
         });
-        // hide modal
-        this.averageModal.modal('hide');
     }
 }
 

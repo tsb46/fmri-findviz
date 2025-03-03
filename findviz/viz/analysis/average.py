@@ -23,9 +23,15 @@ class WindowAverage:
     right_edge : int
         right edge of window
     """
-    def __init__(self, left_edge: int, right_edge: int):
+    def __init__(
+        self, 
+        left_edge: int, 
+        right_edge: int,
+        n_timepoints: int
+    ):
         self.left_edge = left_edge
         self.right_edge = right_edge
+        self.n_timepoints = n_timepoints
         self._validate()
 
     def average(
@@ -79,7 +85,7 @@ class WindowAverage:
             )
         if not validate_less_than_half_time_length(
             self.left_edge, 
-            self.time_length
+            self.n_timepoints
         ):
             raise ParameterInputError(
                 message="Left edge must be less than half the time length",
@@ -87,7 +93,7 @@ class WindowAverage:
             )
         if not validate_less_than_half_time_length(
             self.right_edge, 
-            self.time_length
+            self.n_timepoints
         ):
             raise ParameterInputError(
                 message="Right edge must be less than half the time length",

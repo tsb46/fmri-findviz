@@ -1,7 +1,6 @@
 // PreprocessFmri.js - Preprocessing for FMRI data
 import { DOM_IDS } from '../../../constants/DomIds.js';
 import { EVENT_TYPES } from '../../../constants/EventTypes.js';
-import eventBus from '../../events/ViewerEvents.js';
 import Spinner from '../../../Spinner.js';
 import { getPreprocessedFMRI, resetFMRIPreprocess } from '../../api/preprocess.js';
 
@@ -22,6 +21,7 @@ class PreprocessFmri {
      * @param {string} smoothFwhmId - ID of smooth FWHM input
      * @param {string} errorInlineId - ID of error message inline
      * @param {string} preprocessAlertId - ID of preprocess alert div
+     * @param {ViewerEvents} eventBus - The event bus
      */
     constructor(
         fmriFileType,
@@ -37,9 +37,11 @@ class PreprocessFmri {
         highCutId,
         smoothFwhmId,
         errorInlineId,
-        preprocessAlertId
+        preprocessAlertId,
+        eventBus
     ) {
         this.fmriFileType = fmriFileType;
+        this.eventBus = eventBus;
         // get preprocessing switches
         this.normSwitch = $(`#${normSwitchId}`);
         this.filterSwitch = $(`#${filterSwitchId}`);
@@ -164,7 +166,7 @@ class PreprocessFmri {
                 // hide spinner
                 this.spinner.hide();
                 // publish event
-                eventBus.publish(EVENT_TYPES.PREPROCESSING.PREPROCESS_FMRI_SUCCESS);
+                this.eventBus.publish(EVENT_TYPES.PREPROCESSING.PREPROCESS_FMRI_SUCCESS);
             }, 
             () => {
                 // hide spinner
@@ -207,7 +209,7 @@ class PreprocessFmri {
         this.smoothFwhm.prop('disabled', true);
         // reset preprocess
         resetFMRIPreprocess(this.errorInlineId, () => {
-            eventBus.publish(EVENT_TYPES.PREPROCESSING.PREPROCESS_FMRI_RESET);
+            this.eventBus.publish(EVENT_TYPES.PREPROCESSING.PREPROCESS_FMRI_RESET);
             // hide preprocess alert
             this.preprocessAlert.css("display", "none");
         });

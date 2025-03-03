@@ -1,6 +1,5 @@
 import { EVENT_TYPES } from '../../../constants/EventTypes.js';
 import { initializeSingleSlider } from '../sliders.js';
-import eventBus from '../../events/ViewerEvents.js';
 import { getViewerMetadata, updateTimepoint } from '../../api/data.js';
 
 class TimeSlider {
@@ -10,18 +9,21 @@ class TimeSlider {
      * @param {string} timeSliderId - The ID of the time slider
      * @param {string} timeSliderTitle - The title of the time slider
      * @param {string} timeSliderTitleId - The ID of the time slider title
+     * @param {ViewerEvents} eventBus - The event bus
      */
     constructor(
         displayText,
         timeSliderId,
         timeSliderTitle,
-        timeSliderTitleId
+        timeSliderTitleId,
+        eventBus
     ) {
 
         this.displayText = displayText;
         this.timeSliderId = timeSliderId;
         this.timeSlider = $(`#${this.timeSliderId}`);
         this.timeSliderTitle = $(`#${timeSliderTitleId}`);
+        this.eventBus = eventBus;
 
         // display time slider title
         this.timeSliderTitle.text(timeSliderTitle);
@@ -75,7 +77,7 @@ class TimeSlider {
         await updateTimepoint(timeIndex);
 
         // Trigger a time slider change event
-        eventBus.publish(
+        this.eventBus.publish(
             EVENT_TYPES.VISUALIZATION.FMRI.TIME_SLIDER_CHANGE, 
             timeIndex
         );

@@ -7,6 +7,7 @@ Routes:
     CHECK_TS_PREPROCESSED: Check if timecourse is preprocessed
     CLEAR_ANNOTATION_MARKERS: Clear annotation markers
     GET_ANNOTATION_MARKERS: Get annotation markers
+    GET_ANNOTATION_MARKER_PLOT_OPTIONS: Get annotation marker plot options
     GET_DISTANCE_PLOT_OPTIONS: Get distance plot options
     GET_FMRI_PLOT_OPTIONS: Get fMRI plot options
     GET_NIFTI_VIEW_STATE: Get nifti view state (ortho or montage)
@@ -17,6 +18,7 @@ Routes:
     MOVE_ANNOTATION_SELECTION: Move annotation selection
     RESET_FMRI_COLOR_OPTIONS: Reset fMRI color options
     REMOVE_DISTANCE_PLOT: Remove distance plot
+    UPDATE_ANNOTATION_MARKER_PLOT_OPTIONS: Update annotation marker plot options
     UPDATE_DISTANCE_PLOT_OPTIONS: Update distance plot options
     UPDATE_FMRI_PLOT_OPTIONS: Update fMRI plot options
     UPDATE_TIMECOURSE_GLOBAL_PLOT_OPTIONS: Update timecourse global plot options
@@ -136,15 +138,26 @@ def clear_annotation_markers() -> dict:
     route=Routes.GET_ANNOTATION_MARKERS
 )
 def get_annotation_markers() -> dict:
-    """Get current annotation markers and current annotation selection"""
+    """Get annotation markers, annotation selection, and annotation plot options"""
     markers = data_manager.annotation_markers
     selection = data_manager.annotation_selection
-    highlight = data_manager.annotation_highlight_on
+    plot_options = data_manager._state.annotation_marker_plot_options.to_dict()
     return {
         'markers': markers,
         'selection': selection,
-        'highlight': highlight
+        'plot_options': plot_options
     }
+
+
+@plot_bp.route(Routes.GET_ANNOTATION_MARKER_PLOT_OPTIONS.value, methods=['GET'])
+@handle_route_errors(
+    error_msg='Unknown error in get annotation marker plot options request',
+    log_msg='Retrieved annotation marker plot options successfully',
+    route=Routes.GET_ANNOTATION_MARKER_PLOT_OPTIONS
+)
+def get_annotation_marker_plot_options() -> dict:
+    """Get annotation marker plot options"""
+    return data_manager.get_annotation_marker_plot_options()
 
 
 @plot_bp.route(Routes.GET_DISTANCE_PLOT_OPTIONS.value, methods=['GET'])
@@ -260,8 +273,8 @@ def get_timemarker_plot_options() -> dict:
 def move_annotation_selection() -> dict:
     """Move annotation selection"""
     direction = convert_value(request.form['direction'])
-    data_manager.move_annotation_selection(direction)
-    return {'status': 'success'}
+    selected_marker = data_manager.move_annotation_selection(direction)
+    return {'selected_marker': selected_marker}
 
 
 @plot_bp.route(Routes.REMOVE_DISTANCE_PLOT.value, methods=['POST'])
@@ -355,6 +368,24 @@ def update_fmri_plot_options() -> dict:
     """Update plot options based on form data."""
     fmri_plot_options = json.loads(request.form['fmri_plot_options'])
     data_manager.update_fmri_plot_options(fmri_plot_options)
+    return {'status': 'success'}
+
+
+@plot_bp.route(Routes.UPDATE_ANNOTATION_MARKER_PLOT_OPTIONS.value, methods=['POST'])
+@handle_route_errors(
+    error_msg='Unknown error in update annotation marker plot options request',
+    log_msg='Updated annotation marker plot options successfully',
+    route=Routes.UPDATE_ANNOTATION_MARKER_PLOT_OPTIONS,
+    route_parameters=['annotation_marker_plot_options']
+)
+def update_annotation_marker_plot_options() -> dict:
+    """Update annotation marker plot options"""
+    annotation_marker_plot_options = json.loads(
+        request.form['annotation_marker_plot_options']
+    )
+    data_manager.update_annotation_marker_plot_options(
+        annotation_marker_plot_options
+    )
     return {'status': 'success'}
 
 

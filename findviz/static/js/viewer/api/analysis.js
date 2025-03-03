@@ -81,13 +81,26 @@ export const findPeaks = async (label, time_course_type, peakFinderParams, callb
  * @param {Function} callback - Callback function to handle successful response
  * @returns {Promise} Promise object representing the API call
  */
-export const windowedAverage = async (windowedAverageParams, callback) => {
+export const windowedAverage = async (
+    windowedAverageParams, 
+    errorInlineId,
+    callback,
+    errorCallback
+) => {
     return makeRequest(
         API_ENDPOINTS.ANALYSIS.WINDOWED_AVERAGE, 
-        { method: 'POST', body: createFormData(windowedAverageParams) }, 
+        { 
+            method: 'POST', 
+            body: createFormData({
+                window_average_params: JSON.stringify(windowedAverageParams)
+            }) 
+        }, 
         {
-            errorPrefix: 'Error windowing average'
+            errorPrefix: 'Error during window average',
+            errorId: errorInlineId,
+            isInline: true,
         },
-        callback
+        callback,
+        errorCallback
     );
 };

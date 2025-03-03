@@ -28,6 +28,7 @@ class Routes(Enum):
     CORRELATE='/correlate'
     DISTANCE='/distance'
     GET_ANNOTATION_MARKERS='/get_annotation_markers'
+    GET_ANNOTATION_MARKER_PLOT_OPTIONS='/get_annotation_marker_plot_options'
     GET_CLICK_COORDS='/get_click_coords'
     GET_CROSSHAIR_COORDS='/get_crosshair_coords'
     GET_COLORMAPS='/get_colormaps'
@@ -65,6 +66,7 @@ class Routes(Enum):
     RESET_TIMECOURSE_PREPROCESS='/reset_timecourse_preprocess'
     RESET_TIMECOURSE_SHIFT='/reset_timecourse_shift'
     UNDO_ANNOTATION_MARKER='/undo_annotation_marker'
+    UPDATE_ANNOTATION_MARKER_PLOT_OPTIONS='/update_annotation_marker_plot_options'
     UPDATE_DISTANCE_PLOT_OPTIONS='/update_distance_plot_options'
     UPDATE_FMRI_TIMECOURSE='/update_fmri_timecourse'
     UPDATE_FMRI_PLOT_OPTIONS='/update_fmri_plot_options'
@@ -78,7 +80,7 @@ class Routes(Enum):
     UPDATE_TIMEMARKER_PLOT_OPTIONS='/update_timemarker_plot_options'
     UPDATE_TIMECOURSE_SHIFT='/update_timecourse_shift'
     UPDATE_LOCATION='/update_location'
-    WINDOW_AVERAGE='/window_average'
+    WINDOWED_AVERAGE='/windowed_average'
 
 
 

@@ -2,7 +2,6 @@
 // Class for handling distance analysis modal
 import { EVENT_TYPES } from '../../../constants/EventTypes.js';
 import { DOM_IDS } from '../../../constants/DomIds.js';
-import eventBus from '../../events/ViewerEvents.js';
 import { distance } from '../../api/analysis.js';
 import Spinner from '../../components/Spinner.js';
 
@@ -15,6 +14,7 @@ class DistanceModal {
      * @param {string} distanceRemoveButtonId - The id of the distance remove button
      * @param {string} errorMessageId - The id of the error message
      * @param {string} preprocessAlertId - The id of the preprocess alert
+     * @param {ViewerEvents} eventBus - The event bus
      */
     constructor(
         distanceModalId,
@@ -23,7 +23,8 @@ class DistanceModal {
         timePointMessageId,
         distanceRemoveButtonId,
         errorMessageId,
-        preprocessAlertId
+        preprocessAlertId,
+        eventBus
     ) {
         this.distanceModal = $(`#${distanceModalId}`);
         this.distanceForm = $(`#${distanceFormId}`);
@@ -32,6 +33,8 @@ class DistanceModal {
         this.distanceRemoveButton = $(`#${distanceRemoveButtonId}`);
         this.preprocessAlert = $(`#${preprocessAlertId}`);
         this.errorMessageId = errorMessageId;
+        this.eventBus = eventBus;
+
         // initialize time point display in modal as 0
         this.timePointMessage.text(0);
 
@@ -51,17 +54,17 @@ class DistanceModal {
     // initialize event listeners
     attachEventListeners() {
         // listen for time slider change
-        eventBus.subscribe(EVENT_TYPES.VISUALIZATION.FMRI.TIME_SLIDER_CHANGE, (timeIndex) => {
+        this.eventBus.subscribe(EVENT_TYPES.VISUALIZATION.FMRI.TIME_SLIDER_CHANGE, (timeIndex) => {
             this.timePointMessage.text(timeIndex);
         });
 
         // display preprocess alert
-        eventBus.subscribe(EVENT_TYPES.PREPROCESSING.PREPROCESS_FMRI_SUCCESS, () => {
+        this.eventBus.subscribe(EVENT_TYPES.PREPROCESSING.PREPROCESS_FMRI_SUCCESS, () => {
             this.preprocessAlert.show();
         });
 
         // hide preprocess alert on completion of reset
-        eventBus.subscribe(EVENT_TYPES.PREPROCESSING.PREPROCESS_FMRI_RESET, () => {
+        this.eventBus.subscribe(EVENT_TYPES.PREPROCESSING.PREPROCESS_FMRI_RESET, () => {
             this.preprocessAlert.hide();
         });
 
@@ -82,7 +85,7 @@ class DistanceModal {
             // success callback
             () => {
                 // publish distance event
-                eventBus.publish(EVENT_TYPES.ANALYSIS.DISTANCE);
+                this.eventBus.publish(EVENT_TYPES.ANALYSIS.DISTANCE);
                 // clear error message
                 const errorMessage = $(`#${this.errorMessageId}`);
                 errorMessage.text('');
@@ -104,7 +107,7 @@ class DistanceModal {
     // handle remove distance plot button click
     handleDistanceRemoveButtonClick() {
         // publish distance remove event
-        eventBus.publish(EVENT_TYPES.ANALYSIS.DISTANCE_REMOVE);
+        this.eventBus.publish(EVENT_TYPES.ANALYSIS.DISTANCE_REMOVE);
         // disable distance remove button
         this.distanceRemoveButton.prop('disabled', true);
     }

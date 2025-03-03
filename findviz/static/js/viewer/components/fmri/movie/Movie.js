@@ -1,6 +1,5 @@
 // Movie component
 import { getFmriPlotOptions } from '../../../api/plot.js';
-import eventBus from '../../../events/ViewerEvents.js';
 import { EVENT_TYPES } from '../../../../constants/EventTypes.js';
 
 /**
@@ -11,13 +10,15 @@ class Movie {
      * Create a Movie instance
      * @param {string} timeSliderId - Time slider element
      * @param {string} playMovieButtonId - Play movie button
+     * @param {ViewerEvents} eventBus - The event bus
      */
-    constructor(timeSliderId, playMovieButtonId) {
+    constructor(timeSliderId, playMovieButtonId, eventBus) {
         this.timeSlider = $(`#${timeSliderId}`);
         this.playMovieButton = $(`#${playMovieButtonId}`);
         this.playMovieButtonIcon = this.playMovieButton.find('i');
         this.isPlaying = false;
         this.intervalId = null;
+        this.eventBus = eventBus;
 
         // get interval time from state
         getFmriPlotOptions( (plotOptions) => {
@@ -28,7 +29,7 @@ class Movie {
         this.playMovieButton.on('click', () => this.togglePlay());
 
         // Subscribe to play speed change events
-        eventBus.subscribe(EVENT_TYPES.VISUALIZATION.FMRI.PLAY_MOVIE_SPEED_CHANGE, (newSpeed) => {
+        this.eventBus.subscribe(EVENT_TYPES.VISUALIZATION.FMRI.PLAY_MOVIE_SPEED_CHANGE, (newSpeed) => {
             this.setIntervalTime(newSpeed);
         });
     }

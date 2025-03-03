@@ -1,7 +1,6 @@
 // NiftiViewer.js
 // Handles all plotting and click events for nifti visualization
 import { EVENT_TYPES } from '../../constants/EventTypes.js';
-import eventBus from '../events/ViewerEvents.js';
 import { getFMRIData, getCrosshairCoords, getDirectionLabelCoords } from '../api/data.js';
 import { getFmriPlotOptions } from '../api/plot.js';
 
@@ -12,6 +11,7 @@ class NiftiViewer {
      * @param {string} slice2ContainerId - The ID of the second slice container
      * @param {string} slice3ContainerId - The ID of the third slice container
      * @param {string} colorbarContainerId - The ID of the colorbar container
+     * @param {ViewerEvents} eventBus - The event bus
      */
     constructor(
         niftiPlotContainerId,
@@ -19,13 +19,14 @@ class NiftiViewer {
         slice2ContainerId,
         slice3ContainerId,
         colorbarContainerId,
+        eventBus
     ) {
         this.niftiPlotContainerId = niftiPlotContainerId;
         this.slice1ContainerId = slice1ContainerId;
         this.slice2ContainerId = slice2ContainerId;
         this.slice3ContainerId = slice3ContainerId;
         this.colorbarContainerId = colorbarContainerId;
-
+        this.eventBus = eventBus;
         // define slice name to container id converter
         this.sliceName2ContainerId = {
             slice_1: slice1ContainerId,
@@ -71,7 +72,7 @@ class NiftiViewer {
     attachEventListeners() {
         // Handle time slider change - update slice data and re-plot
         // Handle montage slice direction change - replot with new slice indices
-        eventBus.subscribeMultiple(
+        this.eventBus.subscribeMultiple(
             [
                 EVENT_TYPES.VISUALIZATION.FMRI.TIME_SLIDER_CHANGE, 
                 EVENT_TYPES.VISUALIZATION.FMRI.MONTAGE_SLICE_DIRECTION_CHANGE
@@ -107,7 +108,7 @@ class NiftiViewer {
         );
 
         // Handle click event - update slice data and re-plot, if crosshair is enabled, re-plot crosshairs
-        eventBus.subscribe(EVENT_TYPES.VISUALIZATION.FMRI.NIFTIVIEWER_CLICK, 
+        this.eventBus.subscribe(EVENT_TYPES.VISUALIZATION.FMRI.NIFTIVIEWER_CLICK, 
             () => {
                 getFMRIData((viewer_data) => {
                     console.log('replotting nifti plot - click event');
@@ -152,7 +153,7 @@ class NiftiViewer {
         );
 
         // Handle view state change - update plot width and slice data and re-plot
-        eventBus.subscribe(EVENT_TYPES.VISUALIZATION.FMRI.VIEW_TOGGLE, 
+        this.eventBus.subscribe(EVENT_TYPES.VISUALIZATION.FMRI.VIEW_TOGGLE, 
             (viewState) => {
                 this.changeViewPlotWidth(viewState.view_state);
                 getFMRIData((viewer_data) => {
@@ -192,7 +193,7 @@ class NiftiViewer {
         );
 
         // Handle montage slice index change - replot with new slice indices
-        eventBus.subscribe(EVENT_TYPES.VISUALIZATION.FMRI.MONTAGE_SLICE_CHANGE, 
+        this.eventBus.subscribe(EVENT_TYPES.VISUALIZATION.FMRI.MONTAGE_SLICE_CHANGE, 
             (sliceParams) => {
                 const sliceName = sliceParams.slice_name;
                 const sliceIdx = sliceParams.slice_idx;
@@ -211,7 +212,7 @@ class NiftiViewer {
         );
 
         // Handle any color changes
-        eventBus.subscribeMultiple(
+        this.eventBus.subscribeMultiple(
             [
                 EVENT_TYPES.VISUALIZATION.FMRI.COLOR_MAP_CHANGE, 
                 EVENT_TYPES.VISUALIZATION.FMRI.OPACITY_SLIDER_CHANGE,
@@ -237,7 +238,7 @@ class NiftiViewer {
         );
 
         // Handle threshold change
-        eventBus.subscribe(EVENT_TYPES.VISUALIZATION.FMRI.THRESHOLD_SLIDER_CHANGE, 
+        this.eventBus.subscribe(EVENT_TYPES.VISUALIZATION.FMRI.THRESHOLD_SLIDER_CHANGE, 
             () => {
                 console.log('replotting nifti plot - threshold slider change');
                 getFMRIData((viewer_data) => {
@@ -270,7 +271,7 @@ class NiftiViewer {
 
         // Handle reset of color sliders - update for change of threshold and update plot color properties
         // Handle preprocess submit and reset - replot with new data
-        eventBus.subscribeMultiple(
+        this.eventBus.subscribeMultiple(
             [
                 EVENT_TYPES.VISUALIZATION.FMRI.RESET_COLOR_SLIDERS,
                 EVENT_TYPES.PREPROCESSING.PREPROCESS_FMRI_SUCCESS,
@@ -322,7 +323,7 @@ class NiftiViewer {
         );
 
         // Handle crosshair change
-        eventBus.subscribe(EVENT_TYPES.VISUALIZATION.FMRI.TOGGLE_CROSSHAIR, 
+        this.eventBus.subscribe(EVENT_TYPES.VISUALIZATION.FMRI.TOGGLE_CROSSHAIR, 
             (crosshairState) => {
                 console.log('plotting crosshairs on nifti plot');
                 if (crosshairState.crosshairState) {
@@ -337,7 +338,7 @@ class NiftiViewer {
             }
         );
         // Handle direction marker change
-        eventBus.subscribe(EVENT_TYPES.VISUALIZATION.FMRI.TOGGLE_DIRECTION_MARKER, 
+        this.eventBus.subscribe(EVENT_TYPES.VISUALIZATION.FMRI.TOGGLE_DIRECTION_MARKER, 
             (directionMarkerState) => {
                 console.log('plotting direction markers on nifti plot');
                 if (directionMarkerState.directionMarkerState) {
@@ -353,7 +354,7 @@ class NiftiViewer {
         );
 
         // Handle hover text toggle
-        eventBus.subscribe(EVENT_TYPES.VISUALIZATION.FMRI.HOVER_TEXT_TOGGLE, 
+        this.eventBus.subscribe(EVENT_TYPES.VISUALIZATION.FMRI.HOVER_TEXT_TOGGLE, 
             (hoverState) => {
                 console.log('plotting hover text on nifti plot');
                 this.plotNiftiDataUpdate(
@@ -381,7 +382,7 @@ class NiftiViewer {
         );
 
         // Handle reverse colorbar toggle
-        eventBus.subscribe(EVENT_TYPES.VISUALIZATION.FMRI.TOGGLE_REVERSE_COLORBAR, 
+        this.eventBus.subscribe(EVENT_TYPES.VISUALIZATION.FMRI.TOGGLE_REVERSE_COLORBAR, 
             (reverseColormapState) => {
                 console.log('reversing colormap on nifti plot');
                 this.plotReverseColormap(
@@ -391,7 +392,7 @@ class NiftiViewer {
         );
 
         // resize window on colorbar toggle
-        eventBus.subscribe(EVENT_TYPES.VISUALIZATION.FMRI.TOGGLE_COLORBAR, 
+        this.eventBus.subscribe(EVENT_TYPES.VISUALIZATION.FMRI.TOGGLE_COLORBAR, 
             () => {
                 this.onWindowResize();
             }
@@ -474,7 +475,7 @@ class NiftiViewer {
             this.plotNiftiFullUpdate(viewer_data.plot_options);
 
             // emit event to indicate initialization of plot is complete
-            eventBus.publish(EVENT_TYPES.VISUALIZATION.FMRI.INIT_NIFTI_VIEWER);
+            this.eventBus.publish(EVENT_TYPES.VISUALIZATION.FMRI.INIT_NIFTI_VIEWER);
         });
     }
 

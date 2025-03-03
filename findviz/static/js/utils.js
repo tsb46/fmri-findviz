@@ -37,6 +37,12 @@ function initBootstrapComponents() {
         sanitize: false,
     });
 
+    // Enable HTML content in the annotation marker plot options button
+    $("#annotate-plot-popover").popover({
+        html: true,
+        sanitize: false,
+    });
+
     // Enable HTML content in the find peaks button
     $("#peak-finder-popover").popover({
         html: true,

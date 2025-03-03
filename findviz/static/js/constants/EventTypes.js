@@ -15,6 +15,10 @@ export const EVENT_TYPES = {
             ANNOTATE_MARKER_MOVED: 'annotateMarkerMoved',
             ANNOTATE_MARKER_UNDONE: 'annotateMarkerUndone',
             ANNOTATE_MARKER_REMOVED: 'annotateMarkerRemoved',
+            ANNOTATE_MARKER_COLOR_CHANGE: 'annotateMarkerColorChange',
+            ANNOTATE_MARKER_WIDTH_CHANGE: 'annotateMarkerWidthChange',
+            ANNOTATE_MARKER_OPACITY_CHANGE: 'annotateMarkerOpacityChange',
+            ANNOTATE_MARKER_SHAPE_CHANGE: 'annotateMarkerShapeChange',
         },
         DISTANCE: {
             COLOR_MAP_CHANGE: 'distanceColorMapChange',

@@ -1,7 +1,6 @@
 // TimeCourseFmri.js
 // Handles addition and removal events of fmri time courses to plot
 import { EVENT_TYPES } from '../../../constants/EventTypes.js';
-import eventBus from '../../events/ViewerEvents.js';
 import { popFmriTimeCourse, removeFmriTimeCourses } from '../../api/data.js';
 
 class TimeCourseFmri {
@@ -11,14 +10,19 @@ class TimeCourseFmri {
      * @param {string} timeCourseRemoveButtonId - The ID of the remove fmri time course button
      * @param {string} timeCourseUndoButtonId - The ID of the undo fmri time course button
      * @param {string} timeCourseFreezeButtonId - The ID of the freeze fmri time course button
+     * @param {ViewerEvents} eventBus - The event bus
      */
     constructor(
         enableFmriTimeCourseButtonId,
         timeCourseRemoveButtonId,
         timeCourseUndoButtonId,
         timeCourseFreezeButtonId,
-        freezeIconId
+        freezeIconId,
+        eventBus
     ) {
+        // get event bus
+        this.eventBus = eventBus;
+        // get elements
         this.enableFmriTimeCourseButton = $(`#${enableFmriTimeCourseButtonId}`);
         this.timeCourseRemoveButton = $(`#${timeCourseRemoveButtonId}`);
         this.timeCourseUndoButton = $(`#${timeCourseUndoButtonId}`);
@@ -41,7 +45,7 @@ class TimeCourseFmri {
         this.enableFmriTimeCourseButton.on('click', () => {
             console.log('fmri time course enable button clicked');
             this.timeCourseEnabled = !this.timeCourseEnabled;
-            eventBus.publish(
+            this.eventBus.publish(
                 EVENT_TYPES.VISUALIZATION.TIMECOURSE.ENABLE_FMRI_TIMECOURSE, 
                 this.timeCourseEnabled
             );
@@ -61,7 +65,7 @@ class TimeCourseFmri {
         this.timeCourseUndoButton.on('click', async () => {
             console.log('fmri time course undo button clicked');
             const lastFmriLabel = await popFmriTimeCourse();
-            eventBus.publish(
+            this.eventBus.publish(
                 EVENT_TYPES.VISUALIZATION.TIMECOURSE.UNDO_FMRI_TIMECOURSE,
                 lastFmriLabel.label
             );
@@ -71,7 +75,7 @@ class TimeCourseFmri {
         this.timeCourseRemoveButton.on('click', async () => {
             console.log('fmri time course remove button clicked');
             const fmriLabels = await removeFmriTimeCourses();
-            eventBus.publish(
+            this.eventBus.publish(
                 EVENT_TYPES.VISUALIZATION.TIMECOURSE.REMOVE_FMRI_TIMECOURSE,
                 fmriLabels.labels
             );
@@ -93,7 +97,7 @@ class TimeCourseFmri {
                 this.freezeIcon.addClass('fa-unlock');
             }
 
-            eventBus.publish(
+            this.eventBus.publish(
                 EVENT_TYPES.VISUALIZATION.TIMECOURSE.FREEZE_FMRI_TIMECOURSE,
                 this.timeCourseFreeze
             );

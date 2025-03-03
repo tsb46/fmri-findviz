@@ -1,6 +1,5 @@
 // ColorBar.js - Plot colorbar
 import { EVENT_TYPES } from '../../constants/EventTypes.js';
-import eventBus from '../events/ViewerEvents.js';
 import { getFmriPlotOptions } from '../api/plot.js';
 
 
@@ -9,10 +8,12 @@ class ColorBar {
      * Constructor for ColorBar
      * @param {string} containerId - The ID of the container
      * @param {string} colorbarTitle - The title of the colorbar
+     * @param {ViewerEvents} eventBus - The event bus
      */
-    constructor(containerId, colorbarTitle) {
+    constructor(containerId, colorbarTitle, eventBus) {
         this.containerId = containerId;
         this.colorbarTitle=colorbarTitle;
+        this.eventBus = eventBus;
 
         // initialize colorbar state
         this.colorbarState = null;
@@ -26,7 +27,7 @@ class ColorBar {
      */
     attachEventListeners() {
         // Toggle colorbar
-        eventBus.subscribe(
+        this.eventBus.subscribe(
             EVENT_TYPES.VISUALIZATION.FMRI.TOGGLE_COLORBAR, 
             (colorbarState) => {
                 if (colorbarState.colorbarState) {
@@ -39,7 +40,7 @@ class ColorBar {
         });
 
         // Listen for color slider changes and update colorbar min and max
-        eventBus.subscribe(
+        this.eventBus.subscribe(
             EVENT_TYPES.VISUALIZATION.FMRI.COLOR_SLIDER_CHANGE, 
             (colorSliderValues) => {
                 if (this.colorbarState) {
@@ -52,7 +53,7 @@ class ColorBar {
         );
 
         // Listen for colormap change and update colorbar
-        eventBus.subscribe(
+        this.eventBus.subscribe(
             EVENT_TYPES.VISUALIZATION.FMRI.COLOR_MAP_CHANGE, 
             (color_map) => {
                 console.log('updating colormap selection');
@@ -61,7 +62,7 @@ class ColorBar {
         );
 
         // Listen for reverse colorbar toggle and update colorbar
-        eventBus.subscribe(
+        this.eventBus.subscribe(
             EVENT_TYPES.VISUALIZATION.FMRI.TOGGLE_REVERSE_COLORBAR, 
             (reverseColormapState) => {
                 console.log('reversing colormap');
@@ -70,7 +71,7 @@ class ColorBar {
         );
 
         // Listen for preprocess submit and reset - replot with new data
-        eventBus.subscribeMultiple(
+        this.eventBus.subscribeMultiple(
             [
                 EVENT_TYPES.PREPROCESSING.PREPROCESS_FMRI_SUCCESS,
                 EVENT_TYPES.PREPROCESSING.PREPROCESS_FMRI_RESET,

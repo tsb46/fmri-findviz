@@ -3,6 +3,7 @@
 // Fetch functions:
 // - checkTsPreprocessed
 // - getAnnotationMarkers
+// - getAnnotationMarkerPlotOptions
 // - getDistancePlotOptions
 // - getColormapData
 // - getFmriPlotOptions
@@ -21,6 +22,7 @@
 // - resetFmriColorOptions
 // - removeDistancePlot
 // - undoAnnotationMarker
+// - updateAnnotationMarkerPlotOptions
 // - updateDistancePlotOptions
 // - updateFmriPlotOptions
 // - updateNiftiViewState
@@ -123,15 +125,15 @@ export const getAnnotationMarkers = async (callback) => {
 };
 
 /**
- * Fetches distance plot options from the server
- * @param {Function} callback - Callback function to handle successful response 
+ * Fetches marker plot options from the server
+ * @param {Function} callback - Callback function to handle successful response
  * @returns {Promise} Promise object representing the API call
  */
-export const getDistancePlotOptions = async (callback) => {
+export const getAnnotationMarkerPlotOptions = async (callback) => {
     return makeRequest(
-        API_ENDPOINTS.PLOT_OPTIONS.GET_DISTANCE_PLOT_OPTIONS,
+        API_ENDPOINTS.PLOT_OPTIONS.GET_ANNOTATION_MARKER_PLOT_OPTIONS,
         { method: 'GET' },
-        { errorPrefix: 'Error fetching distance plot options' },
+        { errorPrefix: 'Error fetching annotation marker plot options' },
         callback
     );
 };
@@ -153,6 +155,20 @@ export const getColormapData = async (callback) => {
 };
 
 /**
+ * Fetches distance plot options from the server
+ * @param {Function} callback - Callback function to handle successful response 
+ * @returns {Promise} Promise object representing the API call
+ */
+export const getDistancePlotOptions = async (callback) => {
+    return makeRequest(
+        API_ENDPOINTS.PLOT_OPTIONS.GET_DISTANCE_PLOT_OPTIONS,
+        { method: 'GET' },
+        { errorPrefix: 'Error fetching distance plot options' },
+        callback
+    );
+};
+
+/**
  * Fetches plot options from the server
  * @param {Function} callback - Callback function to handle successful response
  * @returns {Promise} Promise object representing the API call
@@ -167,6 +183,7 @@ export const getFmriPlotOptions = async (callback) => {
         callback
     );
 };
+
 
 /**
  * Get current nifti view state (ortho or montage)
@@ -357,6 +374,26 @@ export const undoAnnotationMarker = async (callback) => {
         {
             errorPrefix: 'Error undoing annotation marker'
         },
+        callback
+    );
+};
+
+/**
+ * Update annotation marker plot options
+ * @param {Object} annotationMarkerPlotOptions - Annotation marker plot options to update
+ * @param {Function} callback - Callback function to handle successful response
+ * @returns {Promise} Promise object representing the API call
+ */
+export const updateAnnotationMarkerPlotOptions = async (annotationMarkerPlotOptions, callback) => {
+    return makeRequest(
+        API_ENDPOINTS.PLOT_OPTIONS.UPDATE_ANNOTATION_MARKER_PLOT_OPTIONS,
+        {
+            method: 'POST',
+            body: createFormData({
+                annotation_marker_plot_options: annotationMarkerPlotOptions
+            })
+        },
+        { errorPrefix: 'Error updating annotation marker plot options' },
         callback
     );
 };

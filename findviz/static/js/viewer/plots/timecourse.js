@@ -1,7 +1,6 @@
 // Timecourse plot
 // Handles all plotting and click events for time course visualization
 import { EVENT_TYPES } from '../../constants/EventTypes.js';
-import eventBus from '../events/ViewerEvents.js';
 import { 
     getLastTimecourse,
     getNTimepoints,
@@ -9,7 +8,6 @@ import {
     getTimeCourseData, 
     getTimePoint,
     popFmriTimeCourse,
-    removeFmriTimeCourses,
     updateFmriTimeCourse 
 } from '../api/data.js';
 import {
@@ -28,12 +26,14 @@ class TimeCourse {
      * @param {string} timeCoursePlotContainerId - The ID of the time course plot container
      * @param {boolean} timeCourseInput - Whether the time course input is provided
      * @param {boolean} taskDesignInput - Whether the task design input is provided
+     * @param {ViewerEvents} eventBus - The event bus
      */
     constructor(
         timeCourseContainerId,
         timeCoursePlotContainerId,
         timeCourseInput,
-        taskDesignInput
+        taskDesignInput,
+        eventBus
     ) {
         this.timeCourseContainerId = timeCourseContainerId;
         this.timeCourseContainer = $(`#${timeCourseContainerId}`);
@@ -41,7 +41,7 @@ class TimeCourse {
         this.timeCoursePlotContainer = $(`#${timeCoursePlotContainerId}`);
         this.timeCourseInput = timeCourseInput;
         this.taskDesignInput = taskDesignInput;
-
+        this.eventBus = eventBus;
         // get number of timepoints
         getNTimepoints( (nTimepoints) => {
             this.timeCourseLength = nTimepoints.n_timepoints;
@@ -77,7 +77,7 @@ class TimeCourse {
 
     attachEventListeners() {
         // listen for enable/disable fmri time course events
-        eventBus.subscribe(
+        this.eventBus.subscribe(
             EVENT_TYPES.VISUALIZATION.TIMECOURSE.ENABLE_FMRI_TIMECOURSE, (state) => {
                 console.log('enabling fmri time course plotting');
                 this.timeCourseEnabled = state;
@@ -94,7 +94,7 @@ class TimeCourse {
         );
 
         // listen for freeze/unfreeze fmri time course events
-        eventBus.subscribe(
+        this.eventBus.subscribe(
             EVENT_TYPES.VISUALIZATION.TIMECOURSE.FREEZE_FMRI_TIMECOURSE, (state) => {
                 this.timeCourseFreeze = state;
                 console.log('freezing fmri time course');
@@ -102,7 +102,7 @@ class TimeCourse {
         );
 
         // listen for time slider change event - replot time marker
-        eventBus.subscribe(
+        this.eventBus.subscribe(
             EVENT_TYPES.VISUALIZATION.FMRI.TIME_SLIDER_CHANGE, (timePoint) => {
                 console.log('replotting time marker');
                 this.plotTimeMarker(timePoint);
@@ -111,7 +111,7 @@ class TimeCourse {
 
         // listen for plotly click events on Nifti or GiftiViewer
         // if fmri time course enabled, add functional timecourse and plot
-        eventBus.subscribeMultiple(
+        this.eventBus.subscribeMultiple(
             [
                 EVENT_TYPES.VISUALIZATION.FMRI.NIFTIVIEWER_CLICK, 
                 EVENT_TYPES.VISUALIZATION.FMRI.GIFTIVIEWER_CLICK
@@ -128,7 +128,7 @@ class TimeCourse {
                         const plotOptions = await this.getPlotOptions();
                         this.plotTimeCourseData(timeCourseData, plotOptions);
                         // publish event that fmri time course has been added
-                        eventBus.publish(
+                        this.eventBus.publish(
                             EVENT_TYPES.VISUALIZATION.TIMECOURSE.ADD_FMRI_TIMECOURSE
                         );
                     } else {
@@ -147,7 +147,7 @@ class TimeCourse {
                         const plotOptions = await this.getPlotOptions();
                         this.plotTimeCourseData(timeCourseData, plotOptions);
                         // publish event that fmri time course has been added
-                        eventBus.publish(
+                        this.eventBus.publish(
                             EVENT_TYPES.VISUALIZATION.TIMECOURSE.ADD_FMRI_TIMECOURSE
                         );
                     }
@@ -160,7 +160,7 @@ class TimeCourse {
 
         // listen for undo fmri time course event
         // remove most recent fmri timecourse and replot
-        eventBus.subscribe(
+        this.eventBus.subscribe(
             EVENT_TYPES.VISUALIZATION.TIMECOURSE.UNDO_FMRI_TIMECOURSE,
             async (label) => {
                 console.log('removing most recently added fmri timecourse');
@@ -176,7 +176,7 @@ class TimeCourse {
 
         // listen for remove all fmri time course event
         // remove all fmri timecourses and replot
-        eventBus.subscribe(
+        this.eventBus.subscribe(
             EVENT_TYPES.VISUALIZATION.TIMECOURSE.REMOVE_FMRI_TIMECOURSE,
             async (labels) => {
                 console.log('removing all fmri timecourses');
@@ -196,7 +196,7 @@ class TimeCourse {
 
         // listen for time course visualization change events
         // update time course plot properties (color, mode, width, visibility, opacity)
-        eventBus.subscribeMultiple(
+        this.eventBus.subscribeMultiple(
             [
                 EVENT_TYPES.VISUALIZATION.TIMECOURSE.TIMECOURSE_COLOR_CHANGE,
                 EVENT_TYPES.VISUALIZATION.TIMECOURSE.TIMECOURSE_MODE_CHANGE,
@@ -218,7 +218,7 @@ class TimeCourse {
         );
 
         // listen for time course scale or constant shift slider change event
-        eventBus.subscribeMultiple(
+        this.eventBus.subscribeMultiple(
             [
                 EVENT_TYPES.VISUALIZATION.TIMECOURSE.TIMECOURSE_SHIFT_CHANGE, 
                 EVENT_TYPES.VISUALIZATION.TIMECOURSE.TIMECOURSE_SHIFT_RESET
@@ -238,7 +238,7 @@ class TimeCourse {
 
         // listen for local convolution toggle event
         // update time course data and plot
-        eventBus.subscribe(
+        this.eventBus.subscribe(
             EVENT_TYPES.VISUALIZATION.TIMECOURSE.TOGGLE_CONVOLUTION,
             async (label) => {
                 console.log('replotting task design plot due to convolution toggle for label', label);
@@ -252,7 +252,7 @@ class TimeCourse {
         );
 
         // Listen for global convolution toggle event
-        eventBus.subscribe(
+        this.eventBus.subscribe(
             EVENT_TYPES.VISUALIZATION.TIMECOURSE.TOGGLE_CONVOLUTION_GLOBAL,
             async () => {
                 console.log('replotting time course due to global convolution toggle');
@@ -270,7 +270,7 @@ class TimeCourse {
 
         // listen for time course global plot options change events
         // update time marker plot properties (color, width, shape, opacity)
-        eventBus.subscribeMultiple(
+        this.eventBus.subscribeMultiple(
             [
                 EVENT_TYPES.VISUALIZATION.TIMECOURSE.TIME_MARKER_COLOR_CHANGE,
                 EVENT_TYPES.VISUALIZATION.TIMECOURSE.TIME_MARKER_WIDTH_SLIDER_CHANGE,
@@ -285,7 +285,7 @@ class TimeCourse {
         );
 
         // listen for time marker visibility toggle event
-        eventBus.subscribe(
+        this.eventBus.subscribe(
             EVENT_TYPES.VISUALIZATION.TIMECOURSE.TIME_MARKER_VISIBILITY_TOGGLE, 
             async (state) => {
                 if (state) {
@@ -302,7 +302,7 @@ class TimeCourse {
         );
 
         // listen for hover text toggle event
-        eventBus.subscribe(
+        this.eventBus.subscribe(
             EVENT_TYPES.VISUALIZATION.TIMECOURSE.HOVER_TEXT_TOGGLE, (state) => {
                 if (state) {
                     console.log('plotting hover text');
@@ -315,7 +315,7 @@ class TimeCourse {
         );
 
         // listen for grid lines toggle event
-        eventBus.subscribe(
+        this.eventBus.subscribe(
             EVENT_TYPES.VISUALIZATION.TIMECOURSE.GRID_TOGGLE, (state) => {
                 if (state) {
                     console.log('plotting grid lines');
@@ -329,31 +329,36 @@ class TimeCourse {
 
         // listen for annotation marker change events
         // update time course data and plot
-        eventBus.subscribeMultiple(
+        this.eventBus.subscribeMultiple(
             [
                 EVENT_TYPES.VISUALIZATION.ANNOTATE.ANNOTATE_MARKER_ADDED,
                 EVENT_TYPES.VISUALIZATION.ANNOTATE.ANNOTATE_MARKER_MOVED,
                 EVENT_TYPES.VISUALIZATION.ANNOTATE.ANNOTATE_MARKER_REMOVED,
-                EVENT_TYPES.VISUALIZATION.ANNOTATE.ANNOTATE_MARKER_UNDONE
+                EVENT_TYPES.VISUALIZATION.ANNOTATE.ANNOTATE_MARKER_UNDONE,
+                EVENT_TYPES.VISUALIZATION.ANNOTATE.ANNOTATE_HIGHLIGHT_TOGGLE,
+                EVENT_TYPES.VISUALIZATION.ANNOTATE.ANNOTATE_MARKER_COLOR_CHANGE,
+                EVENT_TYPES.VISUALIZATION.ANNOTATE.ANNOTATE_MARKER_WIDTH_CHANGE,
+                EVENT_TYPES.VISUALIZATION.ANNOTATE.ANNOTATE_MARKER_OPACITY_CHANGE,
+                EVENT_TYPES.VISUALIZATION.ANNOTATE.ANNOTATE_MARKER_SHAPE_CHANGE
             ], async () => {
                 console.log('replotting time course due to annotation marker change');
                 // get annnotation markers and plot
                 getAnnotationMarkers( (annotationData) => {
                     // if no annotation markers, change highlight to false
                     if (annotationData.markers.length === 0) {
-                        annotationData.highlight = false;
+                        annotationData.plot_options.highlight = false;
                     }
                     this.plotAnnotationMarkers(
                         annotationData.markers, 
                         annotationData.selection,
-                        annotationData.highlight
+                        annotationData.plot_options
                     );
                 });
             }
         );
 
         // listen for preprocess time course event
-        eventBus.subscribe(
+        this.eventBus.subscribe(
             EVENT_TYPES.PREPROCESSING.PREPROCESS_TIMECOURSE_SUCCESS, 
             async (selectedTimeCourses) => {
                 console.log('replotting time course due to preprocess time course');
@@ -372,7 +377,7 @@ class TimeCourse {
         );
 
         // listen for reset fmri preprocessing event
-        eventBus.subscribe(
+        this.eventBus.subscribe(
             EVENT_TYPES.PREPROCESSING.PREPROCESS_TIMECOURSE_RESET, 
             async (preprocessedLabels) => {
                 console.log('replotting time course due to reset fmri preprocessing');
@@ -477,7 +482,7 @@ class TimeCourse {
             Plotly.react(this.timeCoursePlotContainerId, dummyData, layout);
 
             // emit event to indicate initialization of plot is complete
-            eventBus.publish(EVENT_TYPES.VISUALIZATION.TIMECOURSE.INIT_TIMECOURSE_PLOT);
+            this.eventBus.publish(EVENT_TYPES.VISUALIZATION.TIMECOURSE.INIT_TIMECOURSE_PLOT);
 
             // if grid lines on, plot grid lines
             if (globalPlotOptions.grid_on) {
@@ -534,9 +539,9 @@ class TimeCourse {
      * Plot annotation markers
      * @param {Array} markers - The annotation markers
      * @param {Array} selection - The annotation selection
-     * @param {boolean} highlight - Whether to highlight the annotation selection
+     * @param {Object} plotOptions - The annotation plot options
      */
-    plotAnnotationMarkers(markers, selection, highlight) {
+    plotAnnotationMarkers(markers, selection, plotOptions) {
         // create a vertical line at each annotation marker
         this.annotationShapes = markers.map(marker => ({
             type: 'line',
@@ -545,15 +550,16 @@ class TimeCourse {
             x1: marker,
             y1: 1,
             yref: 'paper',
-            opacity: 0.5,
+            opacity: plotOptions.opacity,
             line: {
-                color: 'rgb(255, 0, 0)',
-                width: 1
+                color: plotOptions.color,
+                width: plotOptions.width,
+                dash: plotOptions.shape 
             },
         }));
 
         // if highlight, highlight currently selected annotation marker
-        if (highlight) {
+        if (plotOptions.highlight) {
             this.annotationShapes.push(
                 {
                     type: 'line',

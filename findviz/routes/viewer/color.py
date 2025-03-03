@@ -9,7 +9,7 @@ from flask import Blueprint
  
 from findviz.logger_config import setup_logger
 from findviz.routes.utils import handle_route_errors, Routes
-from findviz.viz.viewer.state import ColorMaps
+from findviz.viz.viewer.state.components import ColorMaps
 from findviz.routes.shared import data_manager
 
 # Set up a logger for the app

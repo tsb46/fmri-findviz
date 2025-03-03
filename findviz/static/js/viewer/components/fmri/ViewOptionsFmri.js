@@ -1,7 +1,6 @@
 // ViewOptionsFmri component
 import { captureScreenshot } from './capture.js';
 import { EVENT_TYPES } from '../../../constants/EventTypes.js';
-import eventBus from '../../events/ViewerEvents.js';
 import { 
     getFmriPlotOptions, 
     updateFmriPlotOptions, 
@@ -27,6 +26,7 @@ class ViewOptionsFmri {
      * @param {string} [colorbarToggleId = null] - The ID of the colorbar toggle
      * @param {string} [reverseColorbarToggleId = null] - The ID of the reverse colorbar toggle
      * @param {string} [screenshotButtonId = null] - The ID of the screenshot button
+     * @param {ViewerEvents} eventBus - The event bus
      */
     constructor(
         fmriFileType,
@@ -42,7 +42,8 @@ class ViewOptionsFmri {
         directionMarkerToggleId = null,
         colorbarToggleId = null,
         reverseColorbarToggleId = null,
-        screenshotButtonId = null
+        screenshotButtonId = null,
+        eventBus
     ) {
         this.fmriFileType = fmriFileType;
         this.plotlyDivIds = plotlyDivIds;
@@ -57,6 +58,7 @@ class ViewOptionsFmri {
         this.colorbarToggleId = colorbarToggleId;
         this.reverseColorbarToggleId = reverseColorbarToggleId;
         this.screenshotButtonId = screenshotButtonId;
+        this.eventBus = eventBus;
 
         // get time slider div
         this.timeSlider = $(`#${timeSliderId}`);
@@ -102,7 +104,7 @@ class ViewOptionsFmri {
                     updateNiftiViewState(
                         this.toggleState['viewToggle'],
                         () => {
-                            eventBus.publish(
+                            this.eventBus.publish(
                                 EVENT_TYPES.VISUALIZATION.FMRI.VIEW_TOGGLE,
                                 { view_state: this.toggleState['viewToggle'] }
                             );
@@ -120,7 +122,7 @@ class ViewOptionsFmri {
                     updateFmriPlotOptions(
                         { direction_marker_on: this.toggleState['directionMarkerToggle'] },
                         () => {
-                            eventBus.publish(
+                            this.eventBus.publish(
                                 EVENT_TYPES.VISUALIZATION.FMRI.TOGGLE_DIRECTION_MARKER,
                                 { directionMarkerState: this.toggleState['directionMarkerToggle'] }
                             );
@@ -138,7 +140,7 @@ class ViewOptionsFmri {
                     updateFmriPlotOptions(
                         { crosshair_on: this.toggleState['crosshairToggle'] },
                         () => {
-                            eventBus.publish(
+                            this.eventBus.publish(
                                 EVENT_TYPES.VISUALIZATION.FMRI.TOGGLE_CROSSHAIR,
                                 { crosshairState: this.toggleState['crosshairToggle'] }
                             );
@@ -157,7 +159,7 @@ class ViewOptionsFmri {
                 updateFmriPlotOptions(
                     { hover_text_on: this.toggleState['hoverToggle'] },
                     () => {
-                        eventBus.publish(
+                        this.eventBus.publish(
                             EVENT_TYPES.VISUALIZATION.FMRI.HOVER_TEXT_TOGGLE,
                             { hoverState: this.toggleState['hoverToggle'] }
                         );
@@ -175,7 +177,7 @@ class ViewOptionsFmri {
                 updateFmriPlotOptions(
                     { colorbar_on: this.toggleState['colorbarToggle'] },
                     () => {
-                        eventBus.publish(
+                        this.eventBus.publish(
                             EVENT_TYPES.VISUALIZATION.FMRI.TOGGLE_COLORBAR,
                             { colorbarState: this.toggleState['colorbarToggle'] }
                         );
@@ -193,7 +195,7 @@ class ViewOptionsFmri {
                 updateFmriPlotOptions(
                     { reverse_colormap: this.toggleState['reverseColorbarToggle'] },
                     () => {
-                        eventBus.publish(
+                        this.eventBus.publish(
                             EVENT_TYPES.VISUALIZATION.FMRI.TOGGLE_REVERSE_COLORBAR,
                             { reverseColormapState: this.toggleState['reverseColorbarToggle'] }
                         );

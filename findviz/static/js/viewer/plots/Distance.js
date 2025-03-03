@@ -2,7 +2,6 @@
 // Plot distance between timepoint and all other timepoints
 
 import { EVENT_TYPES } from '../../constants/EventTypes.js';
-import eventBus from '../events/ViewerEvents.js';
 import { getDistanceData, getTimePoint } from '../api/data.js';
 import { getDistancePlotOptions, removeDistancePlot } from '../api/plot.js';
 
@@ -11,10 +10,12 @@ class Distance {
      * Constructor for Distance class
      * @param {string} distancePlotId - ID of the distance plot
      * @param {string} distanceContainerId - ID of the distance container
+     * @param {ViewerEvents} eventBus - The event bus
      */
-    constructor(distancePlotId, distanceContainerId){
+    constructor(distancePlotId, distanceContainerId, eventBus){
         this.distancePlotId = distancePlotId;
         this.distanceContainerId = distanceContainerId;
+        this.eventBus = eventBus;
 
         // attach event listeners
         this.attachEventListeners();
@@ -28,7 +29,7 @@ class Distance {
      */
     attachEventListeners() {
         // listen for distance submit event and plot distance vector
-        eventBus.subscribe(EVENT_TYPES.ANALYSIS.DISTANCE, 
+        this.eventBus.subscribe(EVENT_TYPES.ANALYSIS.DISTANCE, 
             async () => {
                 console.log('plotting distance');
                 // get distance data
@@ -47,7 +48,7 @@ class Distance {
         );
 
         // listen for distance remove event and remove distance plot
-        eventBus.subscribe(EVENT_TYPES.ANALYSIS.DISTANCE_REMOVE, 
+        this.eventBus.subscribe(EVENT_TYPES.ANALYSIS.DISTANCE_REMOVE, 
             () => {
                 console.log('removing distance plot');
                 Plotly.purge(this.distancePlotId);
@@ -58,7 +59,7 @@ class Distance {
         );
 
         // listen for time point change event and plot time point marker
-        eventBus.subscribe(EVENT_TYPES.VISUALIZATION.FMRI.TIME_SLIDER_CHANGE, 
+        this.eventBus.subscribe(EVENT_TYPES.VISUALIZATION.FMRI.TIME_SLIDER_CHANGE, 
             async (timePoint) => {
                 if (this.plotState) {
                     console.log('replotting time marker on distance plot for time point change event');
@@ -69,7 +70,7 @@ class Distance {
         );
 
         // listen for time marker plot changes and replot time point marker
-        eventBus.subscribeMultiple(
+        this.eventBus.subscribeMultiple(
             [
                 EVENT_TYPES.VISUALIZATION.DISTANCE.TIME_MARKER_WIDTH_CHANGE, 
                 EVENT_TYPES.VISUALIZATION.DISTANCE.TIME_MARKER_OPACITY_CHANGE
@@ -83,7 +84,7 @@ class Distance {
         );
 
         // listen for color range and color map change event and replot distance plot
-        eventBus.subscribeMultiple(
+        this.eventBus.subscribeMultiple(
             [
                 EVENT_TYPES.VISUALIZATION.DISTANCE.COLOR_RANGE_CHANGE,
                 EVENT_TYPES.VISUALIZATION.DISTANCE.COLOR_MAP_CHANGE

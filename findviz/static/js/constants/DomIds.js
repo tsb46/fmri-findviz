@@ -6,7 +6,10 @@ export const DOM_IDS = {
         RIGHT_EDGE: 'average-right-edge',
         SUBMIT_AVERAGE: 'submit-average',
         AVERAGE_FORM: 'average-form',
-        ANNOTATION_WARNING: 'no-annotation-message-average'
+        ANNOTATION_WARNING: 'no-annotation-message-average',
+        SPINNER_OVERLAY: 'average-spinner-overlay',
+        SPINNER_WHEEL: 'average-spinner-wheel',
+        ERROR_MESSAGE: 'error-message-average'
     },
     CORRELATE: {
         NEGATIVE_LAG: 'correlate-negative-lag',
@@ -140,6 +143,11 @@ export const DOM_IDS = {
             HIGHLIGHT_ANNOTATE: 'highlight-annotate',
             UNDO_ANNOTATE: 'undo-annotate',
             REMOVE_ANNOTATE: 'remove-annotate',
+            POPOVER: 'annotate-plot-popover',
+            COLOR_DROPDOWN: 'annotate-color-select',
+            MARKER_SELECT: 'annotate-marker-select',
+            MARKER_WIDTH_SLIDER: 'annotate-marker-width',
+            MARKER_OPACITY_SLIDER: 'annotate-marker-opacity'
         },
         FMRI: {
             ENABLE_FMRI_TIMECOURSE: 'enable-fmri-time-course',

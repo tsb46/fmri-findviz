@@ -2,7 +2,6 @@
 // Correlate fmri time courses with another time course
 
 import { EVENT_TYPES } from '../../../constants/EventTypes.js';
-import eventBus from '../../events/ViewerEvents.js';
 import { getTimeCourseLabels, getTaskConditions } from '../../api/data.js';
 import { correlate } from '../../api/analysis.js';
 
@@ -15,6 +14,7 @@ class Correlate {
      * @param {string} correlateTimeCourseSelectId - The ID of the correlation time course select
      * @param {string} submitCorrelateId - The ID of the submit correlation button
      * @param {string} correlateFormId - The ID of the correlation form
+     * @param {ViewerEvents} eventBus - The event bus
      */
     constructor(
         correlateModalId,
@@ -22,7 +22,8 @@ class Correlate {
         positiveLagId,
         correlateTimeCourseSelectId,
         submitCorrelateId,
-        correlateFormId
+        correlateFormId,
+        eventBus
     ) {
         // get elements
         this.correlateModal = $(`#${correlateModalId}`);
@@ -31,7 +32,7 @@ class Correlate {
         this.correlateTimeCourseSelect = $(`#${correlateTimeCourseSelectId}`);
         this.submitCorrelate = $(`#${submitCorrelateId}`);
         this.correlateForm = $(`#${correlateFormId}`);
-
+        this.eventBus = eventBus;
         // initialize time course types
         this.timeCourseTypes = {};
 
@@ -42,7 +43,7 @@ class Correlate {
         this.fillCorrelateTimeCourseSelect();
 
         // refill time course select on addition of fmri time course
-        eventBus.subscribe(
+        this.eventBus.subscribe(
             EVENT_TYPES.VISUALIZATION.TIMECOURSE.ADD_FMRI_TIMECOURSE, 
             this.fillCorrelateTimeCourseSelect.bind(this)
         );
@@ -106,7 +107,7 @@ class Correlate {
             positive_lag: this.positiveLag.val(),
         };
         correlate(label, timeCourseType, correlateParams, () => {
-            eventBus.publish(EVENT_TYPES.ANALYSIS.CORRELATION);
+            this.eventBus.publish(EVENT_TYPES.ANALYSIS.CORRELATION);
         });
         // hide popover
         this.correlateModal.modal('hide');

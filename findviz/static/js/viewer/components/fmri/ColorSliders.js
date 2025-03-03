@@ -2,7 +2,6 @@
 
 import { initializeRangeSlider, initializeSingleSlider } from '../sliders.js';
 import { EVENT_TYPES } from '../../../constants/EventTypes.js';
-import eventBus from '../../events/ViewerEvents.js';
 import { 
     getFmriPlotOptions, 
     updateFmriPlotOptions, 
@@ -16,19 +15,21 @@ class ColorSliders {
      * @param {string} thresholdSliderId - ID of the threshold slider
      * @param {string} opacitySliderId - ID of the opacity slider
      * @param {string} resetColorSliderId - ID of the reset color slider
+     * @param {ViewerEvents} eventBus - The event bus
      */
     constructor(
         colorSliderId,
         thresholdSliderId,
         opacitySliderId,
-        resetColorSliderId
+        resetColorSliderId,
+        eventBus
     ) {
         // get slider ids 
         this.colorSliderId = colorSliderId;
         this.thresholdSliderId = thresholdSliderId;
         this.opacitySliderId = opacitySliderId;
         this.resetColorSliderId = resetColorSliderId;
-
+        this.eventBus = eventBus;
         // get plot options
         getFmriPlotOptions((plotOptions) => {
             this.initializeColorSliders(
@@ -53,7 +54,7 @@ class ColorSliders {
         this.resetColorSliderValuesListener();
 
         // listen for preprocess submit and reset - full reset of color sliders (range and values)
-        eventBus.subscribeMultiple(
+        this.eventBus.subscribeMultiple(
             [
                 EVENT_TYPES.PREPROCESSING.PREPROCESS_FMRI_SUCCESS,
                 EVENT_TYPES.PREPROCESSING.PREPROCESS_FMRI_RESET
@@ -131,7 +132,7 @@ initializeColorSliders(
                 color_min: colorValues[0],
                 color_max: colorValues[1],
             }, () => {
-                eventBus.publish(EVENT_TYPES.VISUALIZATION.FMRI.COLOR_SLIDER_CHANGE, colorValues);
+                this.eventBus.publish(EVENT_TYPES.VISUALIZATION.FMRI.COLOR_SLIDER_CHANGE, colorValues);
             });
         });
     }
@@ -148,7 +149,7 @@ initializeColorSliders(
                 threshold_min: thresholdValues[0],
                 threshold_max: thresholdValues[1],
             }, () => {
-                eventBus.publish(EVENT_TYPES.VISUALIZATION.FMRI.THRESHOLD_SLIDER_CHANGE, thresholdValues);
+                this.eventBus.publish(EVENT_TYPES.VISUALIZATION.FMRI.THRESHOLD_SLIDER_CHANGE, thresholdValues);
             });
         });
     }
@@ -164,7 +165,7 @@ initializeColorSliders(
             updateFmriPlotOptions({
                 opacity: opacityValues,
             }, () => {
-                eventBus.publish(EVENT_TYPES.VISUALIZATION.FMRI.OPACITY_SLIDER_CHANGE, opacityValues);
+                this.eventBus.publish(EVENT_TYPES.VISUALIZATION.FMRI.OPACITY_SLIDER_CHANGE, opacityValues);
             });
         });
     }
@@ -190,7 +191,7 @@ initializeColorSliders(
             getFmriPlotOptions((plotOptions) => {
                 this.resetColorSliderValues(plotOptions);
                 // publish reset color sliders event
-                eventBus.publish(EVENT_TYPES.VISUALIZATION.FMRI.RESET_COLOR_SLIDERS);
+                this.eventBus.publish(EVENT_TYPES.VISUALIZATION.FMRI.RESET_COLOR_SLIDERS);
             });
         });
     }

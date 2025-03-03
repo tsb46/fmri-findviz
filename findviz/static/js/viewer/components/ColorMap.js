@@ -1,7 +1,5 @@
 // colormap.js - Colormap dropdown creation
-import eventBus from '../events/ViewerEvents.js';
 import { getColormapData } from '../api/plot.js';
-
 
 class ColorMap {
     /**
@@ -12,6 +10,7 @@ class ColorMap {
      * @param {string} colormapDropdownToggleId - ID of the colormap dropdown toggle
      * @param {Function} getPlotOptions - Function to get plot options
      * @param {Function} updatePlotOptions - Function to update plot options
+     * @param {ViewerEvents} eventBus - The event bus
      */
     constructor(
         colormapContainerId,
@@ -19,7 +18,8 @@ class ColorMap {
         colormapDropdownToggleId,
         getPlotOptions,
         updatePlotOptions,
-        changeColorMapEvent
+        changeColorMapEvent,
+        eventBus
     ) {
         this.colormapContainerId = colormapContainerId;
         this.colormapDropdownMenuId = colormapDropdownMenuId;
@@ -27,7 +27,7 @@ class ColorMap {
         this.getPlotOptions = getPlotOptions;
         this.updatePlotOptions = updatePlotOptions;
         this.changeColorMapEvent = changeColorMapEvent;
-
+        this.eventBus = eventBus;
         // get plot options
         getPlotOptions((plotOptions) => {
             this.initializeColorMapMenu(plotOptions.color_map);
@@ -135,7 +135,7 @@ class ColorMap {
         // update the plot options
         await this.updatePlotOptions({ color_map: colormap });
         // trigger color map change event
-        eventBus.publish(
+        this.eventBus.publish(
             this.changeColorMapEvent,
             {
                 colormap: colormap

@@ -185,24 +185,27 @@ def find_peaks():
     return {'status': 'success'}
 
 
-@analysis_bp.route(Routes.WINDOW_AVERAGE.value, methods=['POST'])
+@analysis_bp.route(Routes.WINDOWED_AVERAGE.value, methods=['POST'])
 @handle_route_errors(
     error_msg='Error averaging',
     log_msg='Averaging found successfully',
-    route=Routes.WINDOW_AVERAGE
+    route=Routes.WINDOWED_AVERAGE,
+    fmri_file_type=data_manager.fmri_file_type,
+    route_parameters=['window_average_params'],
+    custom_exceptions=[ParameterInputError, NiftiMaskError]
 )
-def window_average():
+def windowed_average():
     logger.info('Window averaging')
-    # get label from request
-    label = request.json['label']
     # get window average parameters from request
-    window_average_params = request.json
+    window_average_params = json.loads(request.form['window_average_params'])
+    window_average_params = {
+        key: convert_value(value) for key, value in window_average_params.items()
+    }
     # get fmri data from data manager
     viewer_data = data_manager.get_viewer_data(
         fmri_data=True,
-        time_course_data=True,
-        task_data=True,
-        label=label
+        time_course_data=False,
+        task_data=False
     )
     # get fmri file type
     fmri_file_type = data_manager.fmri_file_type
@@ -210,18 +213,19 @@ def window_average():
     if fmri_file_type == 'nifti':
         # if mask is not provided, log error and return 400 error
         if viewer_data['mask_img'] is None:
-            e = NiftiMaskError(
+            raise NiftiMaskError(
                 message="A brain mask is required for nifti preprocessing",
             )
-            logger.error(e)
-            return make_response(e.message, 400)
         # convert fmri data to array
         fmri_data = transforms.nifti_to_array_masked(
-            viewer_data['fmri'],
+            viewer_data['func_img'],
             viewer_data['mask_img']
         )
     elif fmri_file_type == 'gifti':
-        fmri_data, split_indx = transforms.gifti_to_array(viewer_data['fmri'])
+        fmri_data, split_indx = transforms.gifti_to_array(
+            viewer_data['left_func_img'],
+            viewer_data['right_func_img']
+        )
     # get annotation markers from data manager
     annotation_markers = data_manager.annotation_markers
     # create window average
@@ -229,12 +233,28 @@ def window_average():
         window_average = WindowAverage(
             left_edge=window_average_params['left_edge'],
             right_edge=window_average_params['right_edge'],
+            n_timepoints=data_manager.n_timepoints
         )
     except ParameterInputError as e:
-        logger.error(e)
-        return make_response(e.message, 400)
+        raise e
+    
     # create window average
-    window_average_map = window_average.average(fmri_data, annotation_markers)
+    window_average_data = window_average.average(fmri_data, annotation_markers)
+
+    # convert window average data to image
+    if fmri_file_type == 'nifti':
+        window_average_img = transforms.array_to_nifti_masked(
+            window_average_data,
+            viewer_data['mask_img']
+        )
+    elif fmri_file_type == 'gifti':
+        window_average_img = transforms.array_to_gifti(
+            window_average_data,
+            both_hemispheres=data_manager._state.both_hemispheres,
+            split_index=split_indx
+        )
+    # create window average plot state in data manager
+    data_manager.create_window_average_plot_state(window_average_img)
     
     return {'status': 'success'}
 

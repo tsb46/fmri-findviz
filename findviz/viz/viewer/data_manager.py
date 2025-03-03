@@ -15,13 +15,15 @@ import nibabel as nib
 
 from findviz.logger_config import setup_logger
 from findviz.viz.analysis.scaler import SignalScaler, SignalShifter
-from findviz.viz.viewer.state import (
+from findviz.viz.viewer.state.viz_state import (
     NiftiVisualizationState, 
-    GiftiVisualizationState,
-    FmriPlotOptions,
-    TimeCoursePlotOptions,
-    TaskDesignPlotOptions,
+    GiftiVisualizationState
+)
+from findviz.viz.viewer.state.components import (
     DistancePlotOptions,
+    FmriPlotOptions, 
+    TimeCoursePlotOptions, 
+    TaskDesignPlotOptions,
     TimeCourseColor
 )
 from findviz.viz.viewer.types import (
@@ -30,9 +32,9 @@ from findviz.viz.viewer.types import (
     FmriPlotOptionsDict, TimeCourseGlobalPlotOptionsDict,
     TimeCoursePlotOptionsDict, TimeMarkerPlotOptionsDict, 
     TaskDesignPlotOptionsDict, DistancePlotOptionsDict,
-    OrthoSliceIndexDict, MontageSliceDirectionIndexDict, 
-    MontageSliceCoordsDict, CrosshairCoordsDict, 
-    DirectionLabelCoordsDict
+    OrthoSliceIndexDict, MarkerPlotOptionsDict, 
+    MontageSliceDirectionIndexDict, MontageSliceCoordsDict, 
+    CrosshairCoordsDict, DirectionLabelCoordsDict
 )
 from findviz.viz.viewer.utils import (
     apply_mask_nifti, get_coord_labels,
@@ -66,6 +68,7 @@ class DataManager:
         create_distance_plot_state(): Create distance plot state
         create_nifti_state(): Initialize state for NIFTI data
         create_gifti_state(): Initialize state for GIFTI data
+        get_annotation_marker_plot_options(): Get annotation marker plot options
         get_click_coords(): Get click coordinates
         get_crosshair_coords(): Get coordinates for crosshair shape
         get_distance_plot_options(): Get distance plot options
@@ -75,6 +78,7 @@ class DataManager:
         get_timecourse_global_plot_options(): Get time course global plot options
         get_timecourse_plot_options(): Get time course plot options for a given label
         get_timecourse_shift_history(): Get time course shift history
+        get_time_marker_plot_options(): Get time marker plot options
         get_task_design_plot_options(): Get task design plot options for a given label
         get_viewer_metadata(): Get metadata for viewer
         get_viewer_data(): Get formatted data for viewer
@@ -85,8 +89,10 @@ class DataManager:
         reset_timecourse_shift(): Reset time course shift (scale or constant)
         store_fmri_preprocessed(): Store preprocessed fMRI data
         store_timecourse_preprocessed(): Store preprocessed timecourse data
-        update_location(): Update brain location data
+        update_annotation_marker_plot_options(): Update annotation marker plot options
+        update_annotation_selection(): Update annotation selection
         update_distance_plot_options(): Update distance plot options
+        update_location(): Update brain location data
         update_fmri_plot_options(): Update plot options
         update_montage_slice_dir(): Update montage slice direction
         update_montage_slice_idx(): Update montage slice indices
@@ -574,6 +580,15 @@ class DataManager:
             self._state.faces_right = right_mesh.darrays[1].data.tolist()
     
     @requires_state
+    def get_annotation_marker_plot_options(self) -> MarkerPlotOptionsDict:
+        """Get annotation marker plot options.
+        
+        Returns:
+            MarkerPlotOptionsDict: Marker plot options
+        """
+        return self._state.annotation_marker_plot_options.to_dict()
+    
+    @requires_state
     def get_click_coords(self) -> Dict[str, Any]:
         """Get click coordinates for brain data
         
@@ -993,9 +1008,10 @@ class DataManager:
         return data
     
     @requires_state
-    def move_annotation_selection(self, direction: Literal['left', 'right']) -> None:
+    def move_annotation_selection(self, direction: Literal['left', 'right']) -> int:
         """Move annotation selection to the left or right. If at the first or last
-        marker, the selection will wrap around to the other end of the list.
+        marker, the selection will wrap around to the other end of the list. 
+        Return the selected marker.
         
         Arguments:
             direction: The direction to move the annotation selection
@@ -1033,6 +1049,7 @@ class DataManager:
                     selected_idx + 1
                 ]
         logger.info(f"Moved annotation selection to {self._state.annotation_selection}")
+        return self._state.annotation_selection
 
     @requires_state
     def pop_annotation_marker(self) -> Optional[int]:
@@ -1319,6 +1336,19 @@ class DataManager:
         # update shift unit
         self._update_shift_unit()
         logger.info("Preprocessed timecourse data stored for %s", data.keys())
+
+    @requires_state
+    def update_annotation_marker_plot_options(
+        self, 
+        plot_options: MarkerPlotOptionsDict
+    ) -> None:
+        """Update annotation marker plot options.
+        
+        Arguments:
+            plot_options: Dictionary containing marker plot options.
+        """
+        self._state.annotation_marker_plot_options.update_from_dict(plot_options)
+        logger.info("Updated annotation marker plot options")
 
     @requires_state
     def update_annotation_selection(self, marker_value: int) -> None:

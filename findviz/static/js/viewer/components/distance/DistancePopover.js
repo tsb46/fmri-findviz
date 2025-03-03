@@ -1,7 +1,6 @@
 // distance.js
 // Class for handling distance plot options popover
 import { EVENT_TYPES } from '../../../constants/EventTypes.js';
-import eventBus from '../../events/ViewerEvents.js';
 import { initializeRangeSlider, initializeSingleSlider } from '../sliders.js';
 import { getDistancePlotOptions, updateDistancePlotOptions } from '../../api/plot.js';
 import ColorMap from '../ColorMap.js';
@@ -17,6 +16,7 @@ class DistancePopover {
      * @param {string} distanceColorRangeSliderId - The ID of the distance color range slider
      * @param {string} distanceTimeMarkerWidthSliderId - The ID of the distance time marker width slider
      * @param {string} distanceTimeMarkerOpacitySliderId - The ID of the distance time marker opacity slider
+     * @param {ViewerEvents} eventBus - The event bus
      */
     constructor(
         distancePopOverId,
@@ -26,7 +26,7 @@ class DistancePopover {
         distanceColorRangeSliderId,
         distanceTimeMarkerWidthSliderId,
         distanceTimeMarkerOpacitySliderId,
-        distancePrepAlertId
+        eventBus
     ) {
         this.distancePopOverId = distancePopOverId;
         this.distanceColorRangeSliderId = distanceColorRangeSliderId;
@@ -35,11 +35,10 @@ class DistancePopover {
         this.distanceColorMapDropdownToggleId = distanceColorMapDropdownToggleId;
         this.distanceTimeMarkerWidthSliderId = distanceTimeMarkerWidthSliderId;
         this.distanceTimeMarkerOpacitySliderId = distanceTimeMarkerOpacitySliderId;
-        this.distancePrepAlertId = distancePrepAlertId;
-
+        this.eventBus = eventBus;
+        
         // get elements
         this.distancePopOver = $(`#${distancePopOverId}`);
-        this.distancePrepAlert = $(`#${distancePrepAlertId}`);
 
         // initialize distance plot options popover
         this.initializeDistancePlotPopover();
@@ -54,14 +53,14 @@ class DistancePopover {
      */
     attachEventListeners() {
         // listen for distance submit event and enable popover
-        eventBus.subscribe(EVENT_TYPES.ANALYSIS.DISTANCE, 
+        this.eventBus.subscribe(EVENT_TYPES.ANALYSIS.DISTANCE, 
             () => {
                 this.distancePopOver.prop('disabled', false);
             }
         );
 
         // listen for distance remove event and disable popover
-        eventBus.subscribe(EVENT_TYPES.ANALYSIS.DISTANCE_REMOVE, 
+        this.eventBus.subscribe(EVENT_TYPES.ANALYSIS.DISTANCE_REMOVE, 
             () => {
                 this.distancePopOver.prop('disabled', true);
             }
@@ -79,7 +78,7 @@ class DistancePopover {
                 color_max: event.value.newValue[1],
             },
             () => {
-                eventBus.publish(EVENT_TYPES.VISUALIZATION.DISTANCE.COLOR_RANGE_CHANGE);
+                this.eventBus.publish(EVENT_TYPES.VISUALIZATION.DISTANCE.COLOR_RANGE_CHANGE);
             });
         });
 
@@ -88,7 +87,7 @@ class DistancePopover {
             updateDistancePlotOptions({
                 time_marker_width: event.value.newValue,
             }, () => {
-                eventBus.publish(EVENT_TYPES.VISUALIZATION.DISTANCE.TIME_MARKER_WIDTH_CHANGE);
+                this.eventBus.publish(EVENT_TYPES.VISUALIZATION.DISTANCE.TIME_MARKER_WIDTH_CHANGE);
             });
         });
 
@@ -97,7 +96,7 @@ class DistancePopover {
             updateDistancePlotOptions({
                 time_marker_opacity: event.value.newValue,
             }, () => {
-                eventBus.publish(EVENT_TYPES.VISUALIZATION.DISTANCE.TIME_MARKER_OPACITY_CHANGE);
+                this.eventBus.publish(EVENT_TYPES.VISUALIZATION.DISTANCE.TIME_MARKER_OPACITY_CHANGE);
             });
         });
     }
