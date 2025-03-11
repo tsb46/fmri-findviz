@@ -182,11 +182,11 @@
       </div>
       <div class='col-3 pr-1 pl-1'>
         <!-- Average Modal Button -->
-        <button type="button" class="btn btn-outline-primary btn-sm" data-toggle="modal" id='run-average-button' data-target="#average-modal">
+        <button type="button" class="btn btn-outline-primary btn-sm" data-toggle="modal" id='run-average-button' data-target="#average-modal" disabled>
           Average
         </button>
         <!-- Correlation Modal Button -->
-        <button type="button" class="btn btn-outline-primary btn-sm" data-toggle="modal" id='run-correlation-button' data-target="#correlation-modal">
+        <button type="button" class="btn btn-outline-primary btn-sm" data-toggle="modal" id='run-correlation-button' data-target="#correlation-modal" disabled>
           Correlate
       </button>
       </div>
@@ -211,8 +211,9 @@
       </div>
       <form id="correlation-form" enctype="multipart/form-data">
         <div class="modal-body">
-          <div id='correlate-spinner' class="spinner-border spinner-viz" role="status">
-              <span class="sr-only">Correlating...</span>
+          <!-- Correlation Spinner Wheel -->
+          <div class="spinner-container d-flex justify-content-center">
+            <div id='correlate-spinner-wheel' class="spinner-wheel" role="status"></div>
           </div>
           <div class='row'>
             <div class='col ml-3 mr-3'>
@@ -221,6 +222,13 @@
                   <h5>Select Time Course</h5>
                   <select class="custom-select" id="ts-correlate-select">
                   </select>
+                </div>
+              </div>
+              <!-- Preprocess Alert -->
+              <div class='row mt-1'>
+                <div class='alert alert-secondary mt-3 ml-3' id='correlate-prep-alert' role='alert' style=' display: none;'>
+                  <i class='fa-solid fa-triangle-exclamation'></i>
+                  <span class='mr-2'>Using Preprocessed Time Course</span>
                 </div>
               </div>
               <div class='row mt-3'>
@@ -301,9 +309,17 @@
           </div>
         </div>
         <div class="modal-footer">
-          <div id="error-message-average" class="alert alert-danger" role='alert' style="display: none;"></div>
-          <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-          <button type="submit" class="btn btn-primary" id='submit-average' data-dismiss="static">Compute</button>
+          <div class="row">
+            <div class="col">
+              <div id="error-message-average" class="alert alert-danger" role='alert' style="display: none;"></div>
+            </div>
+          </div>
+          <div class="row">
+            <div class="col">
+              <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+              <button type="submit" class="btn btn-primary" id='submit-average' data-dismiss="static">Compute</button>
+            </div>
+          </div>
         </div>
       </form>
     </div>

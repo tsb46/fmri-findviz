@@ -9,7 +9,7 @@
             <div class='col-12'>
               <div class='row pl-1'>
                 <div class="custom-control custom-switch">
-                  <input type="checkbox" class="custom-control-input" id="enable-normalization">
+                  <input type="checkbox" class="custom-control-input" id="enable-normalization" disabled>
                   <label class="custom-control-label small" for="enable-normalization"><strong>Normalization</strong></label>
                   <span class="fa-solid fa-circle-info ml-1 toggle-immediate" data-toggle="tooltip" data-placement="top" title="Normalization is performed separately on each voxel/vertex time course" aria-hidden="true"></span>
                 </div>
@@ -31,7 +31,7 @@
             <div class='col-12'>
               <div class='row pl-1'>
                 <div class="custom-control custom-switch">
-                  <input type="checkbox" class="custom-control-input" id="enable-filtering">
+                  <input type="checkbox" class="custom-control-input" id="enable-filtering" disabled>
                   <label class="custom-control-label small" for="enable-filtering"><strong>Filter</strong></label>
                   <span class="fa-solid fa-circle-info ml-1 toggle-immediate" data-toggle="tooltip" data-placement="top" title="Temporal filtering is performed separately on each voxel/vertex time course with a Butterworth 5th-order filter. Low-cut and high-cut are provided in Hertz (Hz). Providing only low-cut performs high-pass filtering. Providing only high-cut performs low-pass filtering. Providing both performs bandpass filtering." aria-hidden="true"></span>
                 </div>
@@ -69,7 +69,7 @@
             <div class='col-12'>
               <div class='row pl-1'>
                 <div class="custom-control custom-switch">
-                  <input type="checkbox" class="custom-control-input" id="enable-smoothing">
+                  <input type="checkbox" class="custom-control-input" id="enable-smoothing" disabled>
                   <label class="custom-control-label small" for="enable-smoothing"><strong>Spatial Smoothing</strong></label>
                   <span class="fa-solid fa-circle-info ml-1 toggle-immediate" data-toggle="tooltip" data-placement="top" title=" (Not supported for surface .gii input) Perform 3D gaussian isometric spatial smoothing of the fMRI volumes. The extent of smoothing is controlled by the size of the FWHM kernel in mm." aria-hidden="true"></span>
                 </div>
@@ -89,10 +89,10 @@
             <!-- Error Message Placeholder -->
             <div id="error-message-preprocess" class="alert alert-danger" role='alert' style="display: none;"></div>
             <div class='col-7 pl-1 pr-1'>
-              <button type="button" class="btn btn-primary btn-sm btn-block" id='submit-preprocess-button' type='submit'>Preprocess</button>
+              <button type="button" class="btn btn-primary btn-sm btn-block" id='submit-preprocess-button' type='submit' disabled>Preprocess</button>
             </div>
             <div class='col-5 pl-1'>
-              <button type="button" class="btn btn-secondary btn-sm btn-block" id='reset-preprocess-button'>Reset</button>
+              <button type="button" class="btn btn-secondary btn-sm btn-block" id='reset-preprocess-button' disabled>Reset</button>
             </div>
           </div>
         </form>

@@ -2,8 +2,7 @@
 // Plot distance between timepoint and all other timepoints
 
 import { EVENT_TYPES } from '../../constants/EventTypes.js';
-import { getDistanceData, getTimePoint } from '../api/data.js';
-import { getDistancePlotOptions, removeDistancePlot } from '../api/plot.js';
+import ContextManager from '../api/ContextManager.js';
 
 class Distance {
     /**
@@ -11,11 +10,13 @@ class Distance {
      * @param {string} distancePlotId - ID of the distance plot
      * @param {string} distanceContainerId - ID of the distance container
      * @param {ViewerEvents} eventBus - The event bus
+     * @param {ContextManager} contextManager - The context manager
      */
-    constructor(distancePlotId, distanceContainerId, eventBus){
+    constructor(distancePlotId, distanceContainerId, eventBus, contextManager){
         this.distancePlotId = distancePlotId;
         this.distanceContainerId = distanceContainerId;
         this.eventBus = eventBus;
+        this.contextManager = contextManager;
 
         // attach event listeners
         this.attachEventListeners();
@@ -33,9 +34,9 @@ class Distance {
             async () => {
                 console.log('plotting distance');
                 // get distance data
-                const distanceVector = await getDistanceData();
-                const timePoint = await getTimePoint();
-                const plotOptions = await getDistancePlotOptions();
+                const distanceVector = await this.contextManager.data.getDistanceData();
+                const timePoint = await this.contextManager.data.getTimePoint();
+                const plotOptions = await this.contextManager.plot.getDistancePlotOptions();
                 // plot distance vector
                 this.plotDistance(distanceVector, timePoint.timepoint, plotOptions);
                 // plot time point marker
@@ -63,7 +64,7 @@ class Distance {
             async (timePoint) => {
                 if (this.plotState) {
                     console.log('replotting time marker on distance plot for time point change event');
-                    const plotOptions = await getDistancePlotOptions();
+                    const plotOptions = await this.contextManager.plot.getDistancePlotOptions();
                     this.plotTimePointMarker(timePoint, plotOptions);
                 }
             }
@@ -77,8 +78,8 @@ class Distance {
             ] , 
             async () => {
                 console.log('replotting time point marker on distance plot for time marker change event');
-                const plotOptions = await getDistancePlotOptions();
-                const timePoint = await getTimePoint();
+                const plotOptions = await this.contextManager.plot.getDistancePlotOptions();
+                const timePoint = await this.contextManager.data.getTimePoint();
                 this.plotTimePointMarker(timePoint.timepoint, plotOptions);
             }
         );
@@ -91,9 +92,9 @@ class Distance {
             ], 
             async () => {
                 console.log('replotting distance plot for color range and color map change event');
-                const plotOptions = await getDistancePlotOptions();
-                const timePoint = await getTimePoint();
-                const distanceVector = await getDistanceData();
+                const plotOptions = await this.contextManager.plot.getDistancePlotOptions();
+                const timePoint = await this.contextManager.data.getTimePoint();
+                const distanceVector = await this.contextManager.data.getDistanceData();
                 this.plotDistance(distanceVector, timePoint.timepoint, plotOptions);
             }
         );

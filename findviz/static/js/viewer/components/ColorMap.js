@@ -1,5 +1,6 @@
 // colormap.js - Colormap dropdown creation
 import { getColormapData } from '../api/plot.js';
+import ContextManager from '../api/ContextManager.js';
 
 class ColorMap {
     /**
@@ -11,6 +12,7 @@ class ColorMap {
      * @param {Function} getPlotOptions - Function to get plot options
      * @param {Function} updatePlotOptions - Function to update plot options
      * @param {ViewerEvents} eventBus - The event bus
+     * @param {ContextManager} contextManager - The context manager
      */
     constructor(
         colormapContainerId,
@@ -19,7 +21,8 @@ class ColorMap {
         getPlotOptions,
         updatePlotOptions,
         changeColorMapEvent,
-        eventBus
+        eventBus,
+        contextManager
     ) {
         this.colormapContainerId = colormapContainerId;
         this.colormapDropdownMenuId = colormapDropdownMenuId;
@@ -28,17 +31,21 @@ class ColorMap {
         this.updatePlotOptions = updatePlotOptions;
         this.changeColorMapEvent = changeColorMapEvent;
         this.eventBus = eventBus;
-        // get plot options
-        getPlotOptions((plotOptions) => {
-            this.initializeColorMapMenu(plotOptions.color_map);
-        });
+        this.contextManager = contextManager;
+
+        // initialize color map menu
+        this.initializeColorMapMenu();
     }
 
-    // initialize color map menu
-    async initializeColorMapMenu(colorMap) {
+    /**
+     * Initialize color map menu
+     */
+    async initializeColorMapMenu() {
+        // get plot options
+        const plotOptions = await this.getPlotOptions();
         const colormapData = await getColormapData();
         // create colormap dropdown
-        this.createColormapDropdown(colormapData, colorMap);
+        this.createColormapDropdown(colormapData, plotOptions.color_map);
         // toggle colormap dropdown
         this.colorMapDropdownToggle();
         // close colormap dropdown

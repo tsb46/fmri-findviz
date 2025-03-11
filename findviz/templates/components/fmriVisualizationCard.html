@@ -9,10 +9,10 @@
       </div>
       <div class='col-2'>
         <!-- Toggle slice montage or othoview -->
-        <button class="btn btn-outline-secondary btn-sm toggle-wait" id='toggle-view' data-toggle="tooltip" data-placement="top" title="Toggle between ortho and slice montage views.">
+        <button class="btn btn-outline-secondary btn-sm toggle-wait" id='toggle-view' data-toggle="tooltip" data-placement="top" title="Toggle between ortho and slice montage views." disabled>
           <i class="fa-solid fa-brain"></i>
         </button>
-        <button id="montage-popover" title="Slice Montage Options" type="button" class="btn btn-outline-secondary btn-sm" data-container="body" data-toggle="popover" data-placement="top"
+        <button id="montage-popover" title="Slice Montage Options" type="button" class="btn btn-outline-secondary btn-sm" data-container="body" data-toggle="popover" data-placement="top" disabled
         data-content= "
           <div class='row'>
             <div class='col'>
@@ -46,27 +46,27 @@
       </div>
       <div class='col pl-0'>
         <!-- Toggle crosshair for Nifti -->
-        <button class="btn btn-outline-secondary btn-sm toggle-wait" id='toggle-crosshair' data-toggle="tooltip" data-placement="top" title="Toggle crosshair">
+        <button class="btn btn-outline-secondary btn-sm toggle-wait" id='toggle-crosshair' data-toggle="tooltip" data-placement="top" title="Toggle crosshair" disabled>
           <i class="fa-solid fa-plus"></i>
         </button>
         <!-- Toggle plotly hover text -->
-        <button class="btn btn-outline-secondary btn-sm toggle-wait" id='toggle-hover' data-toggle="tooltip" data-placement="top" title="Toggle hover text">
+        <button class="btn btn-outline-secondary btn-sm toggle-wait" id='toggle-hover' data-toggle="tooltip" data-placement="top" title="Toggle hover text" disabled>
           <i class="fa-solid fa-message"></i>
         </button>
         <!-- Toggle direction labels for Nifti -->
-        <button class="btn btn-outline-secondary btn-sm toggle-wait" id='toggle-direction-labels' data-toggle="tooltip" data-placement="top" title="Toggle direction labels">
+        <button class="btn btn-outline-secondary btn-sm toggle-wait" id='toggle-direction-labels' data-toggle="tooltip" data-placement="top" title="Toggle direction labels" disabled>
           <i class="fa-solid fa-text-slash"></i>
         </button>
         <!-- Toggle colorbar -->
-        <button class="btn btn-outline-secondary btn-sm toggle-wait" id='toggle-colorbar' data-toggle="tooltip" data-placement="top" title="Toggle colorbar">
+        <button class="btn btn-outline-secondary btn-sm toggle-wait" id='toggle-colorbar' data-toggle="tooltip" data-placement="top" title="Toggle colorbar" disabled>
           <i class="fa-solid fa-ruler-vertical"></i>
         </button>
         <!-- Reverse colorscale -->
-        <button class="btn btn-outline-secondary btn-sm toggle-wait" id='reverse-colorbar' data-toggle="tooltip" data-placement="top" title="Reverse colorscale">
+        <button class="btn btn-outline-secondary btn-sm toggle-wait" id='reverse-colorbar' data-toggle="tooltip" data-placement="top" title="Reverse colorscale" disabled>
           <i class="fa-solid fa-arrows-up-down"></i>
         </button>
         <!-- Take screenshot of visualization container -->
-        <button class="btn btn-outline-secondary btn-sm toggle-wait" id='select-screenshot' data-toggle="tooltip" data-placement="top" title="Take screenshot">
+        <button class="btn btn-outline-secondary btn-sm toggle-wait" id='select-screenshot' data-toggle="tooltip" data-placement="top" title="Take screenshot" disabled>
           <i class="fa-solid fa-image"></i>
         </button>
         <!-- Movie controls -->
@@ -96,10 +96,10 @@
         <div class='row'>
           <!-- Distance plot -->
           <div class="btn-group">
-            <button type="button" class="btn btn-outline-primary btn-sm" data-toggle="modal" id='distance-modal-button' data-target="#distance-modal">Distance
+            <button type="button" class="btn btn-outline-primary btn-sm" data-toggle="modal" id='distance-modal-button' data-target="#distance-modal" disabled>Distance
             </button>
             <!-- Distance plot options popover -->
-            <button class="btn btn-outline-primary btn-sm toggle-wait pr-1 pl-1 mr-2" id='distance-popover' title="Time Point Distance Plot Options" data-container="body" data-toggle="popover" data-placement="top" disabled data-content= "
+            <button class="btn btn-outline-primary btn-sm toggle-wait pr-1 pl-1 mr-2" id='distance-popover' disabled title="Time Point Distance Plot Options" data-container="body" data-toggle="popover" data-placement="top" disabled data-content= "
               <div class='row'>
                 <div class='col mr-5 ml-5'>
                   <div id='distance-plot-options'>
@@ -182,7 +182,19 @@
             <!-- Container for time slider -->
             <label for="time_slider" id='time-slider-title' style="font-weight: bolder;"></label>
           </div>
-          <div class='col-sm-3 offset-sm-5'>
+          <div class='col-sm-3 offset-sm-1 mr-1'>
+            <div class='row'>
+              <div class='col-sm-5 p-1 text-center'>
+                <div class='small'>Voxel Coord:</div>
+              </div>
+              <div class='col-sm-7 pl-0 d-flex'>
+                <div class="shadow-sm bg-light rounded small p-1 mr-1 w-25 d-inline" id='x-voxel'></div>
+                <div class="shadow-sm bg-light rounded small p-1 mr-1 w-25 d-inline" id='y-voxel'></div>
+                <div class="shadow-sm bg-light rounded small p-1 w-25 d-inline" id='z-voxel'></div>
+              </div>
+            </div>
+          </div>
+          <div class='col-sm-3'>
             <div class='row'>
               <div class='col-sm-5 p-1 text-center'>
                 <div class='small'>World Coord:</div>

@@ -1,12 +1,8 @@
 // set montage box popup options
 import { EVENT_TYPES } from '../../../constants/EventTypes.js';
 import { initializeSingleSlider } from '../sliders.js';
-import { 
-    getMontageData, 
-    getViewerMetadata, 
-    updateMontageSliceDir, 
-    updateMontageSliceIdx 
-} from '../../api/data.js';
+import ContextManager from '../../api/ContextManager.js';
+
 
 /**
  * Montage class
@@ -21,6 +17,7 @@ class Montage {
      * @param {string} slice2SliderId - The ID of the second slice slider
      * @param {string} slice3SliderId - The ID of the third slice slider
      * @param {ViewerEvents} eventBus - The event bus
+     * @param {ContextManager} contextManager - The context manager
      */
     constructor(
         fmriFileType,
@@ -29,17 +26,15 @@ class Montage {
         slice1SliderId,
         slice2SliderId,
         slice3SliderId,
-        eventBus
+        eventBus,
+        contextManager
     ) {
-        // get fmri slice length from viewer metadata
-        getViewerMetadata(
-            (metadata) => {
-                this.fmriSliceLen = metadata.slice_len;
-            }
-        );
         this.fmriFileType = fmriFileType;
         this.montagePopoverId = montagePopoverId;
         this.montageSliceDirSelectId = montageSliceDirSelectId;
+        this.contextManager = contextManager;
+        // get fmri slice length from viewer metadata
+        this.getFmriSliceLen();
         // define montage slice ids
         this.sliceSliderIds = [slice1SliderId, slice2SliderId, slice3SliderId];
         // define id to montage slice names converter 
@@ -50,12 +45,15 @@ class Montage {
         };
         this.eventBus = eventBus;
 
+
         if (this.fmriFileType === 'gifti') {
             // remove popover for gifti
             $(`#${this.montagePopoverId}`).popover('disable');
             // disable button
             $(`#${this.montagePopoverId}`).prop('disabled', true);
         } else {
+            // enable popover button
+            $(`#${this.montagePopoverId}`).prop('disabled', false);
             // initialize montage options
             this.initializeMontageOptions()
         }
@@ -66,39 +64,46 @@ class Montage {
      */
     initializeMontageOptions() {
         // Event listener for when the popover is shown
-        $(`#${this.montagePopoverId}`).on('shown.bs.popover', () => {
+        $(`#${this.montagePopoverId}`).on('shown.bs.popover', async () => {
             console.log('montage popover shown');
             // get plot options
-            getMontageData((montageData) => {
-                const montageSliceDir = montageData.montage_slice_dir;
-                const montageSliceIndices = montageData.montage_slice_idx;
-                // set selection in drop down menu
-                $(`#${this.montageSliceDirSelectId}`).val(montageSliceDir);
-                // loop through slider divs and initialize sliders 
-                this.sliceSliderIds.forEach((sliceSliderId, index) => {
-                    initializeSingleSlider(
-                        sliceSliderId,
-                        montageSliceIndices[montageSliceDir][this.sliceSliderId2Names[sliceSliderId]][montageSliceDir],
-                        [0, this.fmriSliceLen[montageSliceDir] - 1],
-                        1
-                    )
-                    // refresh slider
-                    $(`#${sliceSliderId}`).slider('refresh');
-                });
-                // Hide popover when clicking outside
-                // Store reference to this
-                const self = this;
-                $(document).on('click', function (e) {
-                    // Check if the click is outside the popover and the button
-                    if (!$(e.target).closest(`.popover, #${self.montagePopoverId}`).length) {
-                        $(`#${self.montagePopoverId}`).popover('hide');
-                    }
-                });
-                // attach montage listeners
-                this.sliceSelectionListener();
-                this.sliderChangeListener();
+            const montageData = await this.contextManager.data.getMontageData();
+            const montageSliceDir = montageData.montage_slice_dir;
+            const montageSliceIndices = montageData.montage_slice_idx;
+            // set selection in drop down menu
+            $(`#${this.montageSliceDirSelectId}`).val(montageSliceDir);
+            // loop through slider divs and initialize sliders 
+            this.sliceSliderIds.forEach((sliceSliderId, index) => {
+                initializeSingleSlider(
+                    sliceSliderId,
+                    montageSliceIndices[montageSliceDir][this.sliceSliderId2Names[sliceSliderId]][montageSliceDir],
+                    [0, this.fmriSliceLen[montageSliceDir] - 1],
+                    1
+                )
+                // refresh slider
+                $(`#${sliceSliderId}`).slider('refresh');
             });
+            // Hide popover when clicking outside
+            // Store reference to this
+            const self = this;
+            $(document).on('click', function (e) {
+                // Check if the click is outside the popover and the button
+                if (!$(e.target).closest(`.popover, #${self.montagePopoverId}`).length) {
+                    $(`#${self.montagePopoverId}`).popover('hide');
+                }
+            });
+            // attach montage listeners
+            this.sliceSelectionListener();
+            this.sliderChangeListener();
         });
+    }
+
+    /**
+     * Get fmri slice length
+     */
+    async getFmriSliceLen() {
+        const metadata = await this.contextManager.data.getViewerMetadata();
+        this.fmriSliceLen = metadata.slice_len;
     }
 
     /**
@@ -119,21 +124,20 @@ class Montage {
     async handleMontageSliceDirectionChange(event) {
         console.log('montage slice direction changed');
         // update plot options
-        await updateMontageSliceDir(event.target.value);
+        await this.contextManager.data.updateMontageSliceDir(event.target.value);
         // get plot options
-        getMontageData((montageData) => {
-            this.initializeMontageOptions(
-                montageData.montage_slice_dir,
-                montageData.montage_slice_idx,
-            );
-            // trigger a montage slice direction change event
-            this.eventBus.publish(
-                EVENT_TYPES.VISUALIZATION.FMRI.MONTAGE_SLICE_DIRECTION_CHANGE, 
-                {
-                    sliceDirection: event.target.value,
-                }
-            );
-        });
+        const montageData = await this.contextManager.data.getMontageData();
+        this.initializeMontageOptions(
+            montageData.montage_slice_dir,
+            montageData.montage_slice_idx,
+        );
+        // trigger a montage slice direction change event
+        this.eventBus.publish(
+            EVENT_TYPES.VISUALIZATION.FMRI.MONTAGE_SLICE_DIRECTION_CHANGE, 
+            {
+                sliceDirection: event.target.value,
+            }
+        );
     }
 
     /**
@@ -162,16 +166,15 @@ class Montage {
             slice_idx: sliceIdx,
         }
         // update plot options
-        updateMontageSliceIdx(montageSliceParams, () => {
-            // trigger a montage slice change event
-            this.eventBus.publish(
-                EVENT_TYPES.VISUALIZATION.FMRI.MONTAGE_SLICE_CHANGE, 
+        await this.contextManager.data.updateMontageSliceIdx(montageSliceParams);
+        // trigger a montage slice change event
+        this.eventBus.publish(
+            EVENT_TYPES.VISUALIZATION.FMRI.MONTAGE_SLICE_CHANGE, 
                 {
                     slice_name: sliceName,
                     slice_idx: sliceIdx
                 }
-            );
-        });
+        );
     }
 }
 

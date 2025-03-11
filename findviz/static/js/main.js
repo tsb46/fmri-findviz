@@ -1,6 +1,6 @@
 // main.js
 
-import MainViewer from './viewer/viewer.js';
+import MainViewer from './viewer/MainViewer.js';
 import FileUploader from './upload/FileUploader.js';
 import { initBootstrapComponents } from './utils.js';
 import { DOM_IDS } from './constants/DomIds.js';

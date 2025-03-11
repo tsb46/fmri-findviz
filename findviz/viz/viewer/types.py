@@ -7,6 +7,14 @@ from typing import TypedDict, Optional, List, Dict, Literal, Tuple
 import nibabel as nib
 import numpy as np
 
+class AnnotationMarkerPlotOptionsDict(TypedDict):
+    """Dictionary of marker plot options"""
+    opacity: Optional[float]
+    width: Optional[float]
+    shape: Optional[Literal['solid', 'dashed', 'dotted']]
+    color: Optional[str]
+    highlight: Optional[bool]
+
 class CrosshairCoordsDict(TypedDict):
     """Dictionary of crosshair coordinates for nifti data plotting"""
     slice1: Dict[Literal['len_x', 'len_y', 'x', 'y'], int]
@@ -81,14 +89,6 @@ class OrthoSliceIndexDict(TypedDict):
     x: int
     y: int
     z: int
-
-class MarkerPlotOptionsDict(TypedDict):
-    """Dictionary of marker plot options"""
-    opacity: Optional[float]
-    width: Optional[float]
-    shape: Optional[Literal['solid', 'dashed', 'dotted']]
-    color: Optional[str]
-    highlight: Optional[bool]
 
 class MontageSliceDirectionIndexDict(TypedDict):
     """Dictionary of x,y,z slice indices for a direction in montage view"""

@@ -21,7 +21,7 @@ class CoordLabels(TypedDict):
     y: List[Tuple[int, int, int]]
     z: List[Tuple[int, int, int]]
 
-class TimePointData(TypedDict):
+class NiftiTimePointData(TypedDict):
     func: SliceData
     anat: Optional[SliceData]
     coord_labels: Optional[CoordLabels]
@@ -36,8 +36,10 @@ def get_nifti_data(
     montage_slice_dir: Literal['x', 'y', 'z'],
     threshold_min: float = 0,
     threshold_max: float = 0,
+    threshold_min_orig: float = 0,
+    threshold_max_orig: float = 0,
     anat_img: Optional[nib.Nifti1Image] = None,
-) -> TimePointData:
+) -> NiftiTimePointData:
     """Get slice data for a specific timepoint from functional, anatomical and mask images.
 
     Parameters
@@ -54,6 +56,14 @@ def get_nifti_data(
         Current view state of the viewer
     montage_slice_dir : Literal['x', 'y', 'z']
         Slice direction when in montage view
+    threshold_min : float, optional
+        Minimum threshold value, by default 0
+    threshold_max : float, optional
+        Maximum threshold value, by default 0
+    threshold_min_orig : float, optional
+        Original minimum threshold value, by default 0
+    threshold_max_orig : float, optional
+        Original maximum threshold value, by default 0
     anat_img : Optional[nib.Nifti1Image], optional
         3D anatomical image, by default None
 
@@ -71,8 +81,8 @@ def get_nifti_data(
     # Select time point
     func_data = np.array(index_img(func_img, time_point).get_fdata())
     
-    # threshold data if threshold_min or threshold_max are provided
-    if (threshold_min != 0) or (threshold_max != 0):
+    # threshold data if threshold_min or threshold_max have been changed
+    if (threshold_min != threshold_min_orig) or (threshold_max != threshold_max_orig):
         func_data = threshold_nifti_data(
             func_data, threshold_min, threshold_max
         )
@@ -116,7 +126,6 @@ def get_nifti_data(
     return slice_out
 
 
-# Helper function to generate Plotly slice data
 def get_slice_data(
     nifti_data: np.ndarray,
     slice_index: int, 

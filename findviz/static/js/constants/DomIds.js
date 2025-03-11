@@ -2,19 +2,25 @@
 
 export const DOM_IDS = {
     AVERAGE: {
-        LEFT_EDGE: 'average-left-edge',
-        RIGHT_EDGE: 'average-right-edge',
-        SUBMIT_AVERAGE: 'submit-average',
-        AVERAGE_FORM: 'average-form',
         ANNOTATION_WARNING: 'no-annotation-message-average',
+        AVERAGE_FORM: 'average-form',
+        ERROR_MESSAGE: 'error-message-average',
+        LEFT_EDGE: 'average-left-edge',
+        MODAL_BUTTON: 'run-average-button',
+        RIGHT_EDGE: 'average-right-edge',
         SPINNER_OVERLAY: 'average-spinner-overlay',
         SPINNER_WHEEL: 'average-spinner-wheel',
-        ERROR_MESSAGE: 'error-message-average'
+        SUBMIT_AVERAGE: 'submit-average',
     },
     CORRELATE: {
+        CORRELATE_FORM: 'correlation-form',
+        ERROR_MESSAGE: 'error-message-correlation',
+        MODAL_BUTTON: 'run-correlation-button',
         NEGATIVE_LAG: 'correlate-negative-lag',
         POSITIVE_LAG: 'correlate-positive-lag',
-        CORRELATE_FORM: 'correlation-form',
+        PREPROCESS_ALERT: 'correlate-prep-alert',
+        SPINNER_OVERLAY: 'correlate-spinner-overlay',
+        SPINNER_WHEEL: 'correlate-spinner-wheel',
         SUBMIT_CORRELATE: 'submit-correlation',
         TIMECOURSE_SELECT: 'ts-correlate-select'
     },
@@ -27,6 +33,7 @@ export const DOM_IDS = {
         DISTANCE_FORM: 'distance-form',
         ERROR_MESSAGE: 'error-message-distance',
         METRIC_SELECT: 'distance-metric-select',
+        MODAL_BUTTON: 'distance-modal-button',
         TIME_POINT_MESSAGE: 'timepoint-distance-label',
         TIME_MARKER_WIDTH_SLIDER: 'distance-plot-time-marker-width',
         TIME_MARKER_OPACITY_SLIDER: 'distance-plot-time-marker-opacity',
@@ -69,7 +76,14 @@ export const DOM_IDS = {
         },
     },
     FMRI: {
-        VISUALIZATION_CONTAINER: 'fmri-visualization-container',
+        COORDINATE: {
+            WORLD_X: 'x-world',
+            WORLD_Y: 'y-world',
+            WORLD_Z: 'z-world',
+            VOXEL_X: 'x-voxel',
+            VOXEL_Y: 'y-voxel',
+            VOXEL_Z: 'z-voxel'
+        },
         GIFTI_CONTAINERS: {
             COLORBAR: 'colorbar-container-gii',
             SURFACE_CONTAINER: 'surface-container',
@@ -83,6 +97,22 @@ export const DOM_IDS = {
             SLICE_2_CONTAINER: 'slice-2-container',
             SLICE_3_CONTAINER: 'slice-3-container'
         },
+        PREPROCESSING_OPTIONS: {
+            ENABLE_NORMALIZATION: 'enable-normalization',
+            ENABLE_FILTERING: 'enable-filtering',
+            ENABLE_SMOOTHING: 'enable-smoothing',
+            FILTER_LOW_CUT: 'filter-low-cut',
+            FILTER_HIGH_CUT: 'filter-high-cut',
+            FILTER_TR: 'filter-tr',
+            SELECT_MEAN_CENTER: 'select-mean-center',
+            SELECT_Z_SCORE: 'select-z-score',
+            SMOOTHING_FWHM: 'smoothing-fwhm',
+            SUBMIT_PREPROCESS_BUTTON: 'submit-preprocess-button',
+            RESET_PREPROCESS_BUTTON: 'reset-preprocess-button',
+            ERROR_MESSAGE_PREPROCESS: 'error-message-preprocess',
+            PREPROCESS_ALERT: 'preprocess-alert'
+        },
+        VISUALIZATION_CONTAINER: 'fmri-visualization-container',
         VISUALIZATION_OPTIONS: {
             COLORBAR_TOGGLE: 'toggle-colorbar',
             COLOR_RANGE_SLIDER: 'color-range-slider',
@@ -106,22 +136,6 @@ export const DOM_IDS = {
             THRESHOLD_SLIDER: 'threshold-slider',
             TOGGLE_VIEW_BUTTON: 'toggle-view',
             SCREENSHOT_BUTTON: 'select-screenshot',
-
-        },
-        PREPROCESSING_OPTIONS: {
-            ENABLE_NORMALIZATION: 'enable-normalization',
-            ENABLE_FILTERING: 'enable-filtering',
-            ENABLE_SMOOTHING: 'enable-smoothing',
-            FILTER_LOW_CUT: 'filter-low-cut',
-            FILTER_HIGH_CUT: 'filter-high-cut',
-            FILTER_TR: 'filter-tr',
-            SELECT_MEAN_CENTER: 'select-mean-center',
-            SELECT_Z_SCORE: 'select-z-score',
-            SMOOTHING_FWHM: 'smoothing-fwhm',
-            SUBMIT_PREPROCESS_BUTTON: 'submit-preprocess-button',
-            RESET_PREPROCESS_BUTTON: 'reset-preprocess-button',
-            ERROR_MESSAGE_PREPROCESS: 'error-message-preprocess',
-            PREPROCESS_ALERT: 'preprocess-alert'
         }
     },
     MODALS: {

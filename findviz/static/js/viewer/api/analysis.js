@@ -10,14 +10,35 @@ import { makeRequest, createFormData } from './utils.js';
  * @param {string} label - Label of time course to correlate
  * @param {string} time_course_type - Type of time course (timecourse or task)
  * @param {Object} correlateParams - Parameters for correlation
- * @param {Function} callback - Callback function to handle successful response
+ * @param {string} errorInlineId - ID of inline error element
+ * @param {string} context_id - ID of context to switch to
  * @returns {Promise} Promise object representing the API call
  */
-export const correlate = async (label, time_course_type, correlateParams, callback) => {
+export const correlate = async (
+    label, 
+    time_course_type, 
+    correlateParams, 
+    errorInlineId, 
+    context_id
+) => {
     return makeRequest(
         API_ENDPOINTS.ANALYSIS.CORRELATE,
-        { method: 'POST', body: createFormData({ label, time_course_type, ...correlateParams }) },
-        callback
+        { 
+            method: 'POST', 
+            body: createFormData(
+                { 
+                    label, 
+                    time_course_type, 
+                    ...correlateParams,
+                    context_id
+                }
+            ) 
+        },
+        {
+            errorPrefix: 'Error performing correlation',
+            errorId: errorInlineId,
+            isInline: true,
+        }
     );
 };
 
@@ -25,28 +46,29 @@ export const correlate = async (label, time_course_type, correlateParams, callba
 /**
  * Calculate distance between fmri time points
  * 
- * @param {Object} distanceParams - Parameters for distance calculation
+ * @param {string} distanceMetric - Metric for distance calculation
  * @param {string} errorInlineId - ID of inline error element
- * @param {Function} callback - Callback function to handle successful response
- * @param {Function} [errorCallback] - Callback function for error response
+ * @param {string} context_id - ID of context to switch to
  * @returns {Promise} Promise object representing the API call
  */
 export const distance = async (
-    distanceParams, 
-    errorInlineId, 
-    callback, 
-    errorCallback
+    distanceMetric,
+    errorInlineId,
+    context_id
 ) => {
     return makeRequest(
         API_ENDPOINTS.ANALYSIS.DISTANCE,
-        { method: 'POST', body: createFormData(distanceParams) },
+        { 
+            method: 'POST', 
+            body: createFormData(
+                { distance_metric: distanceMetric, context_id }
+            ) 
+        },
         {
             errorPrefix: 'Error calculating distance',
             errorId: errorInlineId,
             isInline: true,
-        },
-        callback,
-        errorCallback
+        }
     );
 };
 
@@ -56,20 +78,26 @@ export const distance = async (
  * @param {string} label - Label of time course to find peaks on
  * @param {string} time_course_type - Type of time course (timecourse or task)
  * @param {Object} peakFinderParams - Parameters for peak finder
- * @param {Function} callback - Callback function to handle successful response
+ * @param {string} context_id - ID of context to switch to
  * @returns {Promise} Promise object representing the API call
  */
-export const findPeaks = async (label, time_course_type, peakFinderParams, callback) => {
+export const findPeaks = async (label, time_course_type, peakFinderParams, context_id) => {
     return makeRequest(
         API_ENDPOINTS.ANALYSIS.FIND_PEAKS,
-        { method: 'POST', body: createFormData(
-            { label, time_course_type, peak_finder_params: peakFinderParams }
+        { 
+            method: 'POST', 
+            body: createFormData(
+                { 
+                    label, 
+                    time_course_type, 
+                    peak_finder_params: peakFinderParams,
+                    context_id
+                }
             ) 
         },
         {
             errorPrefix: 'Error finding peaks'
-        },
-        callback
+        }
     );
 };
 
@@ -78,29 +106,29 @@ export const findPeaks = async (label, time_course_type, peakFinderParams, callb
  * Windowed average of fmri time courses
  * 
  * @param {Object} windowedAverageParams - Parameters for windowed average
- * @param {Function} callback - Callback function to handle successful response
+ * @param {string} context_id - ID of context to switch to
  * @returns {Promise} Promise object representing the API call
  */
 export const windowedAverage = async (
     windowedAverageParams, 
     errorInlineId,
-    callback,
-    errorCallback
+    context_id
 ) => {
     return makeRequest(
         API_ENDPOINTS.ANALYSIS.WINDOWED_AVERAGE, 
         { 
             method: 'POST', 
-            body: createFormData({
-                window_average_params: JSON.stringify(windowedAverageParams)
-            }) 
+            body: createFormData(
+                { 
+                    window_average_params: JSON.stringify(windowedAverageParams), 
+                    context_id 
+                }
+            ) 
         }, 
         {
             errorPrefix: 'Error during window average',
             errorId: errorInlineId,
             isInline: true,
-        },
-        callback,
-        errorCallback
+        }
     );
 };

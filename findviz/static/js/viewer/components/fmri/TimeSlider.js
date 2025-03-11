@@ -1,6 +1,6 @@
 import { EVENT_TYPES } from '../../../constants/EventTypes.js';
 import { initializeSingleSlider } from '../sliders.js';
-import { getViewerMetadata, updateTimepoint } from '../../api/data.js';
+import ContextManager from '../../api/ContextManager.js';
 
 class TimeSlider {
     /**
@@ -10,13 +10,15 @@ class TimeSlider {
      * @param {string} timeSliderTitle - The title of the time slider
      * @param {string} timeSliderTitleId - The ID of the time slider title
      * @param {ViewerEvents} eventBus - The event bus
+     * @param {ContextManager} contextManager - The context manager
      */
     constructor(
         displayText,
         timeSliderId,
         timeSliderTitle,
         timeSliderTitleId,
-        eventBus
+        eventBus,
+        contextManager
     ) {
 
         this.displayText = displayText;
@@ -24,28 +26,21 @@ class TimeSlider {
         this.timeSlider = $(`#${this.timeSliderId}`);
         this.timeSliderTitle = $(`#${timeSliderTitleId}`);
         this.eventBus = eventBus;
+        this.contextManager = contextManager;
 
         // display time slider title
         this.timeSliderTitle.text(timeSliderTitle);
 
-        // get timepoint array from viewer metadata
-        getViewerMetadata(
-            (metadata) => {
-                this.timePoints = metadata.timepoints;
-                // Initialize time slider
-                this.initializeTimeSlider(this.timePoints)
-            }
-        );
-        
-        // Attach the `slide` event listener (for when the slider value changes)
-        this.timeSlider.on('change', this.handleSlide.bind(this));
+        // Initialize time slider
+        this.initializeTimeSlider();
     }
 
     /**
      * Initialize time slider
-     * @param {Array} timePoints - The time points
      */
-    initializeTimeSlider(timePoints) {
+    async initializeTimeSlider() {
+        const metadata = await this.contextManager.data.getViewerMetadata();
+        this.timePoints = metadata.timepoints;
         // Get display text for formatter
         const displayText = this.displayText;
         // get time point to display text converter
@@ -61,20 +56,22 @@ class TimeSlider {
         initializeSingleSlider(
             this.timeSliderId,
             0,
-            [0, timePoints.length - 1],
+            [0, this.timePoints.length - 1],
             1,
             formatter
         );
+         // Attach the `slide` event listener (for when the slider value changes)
+         this.timeSlider.on('change', this.handleSlide.bind(this));
     }
 
     /**
      * Handle slider change
      */
     async handleSlide() {
-        console.log('time slider changed');
         const timeIndex = this.timeSlider.slider('getValue');
+        console.log(`time slider changed to ${timeIndex}`);
         // update time point
-        await updateTimepoint(timeIndex);
+        await this.contextManager.data.updateTimepoint(timeIndex);
 
         // Trigger a time slider change event
         this.eventBus.publish(

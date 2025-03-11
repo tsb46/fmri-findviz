@@ -52,10 +52,10 @@ def preprocess_fmri(
         mask_img: nib.Nifti1Image
             Mask image to use for preprocessing. 
             Only required if file_type is 'nifti'
-        left_img: nib.GiftiImage
+        left_func_img: nib.GiftiImage
             Gifti image containing left hemisphere functional data. 
             Only required if file_type is 'gifti'
-        right_img: nib.GiftiImage
+        right_func_img: nib.GiftiImage
             Gifti image containing right hemisphere functional data. 
             Only required if file_type is 'gifti'
         
@@ -67,7 +67,7 @@ def preprocess_fmri(
     """
     if file_type == 'nifti' and func_img is None:
         raise ValueError("func_img is required if file_type is 'nifti'")
-    elif file_type == 'gifti' and (left_func_img is None or right_func_img is None):
+    elif (file_type == 'gifti') and (left_func_img is None) and (right_func_img is None):
         raise ValueError(
             "left_func_img or right_func_img are required if file_type is 'gifti'"
         )

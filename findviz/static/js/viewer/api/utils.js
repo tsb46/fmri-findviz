@@ -9,11 +9,9 @@ import { displayInlineError, clearInlineError, modalErrorHandler } from '../erro
  * @param {string} [errorConfig.errorId] - ID of inline error element
  * @param {boolean} [errorConfig.isInline=false] - Whether to show error inline
  * @param {string} errorConfig.errorPrefix - Prefix for error logging
- * @param {Function} [callback] - Callback function for successful response
- * @param {Function} [errorCallback] - Callback function for error response
- * @returns {Promise<any>} Response data or true for POST requests
+ * @returns {Promise<any>} Response data or null on error
  */
-export const makeRequest = async (url, options, errorConfig, callback, errorCallback) => {
+export const makeRequest = async (url, options, errorConfig) => {
     try {
         let finalUrl = url;
 
@@ -29,10 +27,9 @@ export const makeRequest = async (url, options, errorConfig, callback, errorCall
             if (queryString) {
                 finalUrl = `${url}?${queryString}`;
             }
-            delete options.body;  // Remove body from GET request
+            delete options.body;
         }
 
-        // Don't set Content-Type for FormData - browser will set it automatically
         const headers = options.body instanceof FormData 
             ? options.headers 
             : {
@@ -47,21 +44,14 @@ export const makeRequest = async (url, options, errorConfig, callback, errorCall
 
         if (!response.ok) {
             const errorText = await response.text();
-            console.log(`HTTP error! status: ${response.status}, message: ${errorText}`);
+            console.error(`${errorConfig.errorPrefix}: ${errorText}`);
 
             if (errorConfig.isInline && errorConfig.errorId) {
                 displayInlineError(errorText, errorConfig.errorId);
             } else {
                 modalErrorHandler.displayError(errorText);
             }
-
-            // Call error callback if provided
-            if (errorCallback) {
-                errorCallback();
-            }
-
-            return;
-
+            throw new Error(errorText);
         }
 
         // Clear inline error if it exists
@@ -69,37 +59,12 @@ export const makeRequest = async (url, options, errorConfig, callback, errorCall
             clearInlineError(errorConfig.errorId);
         }
 
-        // get data from response (if any)
         const data = await response.json();
 
-        // For GET requests, parse and return data
-        if (options.method === 'GET') {
-            if (callback && data) {
-                callback(data);
-            }
-            return data;
-        }
-
-        // For POST requests, if callback, execute call back and return true 
-        if (callback) {
-            callback(data)
-            return true;
-        } else {
-            // if no callback, return data or true
-            if (data) {
-                return data;
-            } else {
-                return true;
-            }
-        }
-
+        return data || null;
     } catch (error) {
         console.error(`${errorConfig.errorPrefix}:`, error);
-        // Call error callback if provided
-        if (errorCallback) {
-            errorCallback();
-        }
-        return;
+        throw error; // Re-throw to be caught by the calling function
     }
 };
 

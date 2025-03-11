@@ -1,7 +1,7 @@
 // TimeCourseFmri.js
 // Handles addition and removal events of fmri time courses to plot
 import { EVENT_TYPES } from '../../../constants/EventTypes.js';
-import { popFmriTimeCourse, removeFmriTimeCourses } from '../../api/data.js';
+import ContextManager from '../../api/ContextManager.js';
 
 class TimeCourseFmri {
     /**
@@ -11,6 +11,7 @@ class TimeCourseFmri {
      * @param {string} timeCourseUndoButtonId - The ID of the undo fmri time course button
      * @param {string} timeCourseFreezeButtonId - The ID of the freeze fmri time course button
      * @param {ViewerEvents} eventBus - The event bus
+     * @param {ContextManager} contextManager - The context manager
      */
     constructor(
         enableFmriTimeCourseButtonId,
@@ -18,10 +19,12 @@ class TimeCourseFmri {
         timeCourseUndoButtonId,
         timeCourseFreezeButtonId,
         freezeIconId,
-        eventBus
+        eventBus,
+        contextManager
     ) {
-        // get event bus
+        // get event bus and context manager
         this.eventBus = eventBus;
+        this.contextManager = contextManager;
         // get elements
         this.enableFmriTimeCourseButton = $(`#${enableFmriTimeCourseButtonId}`);
         this.timeCourseRemoveButton = $(`#${timeCourseRemoveButtonId}`);
@@ -64,7 +67,7 @@ class TimeCourseFmri {
         // undo most recent fmri time course
         this.timeCourseUndoButton.on('click', async () => {
             console.log('fmri time course undo button clicked');
-            const lastFmriLabel = await popFmriTimeCourse();
+            const lastFmriLabel = await this.contextManager.data.popFmriTimeCourse();
             this.eventBus.publish(
                 EVENT_TYPES.VISUALIZATION.TIMECOURSE.UNDO_FMRI_TIMECOURSE,
                 lastFmriLabel.label
@@ -74,7 +77,7 @@ class TimeCourseFmri {
         // remove all fmri time courses
         this.timeCourseRemoveButton.on('click', async () => {
             console.log('fmri time course remove button clicked');
-            const fmriLabels = await removeFmriTimeCourses();
+            const fmriLabels = await this.contextManager.data.removeFmriTimeCourses();
             this.eventBus.publish(
                 EVENT_TYPES.VISUALIZATION.TIMECOURSE.REMOVE_FMRI_TIMECOURSE,
                 fmriLabels.labels

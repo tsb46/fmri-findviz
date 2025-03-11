@@ -2,19 +2,22 @@
 
 import { EVENT_TYPES } from '../../../../constants/EventTypes.js';
 import { initializeSingleSlider } from '../../sliders.js';
-import { getFmriPlotOptions, updateFmriPlotOptions } from '../../../api/plot.js';
+import ContextManager from '../../../api/ContextManager.js';
+
 
 class MoviePopover {
     /**
      * @param {string} playMoviePopoverId - The id of the play movie popover
      * @param {string} playMovieSpeedSliderId - The id of the play movie speed slider
      * @param {ViewerEvents} eventBus - The event bus
+     * @param {ContextManager} contextManager - The context manager
      */
-    constructor(playMoviePopoverId, playMovieSpeedSliderId, eventBus) {
+    constructor(playMoviePopoverId, playMovieSpeedSliderId, eventBus, contextManager) {
         this.playMoviePopoverId = playMoviePopoverId;
         this.playMoviePopover = $(`#${playMoviePopoverId}`);
         this.playMovieSpeedSliderId = playMovieSpeedSliderId;
         this.eventBus = eventBus;
+        this.contextManager = contextManager;
 
         // initialize popover
         this.initializePlayMoviePopover();
@@ -22,7 +25,7 @@ class MoviePopover {
 
     initializePlayMoviePopover() {
         this.playMoviePopover.on('shown.bs.popover', async () => {
-            const plotOptions = await getFmriPlotOptions();
+            const plotOptions = await this.contextManager.plot.getFmriPlotOptions();
             const playMovieSpeed = plotOptions.play_movie_speed;
 
             // initialize play movie speed slider
@@ -49,11 +52,10 @@ class MoviePopover {
         });
     }
 
-    updatePlayMovieSpeed(playMovieSpeedSlider) {
+    async updatePlayMovieSpeed(playMovieSpeedSlider) {
         const speed = playMovieSpeedSlider.val();
-        updateFmriPlotOptions({ play_movie_speed: speed }, () => {
-            this.eventBus.publish(EVENT_TYPES.VISUALIZATION.FMRI.PLAY_MOVIE_SPEED_CHANGE, speed);
-        });
+        await this.contextManager.plot.updateFmriPlotOptions({ play_movie_speed: speed });
+        this.eventBus.publish(EVENT_TYPES.VISUALIZATION.FMRI.PLAY_MOVIE_SPEED_CHANGE, speed);
     }
 }
 

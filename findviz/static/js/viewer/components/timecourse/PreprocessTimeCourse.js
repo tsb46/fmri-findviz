@@ -1,7 +1,7 @@
 // PreprocessTimeCourse.js - Preprocessing for timecourse data
 import { EVENT_TYPES } from '../../../constants/EventTypes.js';
-import { getPreprocessedTimeCourse, resetTimeCoursePreprocess } from '../../api/preprocess.js';
-import { getTimeCourseLabels, getTimeCourseLabelsPreprocessed } from '../../api/data.js';
+import ContextManager from '../../api/ContextManager.js';
+
 
 class PreprocessTimeCourse {
     /**
@@ -19,6 +19,7 @@ class PreprocessTimeCourse {
      * @param {string} errorInlineId - ID of error message inline
      * @param {string} preprocessAlertId - ID of preprocess alert div
      * @param {ViewerEvents} eventBus - The event bus
+     * @param {ContextManager} contextManager - The context manager
      */
     constructor(
         timeCoursePrepMenuId,
@@ -33,7 +34,8 @@ class PreprocessTimeCourse {
         highCutId,
         errorInlineId,
         preprocessAlertId,
-        eventBus
+        eventBus,
+        contextManager
     ) {
         // get time course prep menu
         this.timeCoursePrepMenu = $(`#${timeCoursePrepMenuId}`);
@@ -54,11 +56,14 @@ class PreprocessTimeCourse {
         this.errorInlineId = errorInlineId;
         // get preprocess alert div
         this.preprocessAlert = $(`#${preprocessAlertId}`);
-        // get event bus
+        // get event bus and context manager
         this.eventBus = eventBus;
+        this.contextManager = contextManager;
         // Set states of preprocessing switches
         this.normSwitchEnabled = false;
         this.filterSwitchEnabled = false;
+        // enable all buttons by default
+        this.enableAllButtons();
         // initialize preprocessing switches
         this.initializeSwitches();
         // initialize preprocessing submit button event
@@ -88,6 +93,32 @@ class PreprocessTimeCourse {
                 this.initializeTimeCoursePrepSelect();
             }
         );
+    }
+
+    disableAllButtons() {
+        this.timeCoursePrepMenu.prop('disabled', true);
+        this.normSwitch.prop('disabled', true);
+        this.filterSwitch.prop('disabled', true);
+        this.meanCenter.prop('disabled', true);
+        this.zScore.prop('disabled', true);
+        this.TR.prop('disabled', true);
+        this.lowCut.prop('disabled', true);
+        this.highCut.prop('disabled', true);
+        this.prepSubmit.prop('disabled', true);
+        this.prepReset.prop('disabled', true);
+    }
+
+    enableAllButtons() {
+        this.timeCoursePrepMenu.prop('disabled', false);
+        this.normSwitch.prop('disabled', false);
+        this.filterSwitch.prop('disabled', false);
+        this.meanCenter.prop('disabled', false);
+        this.zScore.prop('disabled', false);
+        this.TR.prop('disabled', false);
+        this.lowCut.prop('disabled', false);
+        this.highCut.prop('disabled', false);
+        this.prepSubmit.prop('disabled', false);
+        this.prepReset.prop('disabled', false);
     }
 
     initializeSwitches() {
@@ -127,27 +158,26 @@ class PreprocessTimeCourse {
     /**
      * Initialize time course preprocessing selection menu
      */
-    initializeTimeCoursePrepSelect() {
+    async initializeTimeCoursePrepSelect() {
         // get time course labels
-        getTimeCourseLabels((labels) => {
-            // Loop through time courses and append label to select dropdown menu
-            for (let ts of labels) {
-                const label = ts;
-                let newOption = $('<option>', { value: label, text: label });
-                this.timeCoursePrepMenu.append(newOption);
-            };
-            // hack to remove duplicates due to bug
-            //https://github.com/snapappointments/bootstrap-select/issues/2738
-            this.timeCoursePrepMenu.selectpicker('destroy');
-            this.timeCoursePrepMenu.selectpicker();
-        });
+        const labels = await this.contextManager.data.getTimeCourseLabels();
+        // Loop through time courses and append label to select dropdown menu
+        for (let ts of labels) {
+            const label = ts;
+            let newOption = $('<option>', { value: label, text: label });
+            this.timeCoursePrepMenu.append(newOption);
+        };
+        // hack to remove duplicates due to bug
+        //https://github.com/snapappointments/bootstrap-select/issues/2738
+        this.timeCoursePrepMenu.selectpicker('destroy');
+        this.timeCoursePrepMenu.selectpicker();
     }
 
     /**
      * Handle preprocessing submit button event
      * @param {Event} event - event object
      */
-    handlePreprocessSubmit(event) {
+    async handlePreprocessSubmit(event) {
         event.preventDefault();
         console.log('preprocess submit button clicked');
         // get selected time courses
@@ -165,15 +195,16 @@ class PreprocessTimeCourse {
             ts_labels: selectedTimeCourses
         }
         // preprocess timecourse
-        getPreprocessedTimeCourse(preprocessParams, this.errorInlineId, () => {
-            this.eventBus.publish(
-                EVENT_TYPES.PREPROCESSING.PREPROCESS_TIMECOURSE_SUCCESS, 
-                selectedTimeCourses
-            );
-            // show preprocess alert
-            this.preprocessAlert.css("display", "block");
-        });
-        
+        await this.contextManager.preprocess.getPreprocessedTimeCourse(
+            preprocessParams, 
+            this.errorInlineId
+        );
+        this.eventBus.publish(
+            EVENT_TYPES.PREPROCESSING.PREPROCESS_TIMECOURSE_SUCCESS, 
+            selectedTimeCourses
+        );
+        // show preprocess alert
+        this.preprocessAlert.css("display", "block");
     }
 
     /**
@@ -207,14 +238,16 @@ class PreprocessTimeCourse {
         // get selected time courses
         const selectedTimeCourses = this.timeCoursePrepMenu.val();
         // reset preprocess
-        resetTimeCoursePreprocess(selectedTimeCourses, this.errorInlineId, () => {
-            this.eventBus.publish(
-                EVENT_TYPES.PREPROCESSING.PREPROCESS_TIMECOURSE_RESET,
-                selectedTimeCourses
-            );
-            // hide preprocess alert
-            this.preprocessAlert.css("display", "none");
-        });
+        await this.contextManager.preprocess.resetTimeCoursePreprocess(
+            selectedTimeCourses, 
+            this.errorInlineId
+        );
+        this.eventBus.publish(
+            EVENT_TYPES.PREPROCESSING.PREPROCESS_TIMECOURSE_RESET,
+            selectedTimeCourses
+        );
+        // hide preprocess alert
+        this.preprocessAlert.css("display", "none");
     }
 }
 

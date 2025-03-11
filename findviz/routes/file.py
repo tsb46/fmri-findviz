@@ -135,23 +135,24 @@ def upload():
         }, 500)
 
     # pass fmri data to data manager and get viewer data
+    # Initialize state in the active context
     if fmri_file_type == 'nifti':
-        data_manager.create_nifti_state(
+        data_manager.ctx.create_nifti_state(
             func_img = uploads['nifti'][NiftiFiles.FUNC.value],
             anat_img = uploads['nifti'][NiftiFiles.ANAT.value],
             mask_img = uploads['nifti'][NiftiFiles.MASK.value]
         )
         logger.info("Nifti data manager state created successfully")
     else:
-        data_manager.create_gifti_state(
-            left_func=uploads['gifti'][GiftiFiles.LEFT_FUNC.value],
-            right_func=uploads['gifti'][GiftiFiles.RIGHT_FUNC.value],
+        data_manager.ctx.create_gifti_state(
+            left_func_img=uploads['gifti'][GiftiFiles.LEFT_FUNC.value],
+            right_func_img=uploads['gifti'][GiftiFiles.RIGHT_FUNC.value],
             left_mesh=uploads['gifti'][GiftiFiles.LEFT_MESH.value],
             right_mesh=uploads['gifti'][GiftiFiles.RIGHT_MESH.value]
         )
         logger.info("Gifti data manager state created successfully")
     # initialize data manager with or without time series data
-    data_manager.add_timeseries(uploads['ts'])
+    data_manager.ctx.add_timeseries(uploads['ts'])
     if file_upload.ts_status:
         logger.info("Time series data added to viewer data")
     else:
@@ -159,7 +160,7 @@ def upload():
 
     # if task data, add to viewer data
     if file_upload.task_status:
-        data_manager.add_task_design(
+        data_manager.ctx.add_task_design(
             task_data=uploads['task']['task_regressors'], 
             tr=uploads['task']['tr'], 
             slicetime_ref=uploads['task']['slicetime_ref']
@@ -169,7 +170,7 @@ def upload():
         logger.info("No task design data added to viewer data")
 
     # get viewer metadata
-    viewer_metadata = data_manager.get_viewer_metadata()
+    viewer_metadata = data_manager.ctx.get_viewer_metadata()
     logger.info("Viewer metadata retrieved successfully")
     
     return make_response(

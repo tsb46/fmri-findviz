@@ -1,10 +1,7 @@
 // AnnotatePopover.js - handles the plot options for the annotation markers
 import { EVENT_TYPES } from '../../../../constants/EventTypes.js';
 import { initializeSingleSlider } from '../../sliders.js';
-import { 
-    getAnnotationMarkerPlotOptions,
-    updateAnnotationMarkerPlotOptions
-} from '../../../api/plot.js';
+import ContextManager from '../../../api/ContextManager.js';
 
 
 class AnnotatePopover {
@@ -17,6 +14,7 @@ class AnnotatePopover {
      * @param {string} annotateMarkerOpacitySliderId - The id of the annotate marker opacity slider
      * @param {string} highlightAnnotateId - The id of the highlight annotate
      * @param {ViewerEvents} eventBus - The event bus
+     * @param {ContextManager} contextManager - The context manager
      */
     constructor(
         annotatePopoverId,
@@ -25,15 +23,19 @@ class AnnotatePopover {
         annotateMarkerWidthSliderId,
         annotateMarkerOpacitySliderId,
         highlightAnnotateId,
-        eventBus
+        eventBus,
+        contextManager
     ) {
+        // get elements
         this.annotatePopoverId = annotatePopoverId;
         this.annotateColorDropdownId = annotateColorDropdownId;
         this.annotateMarkerSelectId = annotateMarkerSelectId;
         this.annotateMarkerWidthSliderId = annotateMarkerWidthSliderId;
         this.annotateMarkerOpacitySliderId = annotateMarkerOpacitySliderId;
         this.highlightAnnotateId = highlightAnnotateId;
+        // get event bus and context manager
         this.eventBus = eventBus;
+        this.contextManager = contextManager;
         // initialize the annotate popover
         this.initializeAnnotatePopover();
     }
@@ -43,21 +45,18 @@ class AnnotatePopover {
      */
     initializeAnnotatePopover() {
         // initialize the annotate popover
-        $(`#${this.annotatePopoverId}`).on('shown.bs.popover', () => {
+        $(`#${this.annotatePopoverId}`).on('shown.bs.popover', async () => {
             console.log('annotate popover shown');
             // get annotate marker width and opacity    
-            getAnnotationMarkerPlotOptions(
-                (plotOptions) => {
-                    // initialize the annotate sliders
-                    this.initializeAnnotateSliders(plotOptions.width, plotOptions.opacity);
-                    // set selection for color dropdown
-                    $(`#${this.annotateColorDropdownId}`).val(plotOptions.color);
-                    // set selection for marker select
-                    $(`#${this.annotateMarkerSelectId}`).val(plotOptions.shape);
-                    // set selection for highlight annotate
-                    $(`#${this.highlightAnnotateId}`).prop('checked', plotOptions.highlight);
-                }
-            );
+            const plotOptions = await this.contextManager.plot.getAnnotationMarkerPlotOptions();
+            // initialize the annotate sliders
+            this.initializeAnnotateSliders(plotOptions.width, plotOptions.opacity);
+            // set selection for color dropdown
+            $(`#${this.annotateColorDropdownId}`).val(plotOptions.color);
+            // set selection for marker select
+            $(`#${this.annotateMarkerSelectId}`).val(plotOptions.shape);
+            // set selection for highlight annotate
+            $(`#${this.highlightAnnotateId}`).prop('checked', plotOptions.highlight);
 
             // Hide popover when clicking outside
             // Store reference to this
@@ -113,95 +112,85 @@ class AnnotatePopover {
     /**
      * Handles the color dropdown change
      */
-    handleColorDropdownChange() {
+    async handleColorDropdownChange() {
         // get the selected color
         const selectedColor = $(`#${this.annotateColorDropdownId}`).val();
         // update the annotation marker plot options
-        updateAnnotationMarkerPlotOptions(
-            {color: selectedColor},
-            () => {
-                console.log('annotation marker color changed');
-                this.eventBus.publish(
-                    EVENT_TYPES.VISUALIZATION.ANNOTATE.ANNOTATE_MARKER_COLOR_CHANGE,
-                    selectedColor
-                );
-            }
+        await this.contextManager.plot.updateAnnotationMarkerPlotOptions(
+            {color: selectedColor}
+        );
+        console.log('annotation marker color changed');
+        this.eventBus.publish(
+            EVENT_TYPES.VISUALIZATION.ANNOTATE.ANNOTATE_MARKER_COLOR_CHANGE,
+            selectedColor
         );
     }
 
     /**
      * Handles the highlight annotate change
      */
-    handleHighlightAnnotateChange() {
+    async handleHighlightAnnotateChange() {
         // get the checkbox value
         const selectedHighlight = $(`#${this.highlightAnnotateId}`).prop('checked');
         // update the annotation marker plot options
-        updateAnnotationMarkerPlotOptions(
-            {highlight: selectedHighlight},
-            () => {
-                console.log('annotation marker highlight changed');
-                this.eventBus.publish(
-                    EVENT_TYPES.VISUALIZATION.ANNOTATE.ANNOTATE_HIGHLIGHT_TOGGLE,
-                    selectedHighlight
-                );
-            }
+        await this.contextManager.plot.updateAnnotationMarkerPlotOptions(
+            {highlight: selectedHighlight}
+        );
+        console.log('annotation marker highlight changed');
+        this.eventBus.publish(
+            EVENT_TYPES.VISUALIZATION.ANNOTATE.ANNOTATE_HIGHLIGHT_TOGGLE,
+            selectedHighlight
         );
     }
 
     /**
      * Handles the marker select change
      */
-    handleMarkerSelectChange() {
+    async handleMarkerSelectChange() {
         // get the selected marker
         const selectedMarker = $(`#${this.annotateMarkerSelectId}`).val();
         // update the annotation marker plot options
-        updateAnnotationMarkerPlotOptions(
-            {shape: selectedMarker},
-            () => {
-                console.log(`annotation marker shape changed to ${selectedMarker}`);
-                this.eventBus.publish(
-                    EVENT_TYPES.VISUALIZATION.ANNOTATE.ANNOTATE_MARKER_SHAPE_CHANGE,
-                    selectedMarker
-                );
-            }
+        await this.contextManager.plot.updateAnnotationMarkerPlotOptions(
+            {shape: selectedMarker}
+        );
+        console.log(`annotation marker shape changed to ${selectedMarker}`);
+        this.eventBus.publish(
+            EVENT_TYPES.VISUALIZATION.ANNOTATE.ANNOTATE_MARKER_SHAPE_CHANGE,
+            selectedMarker
         );
     }
 
     /**
      * Handles the marker width slider change
      */
-    handleMarkerWidthSliderChange(event) {
+    async handleMarkerWidthSliderChange(event) {
         // get the selected width
         const selectedWidth = event.value.newValue;
         // update the annotation marker plot options
-        updateAnnotationMarkerPlotOptions(
-            {width: selectedWidth},
-            () => {
-                console.log(`annotation marker width changed to ${selectedWidth}`);
-                this.eventBus.publish(
-                    EVENT_TYPES.VISUALIZATION.ANNOTATE.ANNOTATE_MARKER_WIDTH_CHANGE, 
-                    selectedWidth
-                );
-            }
+        await this.contextManager.plot.updateAnnotationMarkerPlotOptions(
+            {width: selectedWidth}
+        );
+        console.log(`annotation marker width changed to ${selectedWidth}`);
+        this.eventBus.publish(
+            EVENT_TYPES.VISUALIZATION.ANNOTATE.ANNOTATE_MARKER_WIDTH_CHANGE, 
+            selectedWidth
         );
     }
 
     /**
      * Handles the marker opacity slider change
      */
-    handleMarkerOpacitySliderChange(event) {
+    async handleMarkerOpacitySliderChange(event) {
         // get the selected opacity
         const selectedOpacity = event.value.newValue;
         // update the annotation marker plot options
-        updateAnnotationMarkerPlotOptions(
-            {opacity: selectedOpacity},
-            () => {
-                console.log(`annotation marker opacity changed to ${selectedOpacity}`);
-                this.eventBus.publish(
-                    EVENT_TYPES.VISUALIZATION.ANNOTATE.ANNOTATE_MARKER_OPACITY_CHANGE,
-                    selectedOpacity
-                );
-            }
+        await this.contextManager.plot.updateAnnotationMarkerPlotOptions(
+            {opacity: selectedOpacity}
+        );
+        console.log(`annotation marker opacity changed to ${selectedOpacity}`);
+        this.eventBus.publish(
+            EVENT_TYPES.VISUALIZATION.ANNOTATE.ANNOTATE_MARKER_OPACITY_CHANGE,
+            selectedOpacity
         );
     }
 }

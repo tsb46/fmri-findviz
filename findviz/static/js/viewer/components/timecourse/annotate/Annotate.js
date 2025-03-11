@@ -1,11 +1,7 @@
 // Annotate.js - handles annotation of time courses
 import { EVENT_TYPES } from '../../../../constants/EventTypes.js';
-import { 
-    addAnnotationMarker, 
-    clearAnnotationMarkers, 
-    moveAnnotationSelection,
-    undoAnnotationMarker
-} from '../../../api/plot.js';
+import ContextManager from '../../../api/ContextManager.js';
+
 
 class Annotate {
     /**
@@ -17,6 +13,7 @@ class Annotate {
      * @param {string} undoAnnotateId - The id of the undo annotate
      * @param {string} removeAnnotateId - The id of the remove annotate
      * @param {ViewerEvents} eventBus - The event bus
+     * @param {ContextManager} contextManager - The context manager
      */
     constructor(
         plotlyPlotId,
@@ -26,14 +23,17 @@ class Annotate {
         leftMoveAnnotateId,
         undoAnnotateId,
         removeAnnotateId,
-        eventBus
+        eventBus,
+        contextManager
     ) {
         this.eventBus = eventBus;
+        this.contextManager = contextManager;
         // check that plotlyPlotId is plotted
         this.plotlyPlot = document.getElementById(plotlyPlotId);
         if (!this.plotlyPlot) {
             throw new Error(`Plotly plot with id ${plotlyPlotId} not found`);
         }
+        // get elements
         this.timeSlider = $(`#${timeSliderId}`);
         this.annotateSwitch = $(`#${annotateSwitchId}`);
         this.rightMoveAnnotate = $(`#${rightMoveAnnotateId}`);
@@ -100,19 +100,18 @@ class Annotate {
      * Initializes the plotly click listener
      */
     initializePlotlyClickListener() {
-        this.plotlyPlot.on('plotly_click', (eventData) => {
+        this.plotlyPlot.on('plotly_click', async (eventData) => {
             if (this.annotateState) {
                 const x = Math.round(eventData.points[0].x);
-                addAnnotationMarker(x, (marker) => {
-                    console.log('annotation marker added at x = ', marker.marker);
-                    // update time slider to the x value
-                    this.timeSlider.slider('setValue', marker.marker);
-                    this.timeSlider.trigger('change');
-                    this.eventBus.publish(
-                        EVENT_TYPES.VISUALIZATION.ANNOTATE.ANNOTATE_MARKER_ADDED, 
-                        marker
-                    );
-                });
+                const marker = await this.contextManager.plot.addAnnotationMarker(x);
+                console.log('annotation marker added at x = ', marker.marker);
+                // update time slider to the x value
+                this.timeSlider.slider('setValue', marker.marker);
+                this.timeSlider.trigger('change');
+                this.eventBus.publish(
+                    EVENT_TYPES.VISUALIZATION.ANNOTATE.ANNOTATE_MARKER_ADDED, 
+                    marker
+                );
             }
         });
     }
@@ -121,21 +120,20 @@ class Annotate {
      * Initializes the right move annotate listener
      */
     initializeRightMoveAnnotateListener() {
-        this.rightMoveAnnotate.on('click', () => {
+        this.rightMoveAnnotate.on('click', async () => {
             console.log('right move annotate clicked');
-            moveAnnotationSelection('right', (selectedMarker) => {
-                console.log(
-                    'selected marker moved to right: ', 
-                    selectedMarker.selected_marker
-                );
-                // update time slider to the x value
-                this.timeSlider.slider('setValue', selectedMarker.selected_marker);
-                this.timeSlider.trigger('change');
-                this.eventBus.publish(
-                    EVENT_TYPES.VISUALIZATION.ANNOTATE.ANNOTATE_MARKER_MOVED, 
-                    'right'
-                );
-            });
+            const selectedMarker = await this.contextManager.plot.moveAnnotationSelection('right');
+            console.log(
+                'selected marker moved to right: ', 
+                selectedMarker.selected_marker
+            );
+            // update time slider to the x value
+            this.timeSlider.slider('setValue', selectedMarker.selected_marker);
+            this.timeSlider.trigger('change');
+            this.eventBus.publish(
+                EVENT_TYPES.VISUALIZATION.ANNOTATE.ANNOTATE_MARKER_MOVED, 
+                'right'
+            );
         });
     }
 
@@ -143,21 +141,20 @@ class Annotate {
      * Initializes the left move annotate listener
      */
     initializeLeftMoveAnnotateListener() {
-        this.leftMoveAnnotate.on('click', () => {
+        this.leftMoveAnnotate.on('click', async () => {
             console.log('left move annotate clicked');
-            moveAnnotationSelection('left', (selectedMarker) => {
-                console.log(
-                    'selected marker moved to left: ', 
-                    selectedMarker.selected_marker
-                );
-                // update time slider to the x value
-                this.timeSlider.slider('setValue', selectedMarker.selected_marker);
-                this.timeSlider.trigger('change');
-                this.eventBus.publish(
-                    EVENT_TYPES.VISUALIZATION.ANNOTATE.ANNOTATE_MARKER_MOVED, 
-                    selectedMarker
-                );
-            });
+            const selectedMarker = await this.contextManager.plot.moveAnnotationSelection('left');
+            console.log(
+                'selected marker moved to left: ', 
+                selectedMarker.selected_marker
+            );
+            // update time slider to the x value
+            this.timeSlider.slider('setValue', selectedMarker.selected_marker);
+            this.timeSlider.trigger('change');
+            this.eventBus.publish(
+                EVENT_TYPES.VISUALIZATION.ANNOTATE.ANNOTATE_MARKER_MOVED, 
+                selectedMarker
+            );
         });
     }
 
@@ -165,19 +162,18 @@ class Annotate {
      * Initializes the undo annotate listener
      */
     initializeUndoAnnotateListener() {
-        this.undoAnnotate.on('click', () => {
+        this.undoAnnotate.on('click', async () => {
             console.log('undo annotate clicked');
-            undoAnnotationMarker((marker) => {
-                if (marker.marker) {
-                    // update time slider to the marker value
-                    this.timeSlider.slider('setValue', marker.marker);
-                    this.timeSlider.trigger('change');
-                }
-                this.eventBus.publish(
-                    EVENT_TYPES.VISUALIZATION.ANNOTATE.ANNOTATE_MARKER_UNDONE, 
-                    marker
-                );
-            });
+            const marker = await this.contextManager.plot.undoAnnotationMarker();
+            if (marker.marker) {
+                // update time slider to the marker value
+                this.timeSlider.slider('setValue', marker.marker);
+                this.timeSlider.trigger('change');
+            }
+            this.eventBus.publish(
+                EVENT_TYPES.VISUALIZATION.ANNOTATE.ANNOTATE_MARKER_UNDONE, 
+                marker
+            );
         });
     }
 
@@ -185,14 +181,13 @@ class Annotate {
      * Initializes the remove annotate listener
      */
     initializeRemoveAnnotateListener() {
-        this.removeAnnotate.on('click', () => {
+        this.removeAnnotate.on('click', async () => {
             console.log('remove annotate clicked');
-            clearAnnotationMarkers(() => {
-                this.eventBus.publish(
-                    EVENT_TYPES.VISUALIZATION.ANNOTATE.ANNOTATE_MARKER_REMOVED, 
-                    true
-                );
-            });
+            await this.contextManager.plot.clearAnnotationMarkers();
+            this.eventBus.publish(
+                EVENT_TYPES.VISUALIZATION.ANNOTATE.ANNOTATE_MARKER_REMOVED, 
+                true
+            );
         });
     }
 

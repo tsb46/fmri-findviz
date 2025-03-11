@@ -6,7 +6,8 @@ including metadata extraction and value range calculations.
 Functions:
     - apply_mask_nifti: Apply a mask to a NIfTI image
     - extend_color_range: Extend color range by a given percentage
-    - get_coord_labels: Get coordinate labels for NIFTI data as a 3D array
+    - get_coord_labels_gifti: Get coordinate labels for GIFTI data as a list of tuples
+    - get_coord_labels_nifti: Get coordinate labels for NIFTI data as a 3D array
     - get_fmri_minmax: Calculate global minimum and maximum values for fmri data
     - get_ts_minmax: Calculate global minimum and maximum values for time series data
     - get_ortho_slice_coords: Get initial orthogonal view slice coordinates for NIFTI data
@@ -18,6 +19,7 @@ Functions:
     - package_distance_metadata: Package metadata for distance visualization
     - package_gii_metadata: Package metadata for GIFTI visualization
     - package_nii_metadata: Package metadata for NIFTI visualization
+    - transform_to_world_coords: Transform voxel coordinates to world coordinates
     - requires_state: Decorator to check if state exists before executing method
 """
 import decimal
@@ -63,7 +65,6 @@ def apply_mask_nifti(
     masked_img = nib.Nifti1Image(nifti_data, nifti_img.affine, nifti_img.header)
     return masked_img
 
-
 def extend_color_range(
     color_min: float,
     color_max: float,
@@ -84,7 +85,37 @@ def extend_color_range(
     return color_min - (extend_range * abs(color_min)), color_max + (extend_range * abs(color_max))
 
 
-def get_coord_labels(
+def get_coord_labels_gifti(
+    gifti_img: Optional[GiftiImage] = None,
+    hemisphere: Optional[Literal['left', 'right']] = None
+) -> List[Tuple[int, Literal['left', 'right']]]:
+    """Get coordinate labels for GIFTI data as a list of tuples
+    containing the vertex number and hemisphere for each vertex. If
+    gifti_img is none, return None.
+
+    Parameters
+    ----------
+    gifti_img : GiftiImage
+        GIFTI image
+    hemisphere : Literal['left', 'right']
+        Hemisphere to get coordinate labels for
+
+    Returns
+    -------
+    List[Tuple[int, Literal['left', 'right']]]
+        List of tuples containing the vertex number and hemisphere for each vertex
+    """
+    if gifti_img is None:
+        return None
+    # get the vertex number and hemisphere for each vertex
+    vertex_numbers = range(len(gifti_img.darrays[0].data))
+    hemispheres = [hemisphere] * len(vertex_numbers)
+    # create a list of tuples containing the vertex number and hemisphere for each vertex
+    coord_labels = list(zip(vertex_numbers, hemispheres))
+    return coord_labels
+
+
+def get_coord_labels_nifti(
     nii_img: Nifti1Image
 ) -> np.ndarray:
     """Get coordinate labels for NIFTI data as a 3D array
@@ -572,6 +603,27 @@ def package_nii_metadata(
     return metadata
 
 
+def transform_to_world_coords(
+    voxel_coords: Dict[Literal['x', 'y', 'z'], int],
+    affine: np.ndarray
+) -> Tuple[float, float, float]:
+    """Transform voxel coordinates to world coordinates.
+    
+    Parameters:
+    -----------
+    voxel_coords: Dictionary of x,y,z voxel coordinates
+    affine: Affine matrix
+    
+    Returns:
+    --------
+    Tuple of x,y,z world coordinates
+    """
+    coords_array = np.array(
+        [voxel_coords['x'], voxel_coords['y'], voxel_coords['z'], 1]
+    )
+    return np.dot(affine, coords_array)[:3]
+
+
 def requires_state(func):
     """Decorator to check if state exists before executing method.
     
@@ -598,4 +650,6 @@ def requires_state(func):
                 return None
             return func.fget(self)
         return wrapper
+
+
 

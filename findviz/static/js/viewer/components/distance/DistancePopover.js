@@ -2,7 +2,7 @@
 // Class for handling distance plot options popover
 import { EVENT_TYPES } from '../../../constants/EventTypes.js';
 import { initializeRangeSlider, initializeSingleSlider } from '../sliders.js';
-import { getDistancePlotOptions, updateDistancePlotOptions } from '../../api/plot.js';
+import ContextManager from '../../api/ContextManager.js';
 import ColorMap from '../ColorMap.js';
 
 class DistancePopover {
@@ -17,6 +17,7 @@ class DistancePopover {
      * @param {string} distanceTimeMarkerWidthSliderId - The ID of the distance time marker width slider
      * @param {string} distanceTimeMarkerOpacitySliderId - The ID of the distance time marker opacity slider
      * @param {ViewerEvents} eventBus - The event bus
+     * @param {ContextManager} contextManager - The context manager
      */
     constructor(
         distancePopOverId,
@@ -26,8 +27,10 @@ class DistancePopover {
         distanceColorRangeSliderId,
         distanceTimeMarkerWidthSliderId,
         distanceTimeMarkerOpacitySliderId,
-        eventBus
+        eventBus,
+        contextManager
     ) {
+        // get elements
         this.distancePopOverId = distancePopOverId;
         this.distanceColorRangeSliderId = distanceColorRangeSliderId;
         this.distanceColorMapContainerId = distanceColorMapContainerId;
@@ -35,8 +38,9 @@ class DistancePopover {
         this.distanceColorMapDropdownToggleId = distanceColorMapDropdownToggleId;
         this.distanceTimeMarkerWidthSliderId = distanceTimeMarkerWidthSliderId;
         this.distanceTimeMarkerOpacitySliderId = distanceTimeMarkerOpacitySliderId;
+        // get event bus and context manager
         this.eventBus = eventBus;
-        
+        this.contextManager = contextManager;
         // get elements
         this.distancePopOver = $(`#${distancePopOverId}`);
 
@@ -72,38 +76,34 @@ class DistancePopover {
      */
     attachPopoverListeners() {
         // Color Range Slider listener
-        $(`#${this.distanceColorRangeSliderId}`).on('change', (event) => {
-            updateDistancePlotOptions({
+        $(`#${this.distanceColorRangeSliderId}`).on('change', async (event) => {
+            await this.contextManager.plot.updateDistancePlotOptions({
                 color_min: event.value.newValue[0],
                 color_max: event.value.newValue[1],
-            },
-            () => {
-                this.eventBus.publish(EVENT_TYPES.VISUALIZATION.DISTANCE.COLOR_RANGE_CHANGE);
             });
+            this.eventBus.publish(EVENT_TYPES.VISUALIZATION.DISTANCE.COLOR_RANGE_CHANGE);
         });
 
         // Time Marker Width Slider listener
-        $(`#${this.distanceTimeMarkerWidthSliderId}`).on('change', (event) => {
-            updateDistancePlotOptions({
+        $(`#${this.distanceTimeMarkerWidthSliderId}`).on('change', async (event) => {
+            await this.contextManager.plot.updateDistancePlotOptions({
                 time_marker_width: event.value.newValue,
-            }, () => {
-                this.eventBus.publish(EVENT_TYPES.VISUALIZATION.DISTANCE.TIME_MARKER_WIDTH_CHANGE);
             });
+            this.eventBus.publish(EVENT_TYPES.VISUALIZATION.DISTANCE.TIME_MARKER_WIDTH_CHANGE);
         });
 
         // Time Marker Opacity Slider listener
-        $(`#${this.distanceTimeMarkerOpacitySliderId}`).on('change', (event) => {
-            updateDistancePlotOptions({
+        $(`#${this.distanceTimeMarkerOpacitySliderId}`).on('change', async (event) => {
+            await this.contextManager.plot.updateDistancePlotOptions({
                 time_marker_opacity: event.value.newValue,
-            }, () => {
-                this.eventBus.publish(EVENT_TYPES.VISUALIZATION.DISTANCE.TIME_MARKER_OPACITY_CHANGE);
             });
+            this.eventBus.publish(EVENT_TYPES.VISUALIZATION.DISTANCE.TIME_MARKER_OPACITY_CHANGE);
         });
     }
 
-    initializeDistancePlotPopover() {
+    async initializeDistancePlotPopover() {
         // initialize tooltips on popup show
-        this.distancePopOver.on('shown.bs.popover', () => {
+        this.distancePopOver.on('shown.bs.popover', async () => {
             // Hide popover when clicking outside
             // Store reference to this
             const self = this;
@@ -119,42 +119,42 @@ class DistancePopover {
                 this.distanceColorMapContainerId,
                 this.distanceColorMapDropdownMenuId,
                 this.distanceColorMapDropdownToggleId,
-                getDistancePlotOptions,
-                updateDistancePlotOptions,
-                EVENT_TYPES.VISUALIZATION.DISTANCE.COLOR_MAP_CHANGE
+                this.contextManager.plot.getDistancePlotOptions,
+                this.contextManager.plot.updateDistancePlotOptions,
+                EVENT_TYPES.VISUALIZATION.DISTANCE.COLOR_MAP_CHANGE,
+                this.eventBus,
+                this.contextManager
             );
             // set slider parameters
-            getDistancePlotOptions((plotOptions) => {
-                // set color range slider
-                initializeRangeSlider(
-                    this.distanceColorRangeSliderId, 
-                    plotOptions.color_range, 
-                    plotOptions.color_min,
-                    plotOptions.color_max,
-                    plotOptions.slider_step_size,
-                );
+            const plotOptions = await this.contextManager.plot.getDistancePlotOptions();
+            // set color range slider
+            initializeRangeSlider(
+                this.distanceColorRangeSliderId, 
+                plotOptions.color_range, 
+                plotOptions.color_min,
+                plotOptions.color_max,
+                plotOptions.slider_step_size,
+            );
 
-                // set time marker width slider
-                initializeSingleSlider(
-                    this.distanceTimeMarkerWidthSliderId,
-                    plotOptions.time_marker_width,
-                    [1, 20], // hardcoded for now
-                    1, // hardcoded for now
-                );
+            // set time marker width slider
+            initializeSingleSlider(
+                this.distanceTimeMarkerWidthSliderId,
+                plotOptions.time_marker_width,
+                [1, 20], // hardcoded for now
+                1, // hardcoded for now
+            );
 
-                // set time marker opacity slider
-                initializeSingleSlider(
-                    this.distanceTimeMarkerOpacitySliderId,
-                    plotOptions.time_marker_opacity,
-                    [0, 1], // hardcoded for now
-                    0.01, // hardcoded for now
-                );
+            // set time marker opacity slider
+            initializeSingleSlider(
+                this.distanceTimeMarkerOpacitySliderId,
+                plotOptions.time_marker_opacity,
+                [0, 1], // hardcoded for now
+                0.01, // hardcoded for now
+            );
 
-                // attach event listeners
-                this.attachPopoverListeners();
-            });
-
-        })
+            // attach event listeners
+            this.attachPopoverListeners();
+        });
     }
 
 

@@ -42,6 +42,7 @@ export const API_ENDPOINTS = {
     },
     DATA: {
         GET_CLICK_COORDS: '/get_click_coords',
+        GET_COORD_LABELS: '/get_coord_labels',
         GET_CROSSHAIR_COORDS: '/get_crosshair_coords',
         GET_DIRECTION_LABEL_COORDS: '/get_direction_label_coords',
         GET_DISTANCE_DATA: '/get_distance_data',
@@ -56,6 +57,8 @@ export const API_ENDPOINTS = {
         GET_TIMECOURSE_SOURCE: '/get_timecourse_source',
         GET_TIMEPOINT: '/get_timepoint',
         GET_VIEWER_METADATA: '/get_viewer_metadata',
+        GET_VOXEL_COORDS: '/get_voxel_coords',
+        GET_WORLD_COORDS: '/get_world_coords',
         POP_FMRI_TIMECOURSE: '/pop_fmri_timecourse',
         REMOVE_FMRI_TIMECOURSES: '/remove_fmri_timecourses',
         UPDATE_FMRI_TIMECOURSE: '/update_fmri_timecourse',

@@ -8,6 +8,7 @@ import numpy as np
 
 from flask import make_response, request
 
+from findviz.routes.shared import data_manager
 from findviz.viz.exception import DataRequestError
 from findviz.logger_config import setup_logger
 
@@ -30,6 +31,7 @@ class Routes(Enum):
     GET_ANNOTATION_MARKERS='/get_annotation_markers'
     GET_ANNOTATION_MARKER_PLOT_OPTIONS='/get_annotation_marker_plot_options'
     GET_CLICK_COORDS='/get_click_coords'
+    GET_COORD_LABELS='/get_coord_labels'
     GET_CROSSHAIR_COORDS='/get_crosshair_coords'
     GET_COLORMAPS='/get_colormaps'
     GET_DIRECTION_LABEL_COORDS='/get_direction_label_coords'
@@ -55,7 +57,9 @@ class Routes(Enum):
     GET_TIMEPOINT='/get_timepoint'
     GET_PREPROCESSED_FMRI='/get_preprocessed_fmri'
     GET_PREPROCESSED_TIMECOURSE='/get_preprocessed_timecourse'
+    GET_WORLD_COORDS='/get_world_coords'
     GET_VIEWER_METADATA='/get_viewer_metadata'
+    GET_VOXEL_COORDS='/get_voxel_coords'
     FIND_PEAKS='/find_peaks'
     MOVE_ANNOTATION_SELECTION='/move_annotation_selection'
     POP_FMRI_TIMECOURSE='/pop_fmri_timecourse'
@@ -122,6 +126,29 @@ def convert_value(
     # Return the value as-is if no conversion happened
     return value
 
+
+def handle_context() -> Callable[[Callable[P, R]], Callable[P, R]]:
+    """Decorator to handle context switching for routes.
+    """
+    def decorator(func: Callable[P, R]) -> Callable[P, R]:
+        @wraps(func)
+        def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
+            # Get context_id from query parameters or form data
+            context_id = request.args.get(
+                'context_id', 
+                request.form.get('context_id')
+            )
+            
+            # Switch to the requested context
+            try:
+                data_manager.switch_context(context_id)
+            except ValueError as e:
+                logger.error(f"Invalid context requested: {context_id}")
+                return make_response({'error': str(e)}, 400)
+                
+            return func(*args, **kwargs)
+        return wrapper
+    return decorator
 
 def handle_route_errors(
     error_msg: str,

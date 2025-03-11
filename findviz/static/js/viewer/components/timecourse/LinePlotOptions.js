@@ -1,21 +1,8 @@
 // LinePlotOptions.js - Options for line plot (timecourse plot)
 import {initializeSingleSlider } from '../sliders.js';
 import { EVENT_TYPES } from '../../../constants/EventTypes.js';
-import { 
-    getTaskConditions,
-    getTimeCourseLabels
-} from '../../api/data.js';
-import { 
-    getTaskDesignPlotOptions,
-    getTimeCoursePlotOptions, 
-    getTimeCourseShiftHistory,
-    getTimeMarkerPlotOptions,
-    resetTimeCourseShift,
-    updateTaskDesignPlotOptions,
-    updateTimeCoursePlotOptions,
-    updateTimeCourseShift,
-    updateTimeMarkerPlotOptions,
-} from '../../api/plot.js';
+import ContextManager from '../../api/ContextManager.js';
+
 
 class LinePlotOptions {
     /**
@@ -37,6 +24,7 @@ class LinePlotOptions {
      * @param {string} timeMarkerSelectColorId - ID of the time marker color picker
      * @param {string} toggleConvolutionId - ID of the toggle convolution checkbox
      * @param {ViewerEvents} eventBus - The event bus
+     * @param {ContextManager} contextManager - The context manager
      */
     constructor(
         timeCourseSelectMenuId,
@@ -55,7 +43,8 @@ class LinePlotOptions {
         timeMarkerSelectShapeId,
         timeMarkerSelectColorId,
         toggleConvolutionId,
-        eventBus
+        eventBus,
+        contextManager
     ) {
         // get ids
         this.timeCourseSelectMenuId = timeCourseSelectMenuId;
@@ -74,8 +63,9 @@ class LinePlotOptions {
         this.timeMarkerSelectColorId = timeMarkerSelectColorId;
         this.timeMarkerSelectShapeId = timeMarkerSelectShapeId;
         this.toggleConvolutionId = toggleConvolutionId;
-        // get event bus
+        // get event bus and context manager
         this.eventBus = eventBus;
+        this.contextManager = contextManager;
         // get div elements
         this.timeCourseSelectMenu = $(`#${timeCourseSelectMenuId}`);
         this.timeCourseOpacitySlider = $(`#${timeCourseOpacitySliderId}`);
@@ -249,18 +239,16 @@ class LinePlotOptions {
         // clear time course types object
         this.timeCourseType = {};
         const labels = [];
-        await getTaskConditions((conditions) => {
-            for (const condition of conditions) {
-                this.timeCourseType[condition] = 'task';
-                labels.push(condition);
-            }
-        });
-        await getTimeCourseLabels((ts_labels) => {
-            for (const label of ts_labels) {
-                this.timeCourseType[label] = 'timecourse';
-                labels.push(label);
-            }
-        });
+        const conditions = await this.contextManager.data.getTaskConditions();
+        for (const condition of conditions) {
+            this.timeCourseType[condition] = 'task';
+            labels.push(condition);
+        }
+        const ts_labels = await this.contextManager.data.getTimeCourseLabels();
+        for (const label of ts_labels) {
+            this.timeCourseType[label] = 'timecourse';
+            labels.push(label);
+        }
         if (callback) {
             callback(labels);
         }
@@ -270,28 +258,26 @@ class LinePlotOptions {
     /**
      * Changes the line plot components for the selected time course
      */
-    changeLinePlotComponents() {
+    async changeLinePlotComponents() {
         if (this.timeCourseType[this.selectedTimeCourse] === 'task') {
-            getTaskDesignPlotOptions(this.selectedTimeCourse, (plotOptions) => {
-                this.timeCourseOpacitySlider.slider('setValue', plotOptions.opacity);
-                this.timeCourseLineWidthSlider.slider('setValue', plotOptions.width);
-                this.timeCourseSelectColor.val(plotOptions.color);
-                this.timeCourseSelectMode.val(plotOptions.mode);
-                this.toggleConvolution.prop('disabled', false);
-                if (plotOptions.convolution === 'hrf') {
-                    this.toggleConvolution.prop('checked', true);
-                } else {
-                    this.toggleConvolution.prop('checked', false);
-                }
-            });
+            const plotOptions = await this.contextManager.plot.getTaskDesignPlotOptions(this.selectedTimeCourse);
+            this.timeCourseOpacitySlider.slider('setValue', plotOptions.opacity);
+            this.timeCourseLineWidthSlider.slider('setValue', plotOptions.width);
+            this.timeCourseSelectColor.val(plotOptions.color);
+            this.timeCourseSelectMode.val(plotOptions.mode);
+            this.toggleConvolution.prop('disabled', false);
+            if (plotOptions.convolution === 'hrf') {
+                this.toggleConvolution.prop('checked', true);
+            } else {
+                this.toggleConvolution.prop('checked', false);
+            }
         } else {
-            getTimeCoursePlotOptions(this.selectedTimeCourse, (plotOptions) => {
-                this.timeCourseOpacitySlider.slider('setValue', plotOptions.opacity);
-                this.timeCourseLineWidthSlider.slider('setValue', plotOptions.width);
-                this.timeCourseSelectColor.val(plotOptions.color);
-                this.timeCourseSelectMode.val(plotOptions.mode);
-                this.toggleConvolution.prop('disabled', true);
-            });
+            const plotOptions = await this.contextManager.plot.getTimeCoursePlotOptions(this.selectedTimeCourse);
+            this.timeCourseOpacitySlider.slider('setValue', plotOptions.opacity);
+            this.timeCourseLineWidthSlider.slider('setValue', plotOptions.width);
+            this.timeCourseSelectColor.val(plotOptions.color);
+            this.timeCourseSelectMode.val(plotOptions.mode);
+            this.toggleConvolution.prop('disabled', true);
         }
     }
    
@@ -299,58 +285,55 @@ class LinePlotOptions {
      * Initializes the components for a given time course
      * @param {string} timeCourse - The time course to initialize components for
      */
-    initializeLinePlotComponents(timeCourse) {
+    async initializeLinePlotComponents(timeCourse) {
         // Initialize task plot options
         if (this.timeCourseType[timeCourse] === 'task') {
-            getTaskDesignPlotOptions(timeCourse, (plotOptions) => {
-                this.initializePlotSliders(
-                    plotOptions.opacity,
-                    plotOptions.width
-                );
-                // initialize time course color select
-                this.timeCourseSelectColor.val(plotOptions.color);
-                // initialize time course mode select
-                this.timeCourseSelectMode.val(plotOptions.mode);
-                // initialize convolution checkbox
-                this.toggleConvolution.prop('disabled', false);
-                if (plotOptions.convolution === 'hrf') {
-                    this.toggleConvolution.prop('checked', true);
-                } else {
-                    this.toggleConvolution.prop('checked', false);
-                }
-            });
+            const plotOptions = await this.contextManager.plot.getTaskDesignPlotOptions(timeCourse);
+            this.initializePlotSliders(
+                plotOptions.opacity,
+                plotOptions.width
+            );
+            // initialize time course color select
+            this.timeCourseSelectColor.val(plotOptions.color);
+            // initialize time course mode select
+            this.timeCourseSelectMode.val(plotOptions.mode);
+            // initialize convolution checkbox
+            this.toggleConvolution.prop('disabled', false);
+            if (plotOptions.convolution === 'hrf') {
+                this.toggleConvolution.prop('checked', true);
+            } else {
+                this.toggleConvolution.prop('checked', false);
+            }
         } else {
             // Initialize time course plot options
-            getTimeCoursePlotOptions(timeCourse, (plotOptions) => {
-                this.initializePlotSliders(
-                    plotOptions.opacity,
-                    plotOptions.width
-                );
-                // initialize time course color select
-                this.timeCourseSelectColor.val(plotOptions.color);
-                // initialize time course mode select
-                this.timeCourseSelectMode.val(plotOptions.mode);
-                // initialize convolution checkbox
-                this.toggleConvolution.prop('disabled', true);
-            });
+            const plotOptions = await this.contextManager.plot.getTimeCoursePlotOptions(timeCourse);
+            this.initializePlotSliders(
+                plotOptions.opacity,
+                plotOptions.width
+            );
+            // initialize time course color select
+            this.timeCourseSelectColor.val(plotOptions.color);
+            // initialize time course mode select
+            this.timeCourseSelectMode.val(plotOptions.mode);
+            // initialize convolution checkbox
+            this.toggleConvolution.prop('disabled', true);
         }
     }
 
     /**
      * Initialize time marker plot components
      */
-    initializeTimeMarkerPlotComponents() {
+    async initializeTimeMarkerPlotComponents() {
         // Initialize time marker plot options
-        getTimeMarkerPlotOptions((plotOptions) => {
-            this.initializeTimeMarkerPlotSliders(
-                plotOptions.width,
-                plotOptions.opacity
-            );
-            // initialize time marker color select
-            this.timeMarkerSelectColor.val(plotOptions.color);
-            // initialize time marker shape select
-            this.timeMarkerSelectShape.val(plotOptions.shape);
-        });
+        const plotOptions = await this.contextManager.plot.getTimeMarkerPlotOptions();
+        this.initializeTimeMarkerPlotSliders(
+            plotOptions.width,
+            plotOptions.opacity
+        );
+        // initialize time marker color select
+        this.timeMarkerSelectColor.val(plotOptions.color);
+        // initialize time marker shape select
+        this.timeMarkerSelectShape.val(plotOptions.shape);
     }
 
     /**
@@ -428,17 +411,17 @@ class LinePlotOptions {
             // enable all buttons if there are time courses
             if (labels.length > 0) {
                 this.enableButtons();
+                // set selected time course to the last label - this is 
+                // the most recent fmri time course
+                this.selectedTimeCourse = labels[labels.length - 1];
+                this.initializeTimeCourseSelectMenu(labels, false);
+                this.changeLinePlotComponents();
+                // modify the shift reset buttons for the time course
+                if (labels.length > 0) {
+                    this.modifyShiftResetButtons();
+                }
             } else {
                 this.disableButtons();
-            }
-            // set selected time course to the last label - this is 
-            // the most recent fmri time course
-            this.selectedTimeCourse = labels[labels.length - 1];
-            this.initializeTimeCourseSelectMenu(labels, false);
-            this.changeLinePlotComponents();
-            // modify the shift reset buttons for the time course
-            if (labels.length > 0) {
-                this.modifyShiftResetButtons();
             }
         });
     }
@@ -446,25 +429,25 @@ class LinePlotOptions {
     /**
      * Handles the color change listener for the time course(s) and time marker
      */
-    handleTimeCourseColorChangeListener() {
+    async handleTimeCourseColorChangeListener() {
         console.log('timeCourseSelectColor change');
-        const callback = () => {
+        if (this.timeCourseType[this.selectedTimeCourse] === 'task') {
+            await this.contextManager.plot.updateTaskDesignPlotOptions(
+                this.selectedTimeCourse,
+                { label: this.selectedTimeCourse, color: this.timeCourseSelectColor.val() },
+            );
             this.eventBus.publish(
                 EVENT_TYPES.VISUALIZATION.TIMECOURSE.TIMECOURSE_COLOR_CHANGE,
                 { label: this.selectedTimeCourse, color: this.timeCourseSelectColor.val() }
             );
-        };
-        if (this.timeCourseType[this.selectedTimeCourse] === 'task') {
-            updateTaskDesignPlotOptions(
-                this.selectedTimeCourse,
-                { label: this.selectedTimeCourse, color: this.timeCourseSelectColor.val() },
-                callback
-            );
         } else {
-            updateTimeCoursePlotOptions(
+            await this.contextManager.plot.updateTimeCoursePlotOptions(
                 this.selectedTimeCourse,
                 { label: this.selectedTimeCourse, color: this.timeCourseSelectColor.val() },
-                callback
+            );
+            this.eventBus.publish(
+                EVENT_TYPES.VISUALIZATION.TIMECOURSE.TIMECOURSE_COLOR_CHANGE,
+                { label: this.selectedTimeCourse, color: this.timeCourseSelectColor.val() }
             );
         }
     }
@@ -472,25 +455,25 @@ class LinePlotOptions {
     /**
      * Handles the line width slider change listener for the time course(s)
      */
-    handleTimeCourseLineWidthSliderChangeListener() {
+    async handleTimeCourseLineWidthSliderChangeListener() {
         console.log('timeCourseLineWidthSlider change');
-        const callback = () => {
+        if (this.timeCourseType[this.selectedTimeCourse] === 'task') {
+            await this.contextManager.plot.updateTaskDesignPlotOptions(
+                this.selectedTimeCourse,
+                { width: this.timeCourseLineWidthSlider.val() },
+            );
             this.eventBus.publish(
                 EVENT_TYPES.VISUALIZATION.TIMECOURSE.TIMECOURSE_LINE_WIDTH_SLIDER_CHANGE,
                 { label: this.selectedTimeCourse, width: this.timeCourseLineWidthSlider.val() }
             );
-        };
-        if (this.timeCourseType[this.selectedTimeCourse] === 'task') {
-            updateTaskDesignPlotOptions(
-                this.selectedTimeCourse,
-                { width: this.timeCourseLineWidthSlider.val() },
-                callback
-            );
         } else {
-            updateTimeCoursePlotOptions(
+            await this.contextManager.plot.updateTimeCoursePlotOptions(
                 this.selectedTimeCourse,
                 { width: this.timeCourseLineWidthSlider.val() },
-                callback
+            );
+            this.eventBus.publish(
+                EVENT_TYPES.VISUALIZATION.TIMECOURSE.TIMECOURSE_LINE_WIDTH_SLIDER_CHANGE,
+                { label: this.selectedTimeCourse, width: this.timeCourseLineWidthSlider.val() }
             );
         }
     }
@@ -500,26 +483,24 @@ class LinePlotOptions {
      * @param {string} changeType - The type of change (constant or scale)
      * @param {string} changeDirection - The direction of the change (increase or decrease)
      */
-    handleTimeCourseShiftListener(changeType, changeDirection) {
+    async handleTimeCourseShiftListener(changeType, changeDirection) {
         console.log(`${changeDirection} of ${changeType} for ${this.selectedTimeCourse}`);
-        updateTimeCourseShift(
+        await this.contextManager.plot.updateTimeCourseShift(
             this.selectedTimeCourse,
             this.timeCourseType[this.selectedTimeCourse],
             changeType,
-            changeDirection,
-            () => {
-                this.eventBus.publish(
-                    EVENT_TYPES.VISUALIZATION.TIMECOURSE.TIMECOURSE_SHIFT_CHANGE,
-                    { 
-                        label: this.selectedTimeCourse, 
-                        changeType: changeType, 
-                        changeDirection: changeDirection 
-                    }
-                );
-                // modify the shift reset buttons for the time course
-                this.modifyShiftResetButtons();
+            changeDirection
+        );
+        this.eventBus.publish(
+            EVENT_TYPES.VISUALIZATION.TIMECOURSE.TIMECOURSE_SHIFT_CHANGE,
+            { 
+                label: this.selectedTimeCourse, 
+                changeType: changeType, 
+                changeDirection: changeDirection 
             }
         );
+        // modify the shift reset buttons for the time course
+        this.modifyShiftResetButtons();
     }
 
     /**
@@ -528,47 +509,45 @@ class LinePlotOptions {
      * @param {string} changeType - The type of shift to reset (constant or scale)
      * @param {boolean} emitEvent - Whether to emit the shift reset event
      */
-    handleTimeCourseShiftResetListener(changeType, emitEvent=true) {
+    async handleTimeCourseShiftResetListener(changeType, emitEvent=true) {
         console.log(`Resetting ${changeType} shift for ${this.selectedTimeCourse}`);
-        resetTimeCourseShift(
+        await this.contextManager.plot.resetTimeCourseShift(
             this.selectedTimeCourse, 
             this.timeCourseType[this.selectedTimeCourse], 
-            changeType,
-            () => {
-                if (emitEvent) {
-                    this.eventBus.publish(
-                        EVENT_TYPES.VISUALIZATION.TIMECOURSE.TIMECOURSE_SHIFT_RESET,
-                        { label: this.selectedTimeCourse, changeType: changeType }
-                    );
-                }
-                // modify the shift reset buttons for the time course
-                this.modifyShiftResetButtons();
-            }
-        )
+            changeType
+        );
+        if (emitEvent) {
+            this.eventBus.publish(
+                EVENT_TYPES.VISUALIZATION.TIMECOURSE.TIMECOURSE_SHIFT_RESET,
+                { label: this.selectedTimeCourse, changeType: changeType }
+            );
+        }
+        // modify the shift reset buttons for the time course
+        this.modifyShiftResetButtons();
     }
 
     /**
      * Handles the opacity slider change listener for the time course(s)
      */
-    handleTimeCourseOpacitySliderChangeListener() {
+    async handleTimeCourseOpacitySliderChangeListener() {
         console.log('timeCourseOpacitySlider change');
-        const callback = () => {
+        if (this.timeCourseType[this.selectedTimeCourse] === 'task') {
+            await this.contextManager.plot.updateTaskDesignPlotOptions(
+                this.selectedTimeCourse,
+                { opacity: this.timeCourseOpacitySlider.val() }
+            );
             this.eventBus.publish(
                 EVENT_TYPES.VISUALIZATION.TIMECOURSE.TIMECOURSE_OPACITY_SLIDER_CHANGE,
                 { label: this.selectedTimeCourse, opacity: this.timeCourseOpacitySlider.val() }
             );
-        };
-        if (this.timeCourseType[this.selectedTimeCourse] === 'task') {
-            updateTaskDesignPlotOptions(
-                this.selectedTimeCourse,
-                { opacity: this.timeCourseOpacitySlider.val() },
-                callback
-            );
         } else {
-            updateTimeCoursePlotOptions(
+            await this.contextManager.plot.updateTimeCoursePlotOptions(
                 this.selectedTimeCourse,
-                { opacity: this.timeCourseOpacitySlider.val() },
-                callback
+                { opacity: this.timeCourseOpacitySlider.val() }
+            );
+            this.eventBus.publish(
+                EVENT_TYPES.VISUALIZATION.TIMECOURSE.TIMECOURSE_OPACITY_SLIDER_CHANGE,
+                { label: this.selectedTimeCourse, opacity: this.timeCourseOpacitySlider.val() }
             );
         }
     }
@@ -586,29 +565,25 @@ class LinePlotOptions {
     /**
      * Handles the time course mode change listener
      */
-    handleTimeCourseSelectModeChangeListener() {
+    async handleTimeCourseSelectModeChangeListener() {
         console.log('timeCourseSelectMode change');
         if (this.timeCourseType[this.selectedTimeCourse] === 'task') {
-            updateTaskDesignPlotOptions(
+            await this.contextManager.plot.updateTaskDesignPlotOptions(
                 this.selectedTimeCourse,
-                { mode: this.timeCourseSelectMode.val() },
-                () => {
-                    this.eventBus.publish(
-                        EVENT_TYPES.VISUALIZATION.TIMECOURSE.TIMECOURSE_MODE_CHANGE,
-                        { label: this.selectedTimeCourse, mode: this.timeCourseSelectMode.val() }
-                    );
-                }
+                { mode: this.timeCourseSelectMode.val() }
+            );
+            this.eventBus.publish(
+                EVENT_TYPES.VISUALIZATION.TIMECOURSE.TIMECOURSE_MODE_CHANGE,
+                { label: this.selectedTimeCourse, mode: this.timeCourseSelectMode.val() }
             );
         } else {
-            updateTimeCoursePlotOptions(
+            await this.contextManager.plot.updateTimeCoursePlotOptions(
                 this.selectedTimeCourse,
-                { mode: this.timeCourseSelectMode.val() },
-                () => {
-                    this.eventBus.publish(
-                        EVENT_TYPES.VISUALIZATION.TIMECOURSE.TIMECOURSE_MODE_CHANGE,
-                        { label: this.selectedTimeCourse, mode: this.timeCourseSelectMode.val() }
-                    );
-                }
+                { mode: this.timeCourseSelectMode.val() }
+            );
+            this.eventBus.publish(
+                EVENT_TYPES.VISUALIZATION.TIMECOURSE.TIMECOURSE_MODE_CHANGE,
+                { label: this.selectedTimeCourse, mode: this.timeCourseSelectMode.val() }
             );
         }
     }
@@ -616,71 +591,63 @@ class LinePlotOptions {
     /**
      * Handles the color change listener for the time marker
      */
-    handleTimeMarkerColorChangeListener() {
+    async handleTimeMarkerColorChangeListener() {
         console.log('timeMarkerSelectColor change');
-        updateTimeMarkerPlotOptions(
-            { color: this.timeMarkerSelectColor.val() },
-            () => {
-                this.eventBus.publish(
-                    EVENT_TYPES.VISUALIZATION.TIMECOURSE.TIME_MARKER_COLOR_CHANGE,
-                    { color: this.timeMarkerSelectColor.val() }
-                );
-            }
+        await this.contextManager.plot.updateTimeMarkerPlotOptions(
+            { color: this.timeMarkerSelectColor.val() }
+        );
+        this.eventBus.publish(
+            EVENT_TYPES.VISUALIZATION.TIMECOURSE.TIME_MARKER_COLOR_CHANGE,
+            { color: this.timeMarkerSelectColor.val() }
         );
     }
 
     /**
      * Handles the shape change listener for the time marker
      */
-    handleTimeMarkerShapeChangeListener() {
+    async handleTimeMarkerShapeChangeListener() {
         console.log('timeMarkerSelectShape change');
-        updateTimeMarkerPlotOptions(
-            { shape: this.timeMarkerSelectShape.val() },
-            () => {
-                this.eventBus.publish(
-                    EVENT_TYPES.VISUALIZATION.TIMECOURSE.TIME_MARKER_SHAPE_CHANGE,
-                    { shape: this.timeMarkerSelectShape.val() }
-                );
-            }
+        await this.contextManager.plot.updateTimeMarkerPlotOptions(
+            { shape: this.timeMarkerSelectShape.val() }
+        );
+        this.eventBus.publish(
+            EVENT_TYPES.VISUALIZATION.TIMECOURSE.TIME_MARKER_SHAPE_CHANGE,
+            { shape: this.timeMarkerSelectShape.val() }
         );
     }
 
     /**
      * Handles the opacity slider change listener for the time marker
      */
-    handleTimeMarkerOpacitySliderChangeListener() {
+    async handleTimeMarkerOpacitySliderChangeListener() {
         console.log('timeMarkerOpacitySlider change');
-        updateTimeMarkerPlotOptions(
-            { opacity: this.timeMarkerOpacitySlider.val() },
-            () => {
-                this.eventBus.publish(
-                    EVENT_TYPES.VISUALIZATION.TIMECOURSE.TIME_MARKER_OPACITY_SLIDER_CHANGE,
-                    { opacity: this.timeMarkerOpacitySlider.val() }
-                );
-            }
+        await this.contextManager.plot.updateTimeMarkerPlotOptions(
+            { opacity: this.timeMarkerOpacitySlider.val() }
+        );
+        this.eventBus.publish(
+            EVENT_TYPES.VISUALIZATION.TIMECOURSE.TIME_MARKER_OPACITY_SLIDER_CHANGE,
+            { opacity: this.timeMarkerOpacitySlider.val() }
         );
     }
 
     /**
      * Handles the width slider change listener for the time marker
      */
-    handleTimeMarkerWidthSliderChangeListener() {
+    async handleTimeMarkerWidthSliderChangeListener() {
         console.log('timeMarkerWidthSlider change');
-        updateTimeMarkerPlotOptions(
-            { width: this.timeMarkerWidthSlider.val() },
-            () => {
-                this.eventBus.publish(
-                    EVENT_TYPES.VISUALIZATION.TIMECOURSE.TIME_MARKER_WIDTH_SLIDER_CHANGE,
-                    { width: this.timeMarkerWidthSlider.val() }
-                );
-            }
+        await this.contextManager.plot.updateTimeMarkerPlotOptions(
+            { width: this.timeMarkerWidthSlider.val() }
+        );
+        this.eventBus.publish(
+            EVENT_TYPES.VISUALIZATION.TIMECOURSE.TIME_MARKER_WIDTH_SLIDER_CHANGE,
+            { width: this.timeMarkerWidthSlider.val() }
         );
     }
 
     /**
      * Handles the toggle convolution change listener
      */
-    handleToggleConvolutionChangeListener() {
+    async handleToggleConvolutionChangeListener() {
         console.log('toggleConvolution change - only for task design input');
         const convChecked = this.toggleConvolution.prop('checked');
         let convolution = null;
@@ -689,39 +656,36 @@ class LinePlotOptions {
         } else {
             convolution = 'block';
         }
-        updateTaskDesignPlotOptions(
+        await this.contextManager.plot.updateTaskDesignPlotOptions(
             this.selectedTimeCourse,
-            { convolution: convolution },
-            () => {
-                this.eventBus.publish(
+            { convolution: convolution }
+        );
+        this.eventBus.publish(
                     EVENT_TYPES.VISUALIZATION.TIMECOURSE.TOGGLE_CONVOLUTION,
-                    { label: this.selectedTimeCourse, convolution: convolution }
-                );
-            }
+            { label: this.selectedTimeCourse, convolution: convolution }
         );
     }
 
     /**
      * Modifies the shift reset buttons for the time course(s)
      */
-    modifyShiftResetButtons() {
+    async modifyShiftResetButtons() {
         // get the shift history for the time course and enable/disable the reset buttons
-        getTimeCourseShiftHistory(
+        const shiftHistory = await this.contextManager.plot.getTimeCourseShiftHistory(
             this.selectedTimeCourse, 
             this.timeCourseType[this.selectedTimeCourse], 
-            (shiftHistory) => {
-                if (shiftHistory.constant.length > 0) {
-                    this.timeCourseConstantReset.prop('disabled', false);
-                } else {
-                    this.timeCourseConstantReset.prop('disabled', true);
-                }
-                if (shiftHistory.scale.length > 0) {
-                    this.timeCourseScaleReset.prop('disabled', false);
-                } else {
-                    this.timeCourseScaleReset.prop('disabled', true);
-                }
-            }
         );
+        // disable the reset buttons if the shift history is empty
+        if (shiftHistory.constant.length > 0) {
+            this.timeCourseConstantReset.prop('disabled', false);
+        } else {
+            this.timeCourseConstantReset.prop('disabled', true);
+        }
+        if (shiftHistory.scale.length > 0) {
+            this.timeCourseScaleReset.prop('disabled', false);
+        } else {
+            this.timeCourseScaleReset.prop('disabled', true);
+        }
     }
 }
 

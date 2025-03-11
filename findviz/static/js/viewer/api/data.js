@@ -1,11 +1,12 @@
 // data.js 
 // API calls for pulling fmri and time course data
 // Fetch functions:
+// - getClickCoords
+// - getCoordLabels
 // - getCrosshairCoords
 // - getDirectionLabelCoords
 // - getDistanceData
 // - getFMRIData
-// - getClickCoords
 // - getMontageData
 // - getNTimepoints
 // - getTaskConditions
@@ -15,8 +16,11 @@
 // - getTimeCourseSource
 // - getTimePoint
 // - getViewerMetadata
+// - getVoxelCoords
+// - getWorldCoords
 
 // Update functions:
+// - changeTimecourseScale
 // - popFmriTimeCourse
 // - removeFmriTimeCourses
 // - updateFmriTimeCourse
@@ -28,319 +32,398 @@
 import { API_ENDPOINTS } from '../../constants/APIEndpoints.js';
 import { makeRequest, createFormData } from './utils.js';
 
-
 /**
  * Change timecourse scale
  * @param {string} label - Label of the timecourse to change
  * @param {string} scale_change - Direction of the scale change
- * @param {Function} callback - Callback function to handle successful response
+ * @param {string} context_id - ID of context to switch to
  * @returns {Promise} Promise object representing the API call
  */
-export const changeTimecourseScale = async (label, scale_change, callback) => {
+export const changeTimecourseScale = async (label, scale_change, context_id) => {
     return makeRequest(
         API_ENDPOINTS.DATA.CHANGE_TIMECOURSE_SCALE,
         {
             method: 'POST',
-            body: createFormData({ label, scale_change })
+            body: createFormData(
+                { label, scale_change, context_id }
+            )
         },
         {
             errorPrefix: 'Error changing timecourse scale'
-        },
-        callback
+        }
     );
 };
 
 /**
  * Fetches click coords from the server
- * @param {Function} callback - Callback function to handle successful response
+ * @param {string} context_id - ID of context to switch to
  * @returns {Promise} Promise object representing the API call
  */
-export const getClickCoords = async (callback) => {
+export const getClickCoords = async (context_id) => {
     return makeRequest(
         API_ENDPOINTS.DATA.GET_CLICK_COORDS,
-        { method: 'GET' },
+        {
+            method: 'GET', 
+            body: createFormData({ context_id }) 
+        },
         {
             errorPrefix: 'Error fetching click coords'
+        }
+    );
+};
+
+
+/**
+ * Fetches coordinate labels from the server
+ * @param {string} context_id - ID of context to switch to
+ * @returns {Promise} Promise object representing the API call
+ */
+export const getCoordLabels = async (context_id) => {
+    return makeRequest(
+        API_ENDPOINTS.DATA.GET_COORD_LABELS,
+        {
+            method: 'GET',
+            body: createFormData({ context_id })
         },
-        callback
+        {
+            errorPrefix: 'Error fetching coordinate labels'
+        }
     );
 };
 
 /**
  * Fetches crosshair coordinates from the server
- * @param {Function} callback - Callback function to handle successful response
+ * @param {string} context_id - ID of context to switch to
  * @returns {Promise} Promise object representing the API call
  */
-export const getCrosshairCoords = async (callback) => {
+export const getCrosshairCoords = async (context_id) => {
     return makeRequest(
         API_ENDPOINTS.DATA.GET_CROSSHAIR_COORDS,
-        { method: 'GET' },
+        {
+            method: 'GET', 
+            body: createFormData({ context_id }) 
+        },
         {
             errorPrefix: 'Error fetching crosshair coordinates'
-        },
-        callback
+        }
     );
 };
 
 /**
  * Fetches direction label coordinates from the server
- * @param {Function} callback - Callback function to handle successful response
  * @returns {Promise} Promise object representing the API call
  */
-export const getDirectionLabelCoords = async (callback) => {
+export const getDirectionLabelCoords = async (context_id) => {
     return makeRequest(
         API_ENDPOINTS.DATA.GET_DIRECTION_LABEL_COORDS,
-        { method: 'GET' },
+        {
+            method: 'GET', 
+            body: createFormData({ context_id }) 
+        },
         {
             errorPrefix: 'Error fetching direction label coordinates'
-        },
-        callback
+        }
     );
 };
 
 /**
  * Fetches distance vector from the server
- * @param {Function} callback - Callback function to handle successful response
  * @returns {Promise} Promise object representing the API call
  */
-export const getDistanceData = async (callback) => {
+export const getDistanceData = async (context_id) => {
     return makeRequest(
         API_ENDPOINTS.DATA.GET_DISTANCE_DATA,
-        { method: 'GET' },
+        {
+            method: 'GET', 
+            body: createFormData({ context_id }) 
+        },
         {
             errorPrefix: 'Error fetching distance data'
-        },
-        callback
+        }
     );
 };
 
 /**
  * Fetches FMRI data from the server
- * @param {Function} callback - Callback function to handle successful response
+ * @param {string} context_id - ID of context to switch to
  * @returns {Promise} Promise object representing the API call
  */
-export const getFMRIData = async (callback) => {
+export const getFMRIData = async (context_id) => {
     return makeRequest(
         API_ENDPOINTS.DATA.GET_FMRI_DATA,
-        { method: 'GET' },
+        { 
+            method: 'GET', 
+            body: createFormData({ context_id }) 
+        },
         {
             errorPrefix: 'Error fetching FMRI data'
-        },
-        callback
+        }
     );
 };
 
 /**
  * Fetches last added fmri timecourse from the server
- * @param {Function} callback - Callback function to handle successful response
+ * @param {string} context_id - ID of context to switch to
  * @returns {Promise} Promise object representing the API call
  */
-export const getLastTimecourse = async (callback) => {
+export const getLastTimecourse = async (context_id) => {
     return makeRequest(
         API_ENDPOINTS.DATA.GET_LAST_TIMECOURSE,
-        { method: 'GET' },
+        { 
+            method: 'GET', 
+            body: createFormData({ context_id }) 
+        },
         {
             errorPrefix: 'Error fetching last fmri timecourse'
-        },
-        callback
+        }
     );
 };
 
 /**
  * Fetches montage slice direction and montage slice indices from the server
- * @param {Function} callback - Callback function to handle successful response
+ * @param {string} context_id - ID of context to switch to
  * @returns {Promise} Promise object representing the API call
  */
-export const getMontageData = async (callback) => {
+export const getMontageData = async (context_id) => {
     return makeRequest(
         API_ENDPOINTS.DATA.GET_MONTAGE_DATA,
-        { method: 'GET' },
+        { 
+            method: 'GET', 
+            body: createFormData({ context_id }) 
+        },
         {
             errorPrefix: 'Error fetching montage data'
-        },
-        callback
+        }
     );
 };
 
 /**
  * Fetches number of timepoints from the server
- * @param {Function} callback - Callback function to handle successful response
+ * @param {string} context_id - ID of context to switch to
  * @returns {Promise} Promise object representing the API call
  */
-export const getNTimepoints = async (callback) => {
+export const getNTimepoints = async (context_id) => {
     return makeRequest(
         API_ENDPOINTS.DATA.GET_N_TIMEPOINTS,
-        { method: 'GET' },
+        { 
+            method: 'GET', 
+            body: createFormData({ context_id }) 
+        },
         {
             errorPrefix: 'Error fetching number of timepoints'
-        },
-        callback
+        }
     );
 };
 
 /**
  * Fetches task conditions from the server
- * @param {Function} callback - Callback function to handle successful response
+ * @param {string} context_id - ID of context to switch to
  * @returns {Promise} Promise object representing the API call
  */
-export const getTaskConditions = async (callback) => {
+export const getTaskConditions = async (context_id) => {
     return makeRequest(
         API_ENDPOINTS.DATA.GET_TASK_CONDITIONS,
-        { method: 'GET' },
+        { 
+            method: 'GET', 
+            body: createFormData({ context_id }) 
+        },
         {
             errorPrefix: 'Error fetching task conditions'
-        },
-        callback
+        }
     );
 };
 
 /**
  * Fetches timecourse data from the server
- * @param {Array} ts_labels - Array of timecourse labels to fetch
- * @param {Function} callback - Callback function to handle successful response
+ * @param {Array} ts_labels - Array of timecourse labels to fetch - if null,
+ * all timecourse data will be fetched
+ * @param {string} context_id - ID of context to switch to
  * @returns {Promise} Promise object representing the API call
  */
-export const getTimeCourseData = async (ts_labels = [], callback) => {
+export const getTimeCourseData = async (ts_labels = null, context_id) => {
     return makeRequest(
         API_ENDPOINTS.DATA.GET_TIMECOURSE_DATA,
         {
             method: 'GET',
-            body: createFormData({ ts_labels })
+            body: createFormData({ ts_labels, context_id })
         },
         {
             errorPrefix: 'Error fetching timecourse data'
-        },
-        callback
+        }
     );
 };
 
 /**
  * Fetches timecourse labels from the server
- * @param {Function} callback - Callback function to handle successful response
+ * @param {string} context_id - ID of context to switch to
  * @returns {Promise} Promise object representing the API call
  */
-export const getTimeCourseLabels = async (callback) => {
+export const getTimeCourseLabels = async (context_id) => {
     return makeRequest(
         API_ENDPOINTS.DATA.GET_TIMECOURSE_LABELS,
-        { method: 'GET' },
+        { 
+            method: 'GET', 
+            body: createFormData({ context_id }) 
+        },
         {
             errorPrefix: 'Error fetching timecourse labels'
-        },
-        callback
+        }
     );
 };
 
 /**
  * Fetches preprocessed timecourse labels from the server
- * @param {Function} callback - Callback function to handle successful response
+ * @param {string} context_id - ID of context to switch to
  * @returns {Promise} Promise object representing the API call
  */
-export const getTimeCourseLabelsPreprocessed = async (callback) => {
+export const getTimeCourseLabelsPreprocessed = async (context_id) => {
     return makeRequest(
         API_ENDPOINTS.DATA.GET_TIMECOURSE_LABELS_PREPROCESSED,
-        { method: 'GET' },
+        { 
+            method: 'GET', 
+            body: createFormData({ context_id }) 
+        },
         {
             errorPrefix: 'Error fetching preprocessed timecourse labels'
-        },
-        callback
+        }
     );
 };
 
 /**
  * Fetches timecourse source from the server
- * @param {Function} callback - Callback function to handle successful response
  * @returns {Promise} Promise object representing the API call
  */
-export const getTimeCourseSource = async (callback) => {
+export const getTimeCourseSource = async (context_id) => {
     return makeRequest(
         API_ENDPOINTS.DATA.GET_TIMECOURSE_SOURCE,
-        { method: 'GET' },
+        { 
+            method: 'GET', 
+            body: createFormData({ context_id }) 
+        },
         {
             errorPrefix: 'Error fetching timecourse source'
-        },
-        callback
+        }
     );
 };
 
 /**
  * Fetch timepoint from the server
- * @param {Function} callback - Callback function to handle successful response
  * @returns {Promise} Promise object representing the API call
  */
-export const getTimePoint = async (callback) => {
+export const getTimePoint = async (context_id) => {
     return makeRequest(
         API_ENDPOINTS.DATA.GET_TIMEPOINT,
-        { method: 'GET' },
+        { 
+            method: 'GET', 
+            body: createFormData({ context_id }) 
+        },
         {
             errorPrefix: 'Error fetching timepoint'
-        },
-        callback
+        }
     );
 };
 
 /**
  * Fetches viewer metadata from the server
- * @param {Function} callback - Callback function to handle successful response
  * @returns {Promise} Promise object representing the API call
  */
-export const getViewerMetadata = async (callback) => {
+export const getViewerMetadata = async (context_id) => {
     return makeRequest(
         API_ENDPOINTS.DATA.GET_VIEWER_METADATA,
-        { method: 'GET' },
+        { 
+            method: 'GET', 
+            body: createFormData({ context_id }) 
+        },
         {
             errorPrefix: 'Error fetching viewer metadata'
+        }
+    );
+};
+
+/** 
+ * Fetches voxel coordinates from the server
+ * @param {string} context_id - ID of context to switch to
+ * @returns {Promise} Promise object representing the API call
+ */
+export const getVoxelCoords = async (context_id) => {
+    return makeRequest(
+        API_ENDPOINTS.DATA.GET_VOXEL_COORDS,
+        {
+            method: 'GET',
+            body: createFormData({ context_id })
         },
-        callback
+        {
+            errorPrefix: 'Error fetching voxel coordinates'
+        }
+    );
+};
+
+/**
+ * Fetches world coordinates from the server
+ * @param {string} context_id - ID of context to switch to
+ * @returns {Promise} Promise object representing the API call
+ */
+export const getWorldCoords = async (context_id) => {
+    return makeRequest(
+        API_ENDPOINTS.DATA.GET_WORLD_COORDS,
+        {
+            method: 'GET',
+            body: createFormData({ context_id })
+        },
+        {
+            errorPrefix: 'Error fetching world coordinates'
+        }
     );
 };
 
 /**
  * Remove most recent fmri time course
- * @param {Function} callback - Callback function to handle successful response
  * @returns {Promise} Promise object representing the API call
  */
-export const popFmriTimeCourse = async (callback) => {
+export const popFmriTimeCourse = async (context_id) => {
     return makeRequest(
         API_ENDPOINTS.DATA.POP_FMRI_TIMECOURSE,
-        { method: 'POST' },
+        { 
+            method: 'POST', 
+            body: createFormData({ context_id }) 
+        },
         {
             errorPrefix: 'Error popping fmri timecourse'
-        },
-        callback
+        }
     );
 };
 
 /**
  * Remove all fmri time courses
- * @param {Function} callback - Callback function to handle successful response
  * @returns {Promise} Promise object representing the API call
  */
-export const removeFmriTimeCourses = async (callback) => {
+export const removeFmriTimeCourses = async (context_id) => {
     return makeRequest(
         API_ENDPOINTS.DATA.REMOVE_FMRI_TIMECOURSES,
-        { method: 'POST' },
+        { 
+            method: 'POST', 
+            body: createFormData({ context_id }) 
+        },
         {
             errorPrefix: 'Error removing fmri timecourses'
-        },
-        callback
+        }
     );
 };
 
 /**
  * Updates functional timecourse data on the server
- * @param {Function} callback - Callback function to handle successful response
  * @returns {Promise} Promise object representing the API call
  */
-export const updateFmriTimeCourse = async (callback) => {
+export const updateFmriTimeCourse = async (context_id) => {
     return makeRequest(
         API_ENDPOINTS.DATA.UPDATE_FMRI_TIMECOURSE,
         {
             method: 'POST',
+            body: createFormData({ context_id })
         },
         {
             errorPrefix: 'Error updating fmri timecourse'
-        },
-        callback
+        }
     );
 };
 
@@ -348,50 +431,52 @@ export const updateFmriTimeCourse = async (callback) => {
  * Updates location data on the server
  * @param {Object} clickCoords - Click coordinates to update
  * @param {string} sliceName - Slice name to update - only for nifti data
- * @param {Function} callback - Callback function to handle successful response
+ * @param {string} context_id - ID of context to switch to
  * @returns {Promise} Promise object representing the API call
  */
-export const updateLocation = async (clickCoords, sliceName, callback) => {
+export const updateLocation = async (clickCoords, sliceName, context_id) => {
     return makeRequest(
         API_ENDPOINTS.DATA.UPDATE_LOCATION,
         {
             method: 'POST',
-            body: createFormData({ click_coords: clickCoords, slice_name: sliceName })
+            body: createFormData(
+                { click_coords: clickCoords, slice_name: sliceName, context_id }
+            )
         },
         {
             errorPrefix: 'Error updating location'
-        },
-        callback
+        }
     );
 };
 
 /**
  * Updates montage slice direction on the server
  * @param {string} montageSliceDir - Montage slice direction to update
- * @param {Function} callback - Callback function to handle successful response
+ * @param {string} context_id - ID of context to switch to
  * @returns {Promise} Promise object representing the API call
  */
-export const updateMontageSliceDir = async (montageSliceDir, callback) => {
+export const updateMontageSliceDir = async (montageSliceDir, context_id) => {
     return makeRequest(
         API_ENDPOINTS.DATA.UPDATE_MONTAGE_SLICE_DIR,
         {
             method: 'POST',
-            body: createFormData({ montage_slice_dir: montageSliceDir })
+            body: createFormData(
+                { montage_slice_dir: montageSliceDir, context_id }
+            )
         },
         {
             errorPrefix: 'Error updating montage slice direction'
-        },
-        callback
+        }
     );
 };
 
 /**
  * Updates montage slice indices on the server
  * @param {Object} montageSliceParams - Montage slice parameters to update
- * @param {Function} callback - Callback function to handle successful response
+ * @param {string} context_id - ID of context to switch to
  * @returns {Promise} Promise object representing the API call
  */
-export const updateMontageSliceIdx = async (montageSliceParams, callback) => {
+export const updateMontageSliceIdx = async (montageSliceParams, context_id) => {
     return makeRequest(
         API_ENDPOINTS.DATA.UPDATE_MONTAGE_SLICE_IDX,
         {
@@ -399,34 +484,35 @@ export const updateMontageSliceIdx = async (montageSliceParams, callback) => {
             body: createFormData(
                 {
                     slice_name: montageSliceParams.slice_name,
-                    slice_idx: montageSliceParams.slice_idx
+                    slice_idx: montageSliceParams.slice_idx,
+                    context_id
                 }
             )
         },
         {
             errorPrefix: 'Error updating montage slice indices'
-        },
-        callback
+        }
     );
 };
 
 /**
  * Updates timepoint on the server
  * @param {number} timePoint - Time point to update
- * @param {Function} callback - Callback function to handle successful response
+ * @param {string} context_id - ID of context to switch to
  * @returns {Promise} Promise object representing the API call
  */
-export const updateTimepoint = async (timePoint, callback) => {
+export const updateTimepoint = async (timePoint, context_id) => {
     return makeRequest(
         API_ENDPOINTS.DATA.UPDATE_TIMEPOINT,
         {
             method: 'POST',
-            body: createFormData({ time_point: timePoint })
+            body: createFormData(
+                { time_point: timePoint, context_id }
+            )
         },
         {
             errorPrefix: 'Error updating timepoint'
-        },
-        callback
+        }
     );
 };
 

@@ -1,12 +1,7 @@
 // ViewOptionsFmri component
 import { captureScreenshot } from './capture.js';
 import { EVENT_TYPES } from '../../../constants/EventTypes.js';
-import { 
-    getFmriPlotOptions, 
-    updateFmriPlotOptions, 
-    getNiftiViewState,
-    updateNiftiViewState,
- } from '../../api/plot.js';
+import ContextManager from '../../api/ContextManager.js';
 import ColorMap from '../ColorMap.js';
 
 class ViewOptionsFmri {
@@ -27,6 +22,7 @@ class ViewOptionsFmri {
      * @param {string} [reverseColorbarToggleId = null] - The ID of the reverse colorbar toggle
      * @param {string} [screenshotButtonId = null] - The ID of the screenshot button
      * @param {ViewerEvents} eventBus - The event bus
+     * @param {ContextManager} contextManager - The context manager
      */
     constructor(
         fmriFileType,
@@ -43,8 +39,10 @@ class ViewOptionsFmri {
         colorbarToggleId = null,
         reverseColorbarToggleId = null,
         screenshotButtonId = null,
-        eventBus
+        eventBus,
+        contextManager
     ) {
+        // get elements
         this.fmriFileType = fmriFileType;
         this.plotlyDivIds = plotlyDivIds;
         this.captureDivId = captureDivId;
@@ -58,57 +56,47 @@ class ViewOptionsFmri {
         this.colorbarToggleId = colorbarToggleId;
         this.reverseColorbarToggleId = reverseColorbarToggleId;
         this.screenshotButtonId = screenshotButtonId;
+        // get event bus and context manager
         this.eventBus = eventBus;
-
+        this.contextManager = contextManager;
         // get time slider div
         this.timeSlider = $(`#${timeSliderId}`);
-
-        // get plot options and initialize state variables
-        this.toggleState = {};
-        getFmriPlotOptions((plotOptions) => {
-            this.toggleState['crosshairToggle'] = plotOptions.crosshair_on;
-            this.toggleState['hoverToggle'] = plotOptions.hover_text_on;
-            this.toggleState['directionMarkerToggle'] = plotOptions.direction_marker_on;
-            this.toggleState['colorbarToggle'] = plotOptions.colorbar_on;
-            this.toggleState['reverseColorbarToggle'] = plotOptions.reverse_colormap;
-        });
-
-        // get nifti view state
-        getNiftiViewState((viewState) => {
-            this.toggleState['viewToggle'] = viewState.view_state;
-        });
 
         // initialize color map
         this.colorMap = new ColorMap(
             this.colormapContainerId,
             this.colormapDropdownMenuId,
             this.colormapDropdownToggleId,
-            getFmriPlotOptions,
-            updateFmriPlotOptions,
-            EVENT_TYPES.VISUALIZATION.FMRI.COLOR_MAP_CHANGE
+            this.contextManager.plot.getFmriPlotOptions,
+            this.contextManager.plot.updateFmriPlotOptions,
+            EVENT_TYPES.VISUALIZATION.FMRI.COLOR_MAP_CHANGE,
+            this.eventBus,
+            this.contextManager
         );
 
         // initialize view listeners
         this.initializeViewListeners();
+        // enable buttons based on the file type (nifti or gifti)
+        this.enableButtons();
     }
 
-    initializeViewListeners() {
+    async initializeViewListeners() {
+        // initialize state variables
+        await this.setStateVariables();
         // Nifti specific listeners
         if (this.fmriFileType == 'nifti') {
             // Ortho to Montage view listener (only for nifti)
             if (this.viewToggleId) {
                 this.viewToggle = $(`#${this.viewToggleId}`);
-                this.viewToggle.on('click', () => {
+                this.viewToggle.on('click', async () => {
                     console.log('view toggle clicked');
                     this.toggleState['viewToggle'] = this.toggleState['viewToggle'] == 'ortho' ? 'montage' : 'ortho';
-                    updateNiftiViewState(
-                        this.toggleState['viewToggle'],
-                        () => {
-                            this.eventBus.publish(
-                                EVENT_TYPES.VISUALIZATION.FMRI.VIEW_TOGGLE,
-                                { view_state: this.toggleState['viewToggle'] }
-                            );
-                        }
+                    await this.contextManager.plot.updateNiftiViewState(
+                        this.toggleState['viewToggle']
+                    );
+                    this.eventBus.publish(
+                        EVENT_TYPES.VISUALIZATION.FMRI.VIEW_TOGGLE,
+                        { view_state: this.toggleState['viewToggle'] }
                     );
                 });
             }
@@ -116,17 +104,15 @@ class ViewOptionsFmri {
             // Montage direction marker listener
             if (this.directionMarkerToggleId) {
                 this.directionMarkerToggle = $(`#${this.directionMarkerToggleId}`);
-                this.directionMarkerToggle.on('click', () => {
+                this.directionMarkerToggle.on('click', async () => {
                     console.log('direction marker toggle clicked');
                     this.toggleState['directionMarkerToggle'] = !this.toggleState['directionMarkerToggle'];
-                    updateFmriPlotOptions(
-                        { direction_marker_on: this.toggleState['directionMarkerToggle'] },
-                        () => {
-                            this.eventBus.publish(
-                                EVENT_TYPES.VISUALIZATION.FMRI.TOGGLE_DIRECTION_MARKER,
-                                { directionMarkerState: this.toggleState['directionMarkerToggle'] }
-                            );
-                        }
+                    await this.contextManager.plot.updateFmriPlotOptions(
+                        { direction_marker_on: this.toggleState['directionMarkerToggle'] }
+                    );
+                    this.eventBus.publish(
+                        EVENT_TYPES.VISUALIZATION.FMRI.TOGGLE_DIRECTION_MARKER,
+                        { directionMarkerState: this.toggleState['directionMarkerToggle'] }
                     );
                 });
             }
@@ -134,17 +120,15 @@ class ViewOptionsFmri {
             // Crosshair listener
             if (this.crosshairToggleId) {
                 this.crosshairToggle = $(`#${this.crosshairToggleId}`);
-                this.crosshairToggle.on('click', () => {
+                this.crosshairToggle.on('click', async () => {
                     console.log('crosshair toggle clicked');
                     this.toggleState['crosshairToggle'] = !this.toggleState['crosshairToggle'];
-                    updateFmriPlotOptions(
+                    await this.contextManager.plot.updateFmriPlotOptions(
                         { crosshair_on: this.toggleState['crosshairToggle'] },
-                        () => {
-                            this.eventBus.publish(
-                                EVENT_TYPES.VISUALIZATION.FMRI.TOGGLE_CROSSHAIR,
-                                { crosshairState: this.toggleState['crosshairToggle'] }
-                            );
-                        }
+                    );
+                    this.eventBus.publish(
+                        EVENT_TYPES.VISUALIZATION.FMRI.TOGGLE_CROSSHAIR,
+                        { crosshairState: this.toggleState['crosshairToggle'] }
                     );
                 });
             }
@@ -153,17 +137,15 @@ class ViewOptionsFmri {
         // Hover label listener
         if (this.hoverToggleId) {
             this.hoverToggle = $(`#${this.hoverToggleId}`);
-            this.hoverToggle.on('click', () => {
+            this.hoverToggle.on('click', async () => {
                 console.log('hover toggle clicked');
                 this.toggleState['hoverToggle'] = !this.toggleState['hoverToggle'];
-                updateFmriPlotOptions(
+                await this.contextManager.plot.updateFmriPlotOptions(
                     { hover_text_on: this.toggleState['hoverToggle'] },
-                    () => {
-                        this.eventBus.publish(
-                            EVENT_TYPES.VISUALIZATION.FMRI.HOVER_TEXT_TOGGLE,
-                            { hoverState: this.toggleState['hoverToggle'] }
-                        );
-                    }
+                );
+                this.eventBus.publish(
+                    EVENT_TYPES.VISUALIZATION.FMRI.HOVER_TEXT_TOGGLE,
+                    { hoverState: this.toggleState['hoverToggle'] }
                 );
             });
         }
@@ -171,17 +153,15 @@ class ViewOptionsFmri {
         // Colorbar listener
         if (this.colorbarToggleId) {
             this.colorbarToggle = $(`#${this.colorbarToggleId}`);
-            this.colorbarToggle.on('click', () => {
+            this.colorbarToggle.on('click', async () => {
                 console.log('colorbar toggle clicked');
                 this.toggleState['colorbarToggle'] = !this.toggleState['colorbarToggle'];
-                updateFmriPlotOptions(
-                    { colorbar_on: this.toggleState['colorbarToggle'] },
-                    () => {
-                        this.eventBus.publish(
-                            EVENT_TYPES.VISUALIZATION.FMRI.TOGGLE_COLORBAR,
-                            { colorbarState: this.toggleState['colorbarToggle'] }
-                        );
-                    }
+                await this.contextManager.plot.updateFmriPlotOptions(
+                    { colorbar_on: this.toggleState['colorbarToggle'] }
+                );
+                this.eventBus.publish(
+                    EVENT_TYPES.VISUALIZATION.FMRI.TOGGLE_COLORBAR,
+                    { colorbarState: this.toggleState['colorbarToggle'] }
                 );
             });
         }
@@ -189,17 +169,15 @@ class ViewOptionsFmri {
         // Reverse colorbar listener
         if (this.reverseColorbarToggleId) {
             this.reverseColorbarToggle = $(`#${this.reverseColorbarToggleId}`);
-            this.reverseColorbarToggle.on('click', () => {
+            this.reverseColorbarToggle.on('click', async () => {
                 console.log('reverse colorbar toggle clicked');
                 this.toggleState['reverseColorbarToggle'] = !this.toggleState['reverseColorbarToggle'];
-                updateFmriPlotOptions(
-                    { reverse_colormap: this.toggleState['reverseColorbarToggle'] },
-                    () => {
-                        this.eventBus.publish(
-                            EVENT_TYPES.VISUALIZATION.FMRI.TOGGLE_REVERSE_COLORBAR,
-                            { reverseColormapState: this.toggleState['reverseColorbarToggle'] }
-                        );
-                    }
+                await this.contextManager.plot.updateFmriPlotOptions(
+                    { reverse_colormap: this.toggleState['reverseColorbarToggle'] }
+                );
+                this.eventBus.publish(
+                    EVENT_TYPES.VISUALIZATION.FMRI.TOGGLE_REVERSE_COLORBAR,
+                    { reverseColormapState: this.toggleState['reverseColorbarToggle'] }
                 );
             });
         }
@@ -208,9 +186,37 @@ class ViewOptionsFmri {
         if (this.screenshotButtonId) {
             this.screenshotButton = $(`#${this.screenshotButtonId}`);
             this.screenshotButton.on('click', () => {
+                console.log('screenshot button clicked');
                 captureScreenshot(this.plotlyDivIds, this.captureDivId);
             });
         }
+    }
+
+    /**
+     * Enable buttons based on the file type (nifti or gifti)
+     */
+    enableButtons() {
+        if (this.fmriFileType == 'nifti') {
+            $(`#${this.viewToggleId}`).prop('disabled', false);
+            $(`#${this.crosshairToggleId}`).prop('disabled', false);
+            $(`#${this.directionMarkerToggleId}`).prop('disabled', false);
+        }
+        $(`#${this.hoverToggleId}`).prop('disabled', false);
+        $(`#${this.colorbarToggleId}`).prop('disabled', false);
+        $(`#${this.reverseColorbarToggleId}`).prop('disabled', false);
+        $(`#${this.screenshotButtonId}`).prop('disabled', false);
+    }
+
+    async setStateVariables() {
+        this.toggleState = {};
+        const plotOptions = await this.contextManager.plot.getFmriPlotOptions();
+        const viewState = await this.contextManager.plot.getNiftiViewState();
+        this.toggleState['crosshairToggle'] = plotOptions.crosshair_on;
+        this.toggleState['hoverToggle'] = plotOptions.hover_text_on;
+        this.toggleState['directionMarkerToggle'] = plotOptions.direction_marker_on;
+        this.toggleState['colorbarToggle'] = plotOptions.colorbar_on;
+        this.toggleState['reverseColorbarToggle'] = plotOptions.reverse_colormap;
+        this.toggleState['viewToggle'] = viewState.view_state;
     }
 }
 

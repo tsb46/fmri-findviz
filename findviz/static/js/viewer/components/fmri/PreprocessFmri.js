@@ -2,7 +2,8 @@
 import { DOM_IDS } from '../../../constants/DomIds.js';
 import { EVENT_TYPES } from '../../../constants/EventTypes.js';
 import Spinner from '../../../Spinner.js';
-import { getPreprocessedFMRI, resetFMRIPreprocess } from '../../api/preprocess.js';
+import ContextManager from '../../api/ContextManager.js';
+
 
 class PreprocessFmri {
     /**
@@ -22,6 +23,7 @@ class PreprocessFmri {
      * @param {string} errorInlineId - ID of error message inline
      * @param {string} preprocessAlertId - ID of preprocess alert div
      * @param {ViewerEvents} eventBus - The event bus
+     * @param {ContextManager} contextManager - The context manager
      */
     constructor(
         fmriFileType,
@@ -38,10 +40,12 @@ class PreprocessFmri {
         smoothFwhmId,
         errorInlineId,
         preprocessAlertId,
-        eventBus
+        eventBus,
+        contextManager
     ) {
         this.fmriFileType = fmriFileType;
         this.eventBus = eventBus;
+        this.contextManager = contextManager;
         // get preprocessing switches
         this.normSwitch = $(`#${normSwitchId}`);
         this.filterSwitch = $(`#${filterSwitchId}`);
@@ -65,6 +69,8 @@ class PreprocessFmri {
         this.normSwitchEnabled = false;
         this.filterSwitchEnabled = false;
         this.smoothSwitchEnabled = false;
+        // enable all buttons by default
+        this.enableAllButtons();
 
         // initialize spinner
         this.spinner = new Spinner(
@@ -78,6 +84,28 @@ class PreprocessFmri {
         this.prepSubmit.on('click', (event) => this.handlePreprocessSubmit(event));
         // initialize preprocess reset
         this.prepReset.on('click', (event) => this.handlePreprocessReset(event));
+    }
+
+    /**
+     * Enable all buttons
+     */
+    enableAllButtons() {
+        this.normSwitch.prop('disabled', false);
+        this.filterSwitch.prop('disabled', false);
+        this.smoothSwitch.prop('disabled', false);
+        this.prepSubmit.prop('disabled', false);
+        this.prepReset.prop('disabled', false);
+    }
+
+    /**
+     * Disable all buttons
+     */
+    disableAllButtons() {
+        this.normSwitch.prop('disabled', true);
+        this.filterSwitch.prop('disabled', true);
+        this.smoothSwitch.prop('disabled', true);
+        this.prepSubmit.prop('disabled', true);
+        this.prepReset.prop('disabled', true);
     }
 
     /**
@@ -141,7 +169,7 @@ class PreprocessFmri {
      * Handle preprocessing submit button event
      * @param {Event} event - event object
      */
-    handlePreprocessSubmit(event) {
+    async handlePreprocessSubmit(event) {
         event.preventDefault();
         console.log('preprocess submit button clicked');
         // get preprocess params
@@ -160,27 +188,28 @@ class PreprocessFmri {
         // show spinner
         this.spinner.show();
         // preprocess FMRI
-        getPreprocessedFMRI(preprocessParams, this.errorInlineId, 
-            () => {
+        try {
+            const result = await this.contextManager.preprocess.getPreprocessedFMRI(
+                preprocessParams, 
+                this.errorInlineId
+            );
+            if (result) {
                 console.log('preprocessed FMRI successfully');
-                // hide spinner
-                this.spinner.hide();
                 // publish event
                 this.eventBus.publish(EVENT_TYPES.PREPROCESSING.PREPROCESS_FMRI_SUCCESS);
-            }, 
-            () => {
-                // hide spinner
-                this.spinner.hide();
-        });
-        // show preprocess alert
-        this.preprocessAlert.css("display", "block");
+            }
+        } finally {
+            this.spinner.hide();
+            // show preprocess alert
+            this.preprocessAlert.css("display", "block");
+        }
     }
 
     /**
      * Handle preprocessing reset button event
      * @param {Event} event - event object
      */
-    handlePreprocessReset(event) {
+    async handlePreprocessReset(event) {
         event.preventDefault();
         console.log('preprocess reset button clicked');
         // clear error message
@@ -208,11 +237,17 @@ class PreprocessFmri {
         this.highCut.prop('disabled', true);
         this.smoothFwhm.prop('disabled', true);
         // reset preprocess
-        resetFMRIPreprocess(this.errorInlineId, () => {
-            this.eventBus.publish(EVENT_TYPES.PREPROCESSING.PREPROCESS_FMRI_RESET);
+        try {
+            const result = await this.contextManager.preprocess.resetFMRIPreprocess(this.errorInlineId);
+            if (result) {
+                console.log('FMRI preprocessing reset successfully');
+                // publish event
+                this.eventBus.publish(EVENT_TYPES.PREPROCESSING.PREPROCESS_FMRI_RESET);
+            }
+        } finally {
             // hide preprocess alert
             this.preprocessAlert.css("display", "none");
-        });
+        }
     }
 
 }

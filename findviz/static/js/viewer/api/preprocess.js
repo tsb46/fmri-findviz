@@ -4,34 +4,32 @@
 import { makeRequest, createFormData } from './utils.js';
 import { API_ENDPOINTS } from '../../constants/APIEndpoints.js';
 
-
 /**
  * Preprocesses FMRI data with given parameters
  * @param {Object} preprocessParams - Parameters for FMRI preprocessing
  * @param {string} errorInlineId - ID of inline error element
- * @param {Function} callback - Callback function to handle successful response
- * @param {Function} [errorCallback] - Callback function for error response
+ * @param {string} context_id - ID of context to switch to
  * @returns {Promise} Promise object representing the API call
  */
 export const getPreprocessedFMRI = async (
     preprocessParams, 
     errorInlineId,
-    callback,
-    errorCallback
+    context_id
 ) => {
     return makeRequest(
         API_ENDPOINTS.PREPROCESS.GET_PREPROCESSED_FMRI,
         {
             method: 'POST',
-            body: createFormData(preprocessParams)
+            body: createFormData({
+                ...preprocessParams,
+                context_id
+            })
         },
         {
             errorId: errorInlineId,
             isInline: true,
             errorPrefix: 'Error preprocessing FMRI data'
-        },
-        callback,
-        errorCallback
+        }
     );
 };
 
@@ -39,60 +37,74 @@ export const getPreprocessedFMRI = async (
  * Preprocesses timecourse data with given parameters
  * @param {Object} preprocessParams - Parameters for timecourse preprocessing
  * @param {string} errorInlineId - ID of inline error element
- * @param {Function} callback - Callback function to handle successful response
+ * @param {string} context_id - ID of context to switch to
  * @returns {Promise} Promise object representing the API call
  */
-export const getPreprocessedTimeCourse = async (preprocessParams, errorInlineId, callback) => {
+export const getPreprocessedTimeCourse = async (
+    preprocessParams, 
+    errorInlineId,
+    context_id
+) => {
     return makeRequest(
         API_ENDPOINTS.PREPROCESS.GET_PREPROCESSED_TIMECOURSE,
         {
             method: 'POST',
-            body: createFormData(preprocessParams)
+            body: createFormData({
+                ...preprocessParams,
+                context_id
+            })
         },
         {
             errorId: errorInlineId,
             isInline: true,
             errorPrefix: 'Error preprocessing timecourse data'
-        },
-        callback
+        }
     );
 };
 
 /**
  * Resets FMRI preprocessing
  * @param {string} errorInlineId - ID of inline error element
- * @param {Function} callback - Callback function to handle successful response
+ * @param {string} context_id - ID of context to switch to
  * @returns {Promise} Promise object representing the API call
  */
-export const resetFMRIPreprocess = async (errorInlineId, callback) => {
+export const resetFMRIPreprocess = async (errorInlineId, context_id) => {
     return makeRequest(
         API_ENDPOINTS.PREPROCESS.RESET_FMRI_PREPROCESS,
-        { method: 'POST' },
+        {
+            method: 'POST',
+            body: createFormData({ context_id })
+        },
         {
             errorPrefix: 'Error resetting FMRI preprocessing'
-        },
-        callback
+        }
     );
 };
 
 /**
  * Resets timecourse preprocessing
  * @param {string} errorInlineId - ID of inline error element
- * @param {Function} callback - Callback function to handle successful response
+ * @param {string} context_id - ID of context to switch to
  * @returns {Promise} Promise object representing the API call
  */
-export const resetTimeCoursePreprocess = async (selectedTimeCourses, errorInlineId, callback) => {
+export const resetTimeCoursePreprocess = async (
+    selectedTimeCourses,
+    errorInlineId,
+    context_id
+) => {
     return makeRequest(
         API_ENDPOINTS.PREPROCESS.RESET_TIMECOURSE_PREPROCESS,
         {
             method: 'POST',
-            body: createFormData({ ts_labels: selectedTimeCourses })
+            body: createFormData({
+                ts_labels: selectedTimeCourses,
+                context_id
+            })
         },
         {
             errorId: errorInlineId,
             isInline: true,
             errorPrefix: 'Error resetting timecourse preprocessing'
-        },
-        callback
+        }
     );
 };

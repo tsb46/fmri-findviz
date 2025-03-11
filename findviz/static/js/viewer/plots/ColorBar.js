@@ -1,6 +1,6 @@
 // ColorBar.js - Plot colorbar
 import { EVENT_TYPES } from '../../constants/EventTypes.js';
-import { getFmriPlotOptions } from '../api/plot.js';
+import ContextManager from '../api/ContextManager.js';
 
 
 class ColorBar {
@@ -9,11 +9,13 @@ class ColorBar {
      * @param {string} containerId - The ID of the container
      * @param {string} colorbarTitle - The title of the colorbar
      * @param {ViewerEvents} eventBus - The event bus
+     * @param {ContextManager} contextManager - The context manager
      */
-    constructor(containerId, colorbarTitle, eventBus) {
+    constructor(containerId, colorbarTitle, eventBus, contextManager) {
         this.containerId = containerId;
         this.colorbarTitle=colorbarTitle;
         this.eventBus = eventBus;
+        this.contextManager = contextManager;
 
         // initialize colorbar state
         this.colorbarState = null;
@@ -26,6 +28,17 @@ class ColorBar {
      * Attach event listeners
      */
     attachEventListeners() {
+        // Plot colorbar on initialization of gifti or nifti plot
+        this.eventBus.subscribeMultiple(
+            [
+                EVENT_TYPES.VISUALIZATION.FMRI.INIT_GIFTI_VIEWER,
+                EVENT_TYPES.VISUALIZATION.FMRI.INIT_NIFTI_VIEWER,
+            ],
+            () => {
+                this.initPlot();
+            }
+        );
+
         // Toggle colorbar
         this.eventBus.subscribe(
             EVENT_TYPES.VISUALIZATION.FMRI.TOGGLE_COLORBAR, 
@@ -86,69 +99,68 @@ class ColorBar {
     /**
      * Initialize colorbar plot
      */
-    initPlot() {
-        getFmriPlotOptions( (plotOptions) => {
-            this.colorbarState = true;
-            const colorbarData = [{
-                z: [[1]],  // Small data for colorbar
-                type: 'heatmap',
-                colorscale: plotOptions.color_map,  // Colormap to match the main plots
-                showscale: true,  // Enable colorbar
-                zmin: plotOptions.color_min,  // Set minimum of the color scale
-                zmax: plotOptions.color_max,  // Set maximum of the color scale
-                colorbar: {
-                    title: this.colorbarTitle,  // Title for the colorbar
-                    titleside: 'top',
-                    titlefont: {
-                        size: 12,
-                        color: '#000'
-                    },
-                    // tick values at min, mid, max
-                    tickvals: [
-                        plotOptions.color_min, 
-                        (plotOptions.color_min + plotOptions.color_max) / 2, 
-                        plotOptions.color_max
-                    ], 
-                    // tick labels at min, mid, max
-                    ticktext: [
-                        `${plotOptions.color_min.toFixed(2)}`, 
-                        `${((plotOptions.color_min + plotOptions.color_max) / 2).toFixed(2)}`, 
-                        `${plotOptions.color_max.toFixed(2)}`
-                    ], 
-                    len: 1,  // Full height of the plot
-                    thickness: 20,  // Thickness of the colorbar
-                    outlinewidth: 0,  // No border around the colorbar
-                    ticks: 'outside',  // Show tick marks outside the colorbar
-                    tickfont: {
-                        size: 10,
-                        color: '#000'
-                    }
+    async initPlot() {
+        const plotOptions = await this.contextManager.plot.getFmriPlotOptions();
+        this.colorbarState = true;
+        const colorbarData = [{
+            z: [[1]],  // Small data for colorbar
+            type: 'heatmap',
+            colorscale: plotOptions.color_map,  // Colormap to match the main plots
+            showscale: true,  // Enable colorbar
+            zmin: plotOptions.color_min,  // Set minimum of the color scale
+            zmax: plotOptions.color_max,  // Set maximum of the color scale
+            colorbar: {
+                title: this.colorbarTitle,  // Title for the colorbar
+                titleside: 'top',
+                titlefont: {
+                    size: 12,
+                    color: '#000'
                 },
-                hoverinfo: 'none', // Disable hover information to avoid showing dummy data
-                opacity: 0 // Ensure the data is invisible but the colorbar is displayed,
-            }];
+                // tick values at min, mid, max
+                tickvals: [
+                    plotOptions.color_min, 
+                    (plotOptions.color_min + plotOptions.color_max) / 2, 
+                    plotOptions.color_max
+                ], 
+                // tick labels at min, mid, max
+                ticktext: [
+                    `${plotOptions.color_min.toFixed(2)}`, 
+                    `${((plotOptions.color_min + plotOptions.color_max) / 2).toFixed(2)}`, 
+                    `${plotOptions.color_max.toFixed(2)}`
+                ], 
+                len: 1,  // Full height of the plot
+                thickness: 20,  // Thickness of the colorbar
+                outlinewidth: 0,  // No border around the colorbar
+                ticks: 'outside',  // Show tick marks outside the colorbar
+                tickfont: {
+                    size: 10,
+                    color: '#000'
+                }
+            },
+            hoverinfo: 'none', // Disable hover information to avoid showing dummy data
+            opacity: 0 // Ensure the data is invisible but the colorbar is displayed,
+        }];
 
-            const layout = {
-                autosize: false,
-                responsive: true, // Make the plot responsive
-                width: 150,  // Narrow width for the colorbar container
-                height: 300,  // Adjust height as needed
-                margin: { l: 0, r: 0, b: 0, t: 0 },  // No margin around colorbar
-                xaxis: {
-                    visible: false,  // Hide the X-axis
-                    fixedrange: true,  // Prevent zooming/panning
-                },
-                yaxis: {
-                    visible: false,  // Hide the Y-axis
-                    fixedrange: true,  // Prevent zooming/panning
-                },
-                showlegend: false,  // Hide any legends
-                paper_bgcolor: 'rgba(0,0,0,0)',  // Transparent background
-                plot_bgcolor: 'rgba(0,0,0,0)'
-            };
-            // Plotly to plot just the colorbar
-            Plotly.newPlot(this.containerId, colorbarData, layout);
-        });
+        const layout = {
+            autosize: false,
+            responsive: true, // Make the plot responsive
+            width: 150,  // Narrow width for the colorbar container
+            height: 300,  // Adjust height as needed
+            margin: { l: 0, r: 0, b: 0, t: 0 },  // No margin around colorbar
+            xaxis: {
+                visible: false,  // Hide the X-axis
+                fixedrange: true,  // Prevent zooming/panning
+            },
+            yaxis: {
+                visible: false,  // Hide the Y-axis
+                fixedrange: true,  // Prevent zooming/panning
+            },
+            showlegend: false,  // Hide any legends
+            paper_bgcolor: 'rgba(0,0,0,0)',  // Transparent background
+            plot_bgcolor: 'rgba(0,0,0,0)'
+        };
+        // Plotly to plot just the colorbar
+        Plotly.newPlot(this.containerId, colorbarData, layout);
     }
 
     /**

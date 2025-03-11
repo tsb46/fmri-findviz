@@ -98,16 +98,16 @@ def gifti_to_array(
         raise ValueError("No gifti images provided")
     
     if left_gifti is None:
-        return right_gifti.darrays[0].data, split_index
+        return _gifti_extract_data(right_gifti), split_index
     if right_gifti is None:
-        return left_gifti.darrays[0].data, split_index
+        return _gifti_extract_data(left_gifti), split_index
     
     # Get the length of left hemisphere data
     split_index = len(left_gifti.darrays[0].data)
     # Concatenate the data from both hemispheres
     concat_data = np.concatenate([
-        left_gifti.darrays[0].data,
-        right_gifti.darrays[0].data
+        _gifti_extract_data(left_gifti),
+        _gifti_extract_data(right_gifti)
     ])
     return concat_data, split_index
 
@@ -131,7 +131,9 @@ def array_to_gifti(
     
     Returns:
     --------
-        gifti_img: nibabel gifti image (left or right) or both
+        gifti_img: nibabel gifti image (left or right) or both hemispheres - with
+        left hemisphere first.
+
     """
     if both_hemispheres and split_index is None:
         raise ValueError("Split index is required for concatenated array")
@@ -161,5 +163,13 @@ def array_to_gifti(
         return left_gifti, right_gifti
     else:
         return gifti_img
+
+
+def _gifti_extract_data(gifti_img: nib.GiftiImage) -> np.ndarray:
+    """
+    Extract data from gifti image
+    """
+    gifti_data = np.vstack([darray.data for darray in gifti_img.darrays])
+    return gifti_data
 
 

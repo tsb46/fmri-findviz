@@ -35,32 +35,53 @@
 
 </head>
 <body>
-  <!-- Parent Visualization Container -->
-  <div id="parent-container" class="container-fluid mt-5" style="display: none;">
-    <!-- Spinner overlay for preprocessing wait -->
-    <div class='spinner-overlay' id="preproc-spinner-overlay"></div>
-    <div id="parent-container-row" class='row justify-content-md-center'>
-      <!-- User Options Container -->
-      <div class="col-3 pl-3 pr-2" id="user_options_container">
-        <!-- Visualization Options -->
-        {% include 'components/fmriVisualizationOptions.html' %}
-      </div>
-      <!-- Visualization Container -->
-      <div class='col-9' id="visualization_container">
-        <!-- fmri visualization card -->
-        {% include 'components/fmriVisualizationCard.html' %}
-      </div>
+ <!-- Parent Visualization Container -->
+ <div id="parent-container" class="container-fluid mt-5" style="display: none;">
+  <!-- Spinner overlay for upload, preprocessing, and analysis wait -->
+  <div id="spinner-overlay" class="spinner-overlay"></div>
+  <!-- FMRI Container -->
+  <div id="fmri-container" class='row justify-content-center'>
+    <!-- FMRI User Options Container -->
+    <div id="fmri-user-options-container">
+      <!-- Visualization Options -->
+      {% include 'components/fmriVisualizationOptions.html' %}
+      <!-- Preprocessing Options -->
+      {% include 'components/fmriPreprocessingOptions.html' %}
     </div>
-    <div class='row justify-content-md-center mt-2'>
-      <!-- Container for time courses -->
-      <div id='timeCourse'></div>
+    <!-- Visualization Container -->
+    <div id="fmri-visualization-container">
+      <!-- fmri visualization card -->
+      {% include 'components/fmriVisualizationCard.html' %}
+    </div>
+    <!-- Spinner wheel for upload, preprocessing, and analysis wait -->
+    <div class="spinner-containerd-flex justify-content-center">
+      <div id="spinner-wheel" class="spinner-wheel"></div>
     </div>
   </div>
+  <!-- Time Course Container -->
+  <div id="time-course-container" class='row justify-content-center mt-2' style="visibility: hidden;">
+    <!-- Time Course User Options Container -->
+    <div id="time-course-user-options-container">
+      <!-- Visualization Options -->
+      {% include 'components/timeCourseVisualizationOptions.html' %}
+      <!-- Time Marker Options -->
+      {% include 'components/timeCourseMarkerOptions.html' %}
+      <!-- Preprocessing Options -->
+      {% include 'components/timeCoursePreprocessingOptions.html' %}
+    </div>
+    <div id='time-course-visualization-container'>
+      <!-- time course visualization card -->
+      {% include 'components/timeCourseVisualizationCard.html' %}
+    </div>
+  </div>
+  <!-- Viewer Error Modal -->
+  {% include 'components/viewerErrorModal.html' %}
+</div>
 
-  <!-- Correlation javascript -->
+  <!-- Analysis Viewer javascript -->
   <script type="module">
     // Import classes from modules
-    import Result from '/static/js/result.js';
+    import AnalysisViewer from '/static/js/viewer/AnalysisViewer.js';
     import { initBootstrapComponents } from '/static/js/utils.js';
 
     // Toggle parent visualization container to display
@@ -68,27 +89,12 @@
     visualizationContainer.style.display = 'block'
     // Load HTML components and initialize 'Result' class
     document.addEventListener("DOMContentLoaded", async () => {
-      // initialize results after page load
-      const plotData = {{ data|tojson }}
-      let plotTitle
-      {% if analysis == "correlate" %}
-        plotTitle = {
-          'title': 'Correlation Map',
-          'timeSliderTitle': 'Lag:'
-        }
-      {% elif analysis == "average" %}
-        plotTitle = {
-          'title': 'Average Map',
-          'timeSliderTitle': 'Time Point:'
-        }
-      {% endif %}
-      // Run Main
-      let result = new Result(
-        plotData,
-        plotTitle
+      // initialize analysis viewer after page load
+      let analysis = new AnalysisViewer(
+        {{ plot_type|tojson }},
+        {{ analysis|tojson }}
       );
-      // initialize plots
-      result.init();
+      analysis.init();
 
       // initialize bootstrap components
       initBootstrapComponents()

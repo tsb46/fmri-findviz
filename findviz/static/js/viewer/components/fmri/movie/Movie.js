@@ -1,6 +1,6 @@
 // Movie component
-import { getFmriPlotOptions } from '../../../api/plot.js';
 import { EVENT_TYPES } from '../../../../constants/EventTypes.js';
+import ContextManager from '../../../api/ContextManager.js';
 
 /**
  * Movie class for handling fMRI time point animation
@@ -11,19 +11,19 @@ class Movie {
      * @param {string} timeSliderId - Time slider element
      * @param {string} playMovieButtonId - Play movie button
      * @param {ViewerEvents} eventBus - The event bus
+     * @param {ContextManager} contextManager - The context manager
      */
-    constructor(timeSliderId, playMovieButtonId, eventBus) {
+    constructor(timeSliderId, playMovieButtonId, eventBus, contextManager) {
         this.timeSlider = $(`#${timeSliderId}`);
         this.playMovieButton = $(`#${playMovieButtonId}`);
         this.playMovieButtonIcon = this.playMovieButton.find('i');
         this.isPlaying = false;
         this.intervalId = null;
         this.eventBus = eventBus;
+        this.contextManager = contextManager;
 
         // get interval time from state
-        getFmriPlotOptions( (plotOptions) => {
-            this.intervalTime = plotOptions.play_movie_speed;
-        });
+        this.getIntervalTime();
 
         // Bind event handlers
         this.playMovieButton.on('click', () => this.togglePlay());
@@ -32,6 +32,11 @@ class Movie {
         this.eventBus.subscribe(EVENT_TYPES.VISUALIZATION.FMRI.PLAY_MOVIE_SPEED_CHANGE, (newSpeed) => {
             this.setIntervalTime(newSpeed);
         });
+    }
+
+    async getIntervalTime() {
+        const plotOptions = await this.contextManager.plot.getFmriPlotOptions();
+        this.intervalTime = plotOptions.play_movie_speed;
     }
 
     /**

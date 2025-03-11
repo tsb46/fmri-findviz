@@ -1,23 +1,9 @@
 // Timecourse plot
 // Handles all plotting and click events for time course visualization
 import { EVENT_TYPES } from '../../constants/EventTypes.js';
-import { 
-    getLastTimecourse,
-    getNTimepoints,
-    getTaskConditions,
-    getTimeCourseData, 
-    getTimePoint,
-    popFmriTimeCourse,
-    updateFmriTimeCourse 
-} from '../api/data.js';
-import {
-    getAnnotationMarkers,
-    getTaskDesignPlotOptions,
-    getTimeCourseGlobalPlotOptions, 
-    getTimeCoursePlotOptions,
-    getTimeMarkerPlotOptions
-} from '../api/plot.js';
 import TraceManager from './TraceManager.js';
+import ContextManager from '../api/ContextManager.js';
+
 
 class TimeCourse {
     /**
@@ -27,13 +13,16 @@ class TimeCourse {
      * @param {boolean} timeCourseInput - Whether the time course input is provided
      * @param {boolean} taskDesignInput - Whether the task design input is provided
      * @param {ViewerEvents} eventBus - The event bus
+     * @param {ContextManager} contextManager - The context manager
      */
     constructor(
         timeCourseContainerId,
         timeCoursePlotContainerId,
         timeCourseInput,
         taskDesignInput,
-        eventBus
+        eventBus,
+        contextManager,
+        yAxisPadding=0.05
     ) {
         this.timeCourseContainerId = timeCourseContainerId;
         this.timeCourseContainer = $(`#${timeCourseContainerId}`);
@@ -42,11 +31,8 @@ class TimeCourse {
         this.timeCourseInput = timeCourseInput;
         this.taskDesignInput = taskDesignInput;
         this.eventBus = eventBus;
-        // get number of timepoints
-        getNTimepoints( (nTimepoints) => {
-            this.timeCourseLength = nTimepoints.n_timepoints;
-        });
-
+        this.contextManager = contextManager;
+        this.yAxisPadding = yAxisPadding;
         // initialize empty plot with default layout
         this.initEmptyPlot();
 
@@ -122,9 +108,9 @@ class TimeCourse {
                     // if previous selection was frozen, update functional timecourse
                     if (this.timeCourseFreeze) {
                         console.log('adding functional timecourse due to freeze');
-                        await updateFmriTimeCourse();
+                        await this.contextManager.data.updateFmriTimeCourse();
                         // get time course data and plot
-                        const timeCourseData = await getLastTimecourse();
+                        const timeCourseData = await this.contextManager.data.getLastTimecourse();
                         const plotOptions = await this.getPlotOptions();
                         this.plotTimeCourseData(timeCourseData, plotOptions);
                         // publish event that fmri time course has been added
@@ -135,15 +121,15 @@ class TimeCourse {
                         // if previous selection was not frozen, remove most recent 
                         // fmri timecourse and replace with current selection
                         console.log('removing most recent fmri timecourse and replacing with current selection');
-                        const lastFmriLabel = await popFmriTimeCourse();
+                        const lastFmriLabel = await this.contextManager.data.popFmriTimeCourse();
                         // remove most recent fmri timecourse from plot
                         if (lastFmriLabel.label !== null) {
                             this.removeTimeCourse(lastFmriLabel.label);
                         }
                         // add currently selected voxel fmri timecourse to plot
-                        await updateFmriTimeCourse();
+                        await this.contextManager.data.updateFmriTimeCourse();
                         // get time course data and plot
-                        const timeCourseData = await getLastTimecourse();
+                        const timeCourseData = await this.contextManager.data.getLastTimecourse();
                         const plotOptions = await this.getPlotOptions();
                         this.plotTimeCourseData(timeCourseData, plotOptions);
                         // publish event that fmri time course has been added
@@ -152,7 +138,7 @@ class TimeCourse {
                         );
                     }
                     // update axis range
-                    const timeCourseGlobalPlotOptions = await getTimeCourseGlobalPlotOptions();
+                    const timeCourseGlobalPlotOptions = await this.contextManager.plot.getTimeCourseGlobalPlotOptions();
                     this.updateYAxisRange(timeCourseGlobalPlotOptions);
                 }
             }
@@ -169,7 +155,7 @@ class TimeCourse {
                     this.removeTimeCourse(label);
                 }
                 // update axis range
-                const timeCourseGlobalPlotOptions = await getTimeCourseGlobalPlotOptions();
+                const timeCourseGlobalPlotOptions = await this.contextManager.plot.getTimeCourseGlobalPlotOptions();
                 this.updateYAxisRange(timeCourseGlobalPlotOptions);
             }
         );
@@ -189,7 +175,7 @@ class TimeCourse {
                     }
                 }
                 // update axis range
-                const timeCourseGlobalPlotOptions = await getTimeCourseGlobalPlotOptions();
+                const timeCourseGlobalPlotOptions = await this.contextManager.plot.getTimeCourseGlobalPlotOptions();
                 this.updateYAxisRange(timeCourseGlobalPlotOptions);
             }
         );
@@ -228,10 +214,10 @@ class TimeCourse {
                     're-plotting time course due to scale or constant shift for', shiftParams.label
                 );
                 // get time course data and plot
-                const timeCourseData = await getTimeCourseData([shiftParams.label]);
+                const timeCourseData = await this.contextManager.data.getTimeCourseData([shiftParams.label]);
                 this.updateTimeCourseData(shiftParams.label, timeCourseData);
                 // update axis range
-                const timeCourseGlobalPlotOptions = await getTimeCourseGlobalPlotOptions();
+                const timeCourseGlobalPlotOptions = await this.contextManager.plot.getTimeCourseGlobalPlotOptions();
                 this.updateYAxisRange(timeCourseGlobalPlotOptions);
             }
         );
@@ -243,10 +229,10 @@ class TimeCourse {
             async (label) => {
                 console.log('replotting task design plot due to convolution toggle for label', label);
                 // get time course data and plot
-                const timeCourseData = await getTimeCourseData([label.label]);
+                const timeCourseData = await this.contextManager.data.getTimeCourseData([label.label]);
                 this.updateTimeCourseData(label.label, timeCourseData);
                 // update axis range
-                const timeCourseGlobalPlotOptions = await getTimeCourseGlobalPlotOptions();
+                const timeCourseGlobalPlotOptions = await this.contextManager.plot.getTimeCourseGlobalPlotOptions();
                 this.updateYAxisRange(timeCourseGlobalPlotOptions);
             }
         );
@@ -257,13 +243,13 @@ class TimeCourse {
             async () => {
                 console.log('replotting time course due to global convolution toggle');
                 // get time course data and plot
-                const taskConditions = await getTaskConditions();
-                const timeCourseData = await getTimeCourseData(taskConditions);
+                const taskConditions = await this.contextManager.data.getTaskConditions();
+                const timeCourseData = await this.contextManager.data.getTimeCourseData(taskConditions);
                 for (const ts_label of taskConditions) {
                     this.updateTimeCourseData(ts_label, timeCourseData);
                 }
                 // update axis range
-                const timeCourseGlobalPlotOptions = await getTimeCourseGlobalPlotOptions();
+                const timeCourseGlobalPlotOptions = await this.contextManager.plot.getTimeCourseGlobalPlotOptions();
                 this.updateYAxisRange(timeCourseGlobalPlotOptions);
             }
         );
@@ -278,8 +264,8 @@ class TimeCourse {
                 EVENT_TYPES.VISUALIZATION.TIMECOURSE.TIME_MARKER_OPACITY_SLIDER_CHANGE
             ], async () => {
                 console.log('updating time marker property');
-                const timeMarkerPlotOptions = await getTimeMarkerPlotOptions();
-                const timePoint = await getTimePoint();
+                const timeMarkerPlotOptions = await this.contextManager.plot.getTimeMarkerPlotOptions();
+                const timePoint = await this.contextManager.data.getTimePoint();
                 this.plotTimeMarker(timePoint.timepoint, timeMarkerPlotOptions);
             }
         );
@@ -290,8 +276,8 @@ class TimeCourse {
             async (state) => {
                 if (state) {
                     console.log('plotting time marker');
-                    const timeMarkerPlotOptions = await getTimeMarkerPlotOptions();
-                    const timePoint = await getTimePoint();
+                    const timeMarkerPlotOptions = await this.contextManager.plot.getTimeMarkerPlotOptions();
+                    const timePoint = await this.contextManager.data.getTimePoint();
                     this.plotTimeMarker(timePoint.timepoint, timeMarkerPlotOptions);
                 } else {
                     console.log('hiding time marker');
@@ -316,13 +302,20 @@ class TimeCourse {
 
         // listen for grid lines toggle event
         this.eventBus.subscribe(
-            EVENT_TYPES.VISUALIZATION.TIMECOURSE.GRID_TOGGLE, (state) => {
+            EVENT_TYPES.VISUALIZATION.TIMECOURSE.GRID_TOGGLE, async (state) => {
+                const globalPlotOptions = await this.contextManager.plot.getTimeCourseGlobalPlotOptions();
                 if (state) {
                     console.log('plotting grid lines');
-                    this.plotGridLines();
+                    this.plotGridLines(
+                        globalPlotOptions.global_min,
+                        globalPlotOptions.global_max
+                    );
                 } else {
                     console.log('removing grid lines');
-                    this.removeGridLines();
+                    this.removeGridLines(
+                        globalPlotOptions.global_min,
+                        globalPlotOptions.global_max
+                    );
                 }
             }
         );
@@ -343,17 +336,16 @@ class TimeCourse {
             ], async () => {
                 console.log('replotting time course due to annotation marker change');
                 // get annnotation markers and plot
-                getAnnotationMarkers( (annotationData) => {
-                    // if no annotation markers, change highlight to false
-                    if (annotationData.markers.length === 0) {
-                        annotationData.plot_options.highlight = false;
-                    }
-                    this.plotAnnotationMarkers(
-                        annotationData.markers, 
-                        annotationData.selection,
-                        annotationData.plot_options
-                    );
-                });
+                const annotationData = await this.contextManager.plot.getAnnotationMarkers();
+                // if no annotation markers, change highlight to false
+                if (annotationData.markers.length === 0) {
+                    annotationData.plot_options.highlight = false;
+                }
+                this.plotAnnotationMarkers(
+                    annotationData.markers, 
+                    annotationData.selection,
+                    annotationData.plot_options
+                );
             }
         );
 
@@ -367,11 +359,11 @@ class TimeCourse {
                     this.removeTimeCourse(ts_label);
                 }
                 // get time course data and plot
-                const timeCourseData = await getTimeCourseData(selectedTimeCourses);
+                const timeCourseData = await this.contextManager.data.getTimeCourseData(selectedTimeCourses);
                 const plotOptions = await this.getPlotOptions();
                 this.plotTimeCourseData(timeCourseData, plotOptions);
                 // update axis range
-                const timeCourseGlobalPlotOptions = await getTimeCourseGlobalPlotOptions();
+                const timeCourseGlobalPlotOptions = await this.contextManager.plot.getTimeCourseGlobalPlotOptions();
                 this.updateYAxisRange(timeCourseGlobalPlotOptions);
             }
         );
@@ -386,11 +378,11 @@ class TimeCourse {
                     this.removeTimeCourse(ts_label);
                 }
                 // get time course data and plot
-                const timeCourseData = await getTimeCourseData(preprocessedLabels);
+                const timeCourseData = await this.contextManager.data.getTimeCourseData(preprocessedLabels);
                 const plotOptions = await this.getPlotOptions();
                 this.plotTimeCourseData(timeCourseData, plotOptions);
                 // update axis range
-                const timeCourseGlobalPlotOptions = await getTimeCourseGlobalPlotOptions();
+                const timeCourseGlobalPlotOptions = await this.contextManager.plot.getTimeCourseGlobalPlotOptions();
                 this.updateYAxisRange(timeCourseGlobalPlotOptions);
             }
         );
@@ -399,7 +391,7 @@ class TimeCourse {
     /**
      * Create layout for time course plot
      */
-    createLayout(globalPlotOptions, axisPadding=0.05) {
+    createLayout(globalPlotOptions) {
         // create layout
         const layout = {
             height: 500,
@@ -411,8 +403,8 @@ class TimeCourse {
             yaxis: {
                 title: 'Signal Intensity',
                 range: [
-                    globalPlotOptions.global_min - axisPadding, 
-                    globalPlotOptions.global_max + axisPadding
+                    globalPlotOptions.global_min - this.yAxisPadding, 
+                    globalPlotOptions.global_max + this.yAxisPadding
                 ],
                 autorange: true
             },
@@ -444,8 +436,8 @@ class TimeCourse {
             console.log('plotting time course with user-provided input');
             // get plot options
             const plotOptions = await this.getPlotOptions();
-            // get timecourse data
-            const timeCourseData = await getTimeCourseData();
+            // get timecourse data - pass null to get all timecourse data
+            const timeCourseData = await this.contextManager.data.getTimeCourseData(null);
             this.plotTimeCourseData(timeCourseData, plotOptions);
         }
     }
@@ -456,9 +448,12 @@ class TimeCourse {
     async initEmptyPlot() {
         try {
             console.log('initializing empty time course plot');
+            // get number of timepoints
+            const nTimepoints = await this.contextManager.data.getNTimepoints();
+            this.timeCourseLength = nTimepoints.n_timepoints;
             // get time marker and global plot options
-            const timeMarkerPlotOptions = await getTimeMarkerPlotOptions();
-            const timeCourseGlobalPlotOptions = await getTimeCourseGlobalPlotOptions();
+            const timeMarkerPlotOptions = await this.contextManager.plot.getTimeMarkerPlotOptions();
+            const timeCourseGlobalPlotOptions = await this.contextManager.plot.getTimeCourseGlobalPlotOptions();
             // combine all plot options into one object
             const globalPlotOptions = {
             ...timeMarkerPlotOptions,
@@ -486,27 +481,28 @@ class TimeCourse {
 
             // if grid lines on, plot grid lines
             if (globalPlotOptions.grid_on) {
-                this.plotGridLines();
+                this.plotGridLines(
+                    timeCourseGlobalPlotOptions.global_min,
+                    timeCourseGlobalPlotOptions.global_max
+                );
             }
 
             // get time point marker and plot
             if (globalPlotOptions.time_marker_on) {
-                getTimePoint( (timePoint) => {
-                    this.plotTimeMarker(timePoint.timepoint, timeMarkerPlotOptions);
-                });
+                const timePoint = await this.contextManager.data.getTimePoint();
+                this.plotTimeMarker(timePoint.timepoint, timeMarkerPlotOptions);
             }
 
             // get annnotation markers and plot
-            getAnnotationMarkers( (annotationData) => {
-                // if no annotation markers, don't plot
-                if (annotationData.markers.length > 0) {
-                    this.plotAnnotationMarkers(
-                        annotationData.markers, 
-                        annotationData.selection,
-                        annotationData.highlight
-                    );
-                }
-            });
+            const annotationData = await this.contextManager.plot.getAnnotationMarkers();
+            // if no annotation markers, don't plot
+            if (annotationData.markers.length > 0) {
+                this.plotAnnotationMarkers(
+                    annotationData.markers, 
+                    annotationData.selection,
+                    annotationData.highlight
+                );
+            }
 
         } catch (error) {
             console.error('Error initializing empty time course plot', error);
@@ -515,10 +511,10 @@ class TimeCourse {
 
     // get plot options from task and timecourse plot options
     async getPlotOptions() {
-        // get time course plot options
-        const timeCoursePlotOptions = await getTimeCoursePlotOptions();
-        // get task design plot options
-        const taskDesignPlotOptions = await getTaskDesignPlotOptions();
+        // get time course plot options - pass null to get plot options for all time courses
+        const timeCoursePlotOptions = await this.contextManager.plot.getTimeCoursePlotOptions(null);
+        // get task design plot options - pass null to get plot options for all tasks
+        const taskDesignPlotOptions = await this.contextManager.plot.getTaskDesignPlotOptions(null);
         // combine task and time course plot options into one object
         const plotOptions = {
             ...timeCoursePlotOptions,
@@ -582,11 +578,22 @@ class TimeCourse {
 
     /**
      * Plot grid lines on X- and Y-axis
+     * @param {number} globalMin - The minimum value of the global range
+     * @param {number} globalMax - The maximum value of the global range
      */
-    plotGridLines() {
+    plotGridLines(globalMin, globalMax) {
         let gridLinesUpdate = {
-            xaxis: { showgrid: true },
-            yaxis: { showgrid: true }
+            xaxis: { 
+                showgrid: true,
+                range: [0, this.timeCourseLength - 1]
+            },
+            yaxis: { 
+                showgrid: true,
+                range: [
+                    globalMin - this.yAxisPadding, 
+                    globalMax + this.yAxisPadding
+                ]
+            }
         }
         Plotly.relayout(this.timeCoursePlotContainerId, gridLinesUpdate);
     }
@@ -665,11 +672,22 @@ class TimeCourse {
 
     /**
      * Remove grid lines from X- and Y-axis
+     * @param {number} globalMin - The minimum value of the global range
+     * @param {number} globalMax - The maximum value of the global range
      */
-    removeGridLines() {
+    removeGridLines(globalMin, globalMax) {
         let gridLinesUpdate = {
-            xaxis: { showgrid: false },
-            yaxis: { showgrid: false }
+            xaxis: { 
+                showgrid: false,
+                range: [0, this.timeCourseLength - 1]
+            },
+            yaxis: { 
+                showgrid: false,
+                range: [
+                    globalMin - this.yAxisPadding, 
+                    globalMax + this.yAxisPadding
+                ]
+            }
         }
         Plotly.relayout(this.timeCoursePlotContainerId, gridLinesUpdate);
     }
@@ -770,7 +788,12 @@ class TimeCourse {
      */
     updateYAxisRange(timeCourseGlobalPlotOptions) {
         let axisRangeUpdate = {
-            yaxis: { range: [timeCourseGlobalPlotOptions.global_min, timeCourseGlobalPlotOptions.global_max] }
+            yaxis: { 
+                range: [
+                    timeCourseGlobalPlotOptions.global_min - this.yAxisPadding, 
+                    timeCourseGlobalPlotOptions.global_max + this.yAxisPadding
+                ]
+            }
         }
         Plotly.relayout(this.timeCoursePlotContainerId, axisRangeUpdate);
     }

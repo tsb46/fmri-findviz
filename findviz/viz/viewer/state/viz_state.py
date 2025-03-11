@@ -173,6 +173,7 @@ class NiftiVisualizationState(VisualizationState):
             Default is 'z'
         montage_slice_coords: Coordinates of montage slices for NIFTI data. 
             Default is None.
+        selected_slice: Selected slice for NIFTI data. Default is None.
     """
     # metadata
     file_type: Literal['nifti'] = 'nifti'
@@ -203,7 +204,10 @@ class NiftiVisualizationState(VisualizationState):
     # montage view slice coordinates
     montage_slice_dir: Optional[Literal['x', 'y', 'z']] = 'z'
     montage_slice_coords: Optional[MontageSliceCoordsDict] = field(default_factory=dict)
-    
+
+    # selected slice
+    selected_slice: Literal['slice_1', 'slice_2', 'slice_3'] = 'slice_1'
+
 
 @dataclass
 class GiftiVisualizationState(VisualizationState):
@@ -219,6 +223,7 @@ class GiftiVisualizationState(VisualizationState):
         faces_left: Face indices for left hemisphere
         vertices_right: Vertex coordinates for right hemisphere
         faces_right: Face indices for right hemisphere
+        coord_labels: Vertex number and hemisphere for each vertex
         selected_vertex: Selected vertex index
         selected_hemi: Selected hemisphere ('left' or 'right')
     """
@@ -239,6 +244,10 @@ class GiftiVisualizationState(VisualizationState):
     # selected vertex and hemisphere
     selected_vertex: Optional[int] = None
     selected_hemi: Optional[Literal['left', 'right']] = None
+
+    # vertex number and hemisphere for each vertex
+    left_coord_labels: Optional[List[Tuple[int, Literal['left']]]] = None
+    right_coord_labels: Optional[List[Tuple[int, Literal['right']]]] = None
 
     def __post_init__(self):
         # set both hemispheres to True if left and right hemispheres are provided

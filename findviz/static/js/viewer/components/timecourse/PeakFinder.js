@@ -1,8 +1,6 @@
 // PeakFinder.js
 import { EVENT_TYPES } from '../../../constants/EventTypes.js';
-import { getTimeCourseLabels, getTaskConditions } from '../../api/data.js';
-import { checkTsPreprocessed } from '../../api/plot.js';
-import { findPeaks } from '../../api/analysis.js';
+import ContextManager from '../../api/ContextManager.js';
 
 
 class PeakFinder {
@@ -14,6 +12,7 @@ class PeakFinder {
      * @param {string} peakFinderFormId - The ID of the form for the peak finder
      * @param {string} peakFinderPrepAlertId - The ID of the preprocess alert for the peak finder
      * @param {ViewerEvents} eventBus - The event bus
+     * @param {ContextManager} contextManager - The context manager
      */
     constructor(
         peakFinderPopOverId,
@@ -21,7 +20,8 @@ class PeakFinder {
         submitPeakFinderId,
         peakFinderFormId,
         peakFinderPrepAlertId,
-        eventBus
+        eventBus,
+        contextManager
     ) {
         // set ids
         this.peakFinderPopOverId = peakFinderPopOverId;
@@ -29,8 +29,9 @@ class PeakFinder {
         this.submitPeakFinderId = submitPeakFinderId;
         this.peakFinderFormId = peakFinderFormId;
         this.peakFinderPrepAlertId = peakFinderPrepAlertId;
+        // get event bus and context manager
         this.eventBus = eventBus;
-
+        this.contextManager = contextManager;
         // set elements
         this.peakFinderPopOver = $(`#${peakFinderPopOverId}`);
 
@@ -59,18 +60,16 @@ class PeakFinder {
         // clear time course types object
         this.timeCourseTypes = {};
         const labels = [];
-        await getTaskConditions((conditions) => {
-            for (const condition of conditions) {
-                labels.push(condition);
-                this.timeCourseTypes[condition] = 'task';
-            }
-        });
-        await getTimeCourseLabels((ts_labels) => {
-            for (const label of ts_labels) {
-                labels.push(label);
-                this.timeCourseTypes[label] = 'timecourse';
-            }
-        });
+        const conditions = await this.contextManager.data.getTaskConditions();
+        for (const condition of conditions) {
+            labels.push(condition);
+            this.timeCourseTypes[condition] = 'task';
+        }
+        const ts_labels = await this.contextManager.data.getTimeCourseLabels();
+        for (const label of ts_labels) {
+            labels.push(label);
+            this.timeCourseTypes[label] = 'timecourse';
+        }
         if (callback) {
             callback(labels);
         }
@@ -143,26 +142,25 @@ class PeakFinder {
      * Fill the peak finder time course select with labels
      * @param {jQuery} peakFinderTimeCourseSelect - The peak finder time course select
      */
-    fillPeakFinderTimeCourseSelect(peakFinderTimeCourseSelect) {
-        this.getPlotLabels((ts_labels) => {
-            peakFinderTimeCourseSelect.empty();
-            for (const label of ts_labels) {
-                peakFinderTimeCourseSelect.append(`<option value='${label}'>${label}</option>`);
-            }
-            // select the last label as the selected time course
-            peakFinderTimeCourseSelect.val(ts_labels[ts_labels.length - 1]);
-            this.selectedTimeCourse = ts_labels[ts_labels.length - 1];
-            // check if time course is preprocessed
-            checkTsPreprocessed(
-                this.selectedTimeCourse, 
-                this.timeCourseTypes[this.selectedTimeCourse], 
-                (isPreprocessed) => {
-                    if (isPreprocessed.is_preprocessed) {
-                        $(`#${this.peakFinderPrepAlertId}`).show();
-                    }
-                }
-            );
-        });
+    async fillPeakFinderTimeCourseSelect(peakFinderTimeCourseSelect) {
+        const ts_labels = await this.getPlotLabels();
+        // empty the time course select
+        peakFinderTimeCourseSelect.empty();
+        // fill the time course select with labels
+        for (const label of ts_labels) {
+            peakFinderTimeCourseSelect.append(`<option value='${label}'>${label}</option>`);
+        }
+        // select the last label as the selected time course
+        peakFinderTimeCourseSelect.val(ts_labels[ts_labels.length - 1]);
+        this.selectedTimeCourse = ts_labels[ts_labels.length - 1];
+        // check if time course is preprocessed
+        const isPreprocessed = await this.contextManager.plot.checkTsPreprocessed(
+            this.selectedTimeCourse, 
+            this.timeCourseTypes[this.selectedTimeCourse]
+        );
+        if (isPreprocessed.is_preprocessed) {
+            $(`#${this.peakFinderPrepAlertId}`).show();
+        }
     }
 
     /**
@@ -170,26 +168,28 @@ class PeakFinder {
      * @param {Event} event - The event object
      * @param {jQuery} peakFinderTimeCourseSelect - The peak finder time course select
      */
-    handleTimeCourseSelectChange(peakFinderTimeCourseSelect) {
+    async handleTimeCourseSelectChange(peakFinderTimeCourseSelect) {
         console.log('time course select changed for peak finder');
         // get selected time course
         const timeCourse = peakFinderTimeCourseSelect.val();
         this.selectedTimeCourse = timeCourse;
         // check if time course is preprocessed
-        checkTsPreprocessed(timeCourse, this.timeCourseTypes[timeCourse], (isPreprocessed) => {
-            if (isPreprocessed.is_preprocessed) {
-                $(`#${this.peakFinderPrepAlertId}`).show();
-            } else {
-                $(`#${this.peakFinderPrepAlertId}`).hide();
-            }
-        });
+        const isPreprocessed = await this.contextManager.plot.checkTsPreprocessed(
+            timeCourse, 
+            this.timeCourseTypes[timeCourse]
+        );
+        if (isPreprocessed.is_preprocessed) {
+            $(`#${this.peakFinderPrepAlertId}`).show();
+        } else {
+            $(`#${this.peakFinderPrepAlertId}`).hide();
+        }
     }
     /**
      * Handle the peak finder submit
      * @param {Event} event - The event object
      * @param {jQuery} peakFinderTimeCourseSelect - The peak finder time course select
      */
-    handlePeakFinderSubmit(peakFinderForm, peakFinderTimeCourseSelect) {
+    async handlePeakFinderSubmit(peakFinderForm, peakFinderTimeCourseSelect) {
         console.log('peak finder submit button clicked');
         // get selected time course
         const timeCourse = peakFinderTimeCourseSelect.val();
@@ -205,11 +205,12 @@ class PeakFinder {
         // update peak finder params
         this.peakFinderParams = peakFinderParams;
         // find peaks
-        findPeaks(timeCourse, timeCourseType, peakFinderParams, () => {
-            console.log('peak finder success');
-            this.eventBus.publish(EVENT_TYPES.VISUALIZATION.ANNOTATE.ANNOTATE_MARKER_ADDED);
-        });
-
+        await this.contextManager.analysis.findPeaks(
+            timeCourse, 
+            timeCourseType, 
+            peakFinderParams, 
+        );
+        this.eventBus.publish(EVENT_TYPES.VISUALIZATION.ANNOTATE.ANNOTATE_MARKER_ADDED);
         // hide popover
         this.peakFinderPopOver.popover('hide');
     }

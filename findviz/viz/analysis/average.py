@@ -1,6 +1,8 @@
 """
 Window average fmri time courses around annotation markers
 """
+from typing import List
+
 import numpy as np
 
 from findviz.viz.analysis.utils import extract_range
@@ -19,9 +21,9 @@ class WindowAverage:
     Parameters
     ----------
     left_edge : int
-        left edge of window
+        left edge of window, should be zero or negative
     right_edge : int
-        right edge of window
+        right edge of window, should be positive or zero
     """
     def __init__(
         self, 
@@ -68,7 +70,21 @@ class WindowAverage:
 
         return w_avg
 
-    def _validate(self):
+    def get_timepoints(self) -> List[float]:
+        """
+        Get timepoints for the window average
+
+        Returns
+        -------
+        np.ndarray
+            timepoints for the window average
+        """
+        return np.arange(
+            self.left_edge,
+            self.right_edge + 1
+        ).tolist()
+
+    def _validate(self) -> None:
         """
         Validate input parameters
         """
