@@ -227,7 +227,31 @@ class FileValidationError(Exception):
 
     def __str__(self):
         return f"{self.message} - validation error in {self.func_name} for {self.file_type} file"
-        
+
+
+class FVStateVersionIncompatibleError(Exception):
+    """
+    Error in FINDviz state file version
+
+    Attributes
+    ----------
+    message : str
+        custom error message to display to user
+    expected_version : str
+        the expected version of the state file
+    current_version : str
+        the current version of the state file
+    """
+    def __init__(self, message: str, expected_version: str, current_version: str):
+        super().__init__(message)
+        self.message = message
+        self.expected_version = expected_version
+        self.current_version = current_version
+
+    def __str__(self):
+        return (f"{self.message} - expected version: {self.expected_version}, "
+               f"current version: {self.current_version}")
+    
 
 class NiftiMaskError(Exception):
     """

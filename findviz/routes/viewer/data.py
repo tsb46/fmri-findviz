@@ -1,7 +1,8 @@
 """
-Viewer routes
+Viewer data routes
 
 Routes:
+    CONVERT_TIMEPOINTS: Convert timepoints to seconds
     GET_CLICK_COORDS: Get click coords
     GET_COORD_LABELS: Get coordinate labels
     GET_CROSSHAIR_COORDS: Get crosshair coords
@@ -10,12 +11,13 @@ Routes:
     GET_FMRI_DATA: Get FMRI data
     GET_LAST_TIMECOURSE: Get last added fmri timecourse
     GET_MONTAGE_DATA: Get montage data
-    GET_N_TIMEPOINTS: Get number of timepoints
     GET_TASK_CONDITIONS: Get task conditions
     GET_TIMECOURSE_DATA: Get timecourse data
     GET_TIMECOURSE_LABELS: Get timecourse labels
     GET_TIMECOURSE_SOURCE: Get timecourse source
     GET_TIMEPOINT: Get timepoint
+    GET_TIMEPOINTS: Get timepoints
+    GET_VERTEX_COORDS: Get vertex coordinates
     GET_VIEWER_METADATA: Get viewer metadata
     GET_VOXEL_COORDS: Get voxel coordinates
     GET_WORLD_COORDS: Get world coordinates
@@ -26,6 +28,7 @@ Routes:
     UPDATE_MONTAGE_SLICE_DIR: Update montage slice direction
     UPDATE_MONTAGE_SLICE_IDX: Update montage slice indices
     UPDATE_TIMEPOINT: Update timepoint
+    UPDATE_TR: Update TR
 """
 import json
 
@@ -52,21 +55,17 @@ logger = setup_logger(__name__)
 
 data_bp = Blueprint('data', __name__)
 
-@data_bp.route(Routes.CHANGE_TIMECOURSE_SCALE.value, methods=['POST'])
+
+@data_bp.route(Routes.CONVERT_TIMEPOINTS.value, methods=['POST'])
 @handle_context()
 @handle_route_errors(
-    error_msg='Unknown error in timecourse scale change request',
-    log_msg='Timecourse scale change request successful',
-    fmri_file_type=lambda: data_manager.ctx.fmri_file_type,
-    route=Routes.CHANGE_TIMECOURSE_SCALE,
-    route_parameters=['label', 'scale_change', 'scale_change_unit']
+    error_msg='Unknown error in timepoints conversion request',
+    log_msg='Timepoints conversion request successful',
+    route=Routes.CONVERT_TIMEPOINTS
 )
-def change_timecourse_scale() -> dict:
-    """Change timecourse scale"""
-    label = request.form['label']
-    scale_change = request.form['scale_change']
-    scale_change_unit = request.form['scale_change_unit']
-    data_manager.ctx.change_timecourse_scale(label, scale_change, scale_change_unit)
+def convert_timepoints() -> dict:
+    """Convert timepoints to seconds"""
+    data_manager.ctx.convert_timepoints()
     return {'status': 'success'}
 
 
@@ -225,19 +224,6 @@ def get_montage_data() -> dict:
     return montage_data
 
 
-@data_bp.route(Routes.GET_N_TIMEPOINTS.value, methods=['GET'])
-@handle_context()
-@handle_route_errors(
-    error_msg='Unknown error in number of timepoints request',
-    log_msg='Number of timepoints request successful',
-    fmri_file_type=lambda: data_manager.ctx.fmri_file_type,
-    route=Routes.GET_N_TIMEPOINTS
-)
-def get_n_timepoints() -> dict:
-    """Get number of timepoints"""
-    return {'n_timepoints': data_manager.ctx.n_timepoints}
-
-
 @data_bp.route(Routes.GET_TASK_CONDITIONS.value, methods=['GET'])
 @handle_context()
 @handle_route_errors(
@@ -334,8 +320,35 @@ def get_timecourse_source() -> dict:
     route=Routes.GET_TIMEPOINT
 )
 def get_timepoint() -> dict:
-    """Get current timepoint"""
+    """Get currently selected timepoint"""
     return {'timepoint': data_manager.ctx.timepoint}
+
+
+@data_bp.route(Routes.GET_TIMEPOINTS.value, methods=['GET'])
+@handle_context()
+@handle_route_errors(
+    error_msg='Unknown error in timepoints request',
+    log_msg='Timepoints request successful',
+    route=Routes.GET_TIMEPOINTS
+)
+def get_timepoints() -> dict:
+    """Get all timepoints"""
+    return {'timepoints': data_manager.ctx.get_timepoints()}
+
+
+@data_bp.route(Routes.GET_VERTEX_COORDS.value, methods=['GET'])
+@handle_context()
+@handle_route_errors(
+    error_msg='Unknown error in vertex coordinates request',
+    log_msg='Vertex coordinates request successful',
+    route=Routes.GET_VERTEX_COORDS
+)
+def get_vertex_coords() -> dict:
+    """Get vertex coordinates"""
+    return {
+        'vertex_number': data_manager.ctx.selected_vertex,
+        'selected_hemisphere': data_manager.ctx.selected_hemi
+    }
 
 
 @data_bp.route(Routes.GET_VIEWER_METADATA.value, methods=['GET'])
@@ -519,3 +532,15 @@ def update_timepoint() -> dict:
     return {'status': 'success'}
 
 
+@data_bp.route(Routes.UPDATE_TR.value, methods=['POST'])
+@handle_context()
+@handle_route_errors(
+    error_msg='Unknown error in TR update request',
+    log_msg='TR update successful',
+    route=Routes.UPDATE_TR
+)
+def update_tr() -> dict:
+    """Update TR"""
+    tr = convert_value(request.form['tr'])
+    data_manager.ctx.set_tr(tr)
+    return {'status': 'success'}

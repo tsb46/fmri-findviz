@@ -62,6 +62,8 @@ class PreprocessTimeCourse {
         // Set states of preprocessing switches
         this.normSwitchEnabled = false;
         this.filterSwitchEnabled = false;
+        // check if time course data is preprocessed
+        this.checkPreprocessed();
         // enable all buttons by default
         this.enableAllButtons();
         // initialize preprocessing switches
@@ -93,6 +95,21 @@ class PreprocessTimeCourse {
                 this.initializeTimeCoursePrepSelect();
             }
         );
+    }
+
+    /**
+     * Check if time course data is preprocessed
+     */
+    async checkPreprocessed() {
+        // get time course labels
+        const labels = await this.contextManager.data.getTimeCourseLabels();
+        // Loop through time courses and check if they are preprocessed
+        for (let ts of labels) {
+            const preprocessed = await this.contextManager.plot.checkTsPreprocessed(ts);
+            if (preprocessed.is_preprocessed) {
+                this.preprocessAlert.css("display", "block");
+            }
+        }
     }
 
     disableAllButtons() {

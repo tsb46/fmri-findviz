@@ -1,0 +1,62 @@
+<!-- Average Analysis Panel-->
+<div class="modal fade" id="average-modal" tabindex="-1" aria-labelledby="average-modal-label" aria-hidden="true">
+    <div class='spinner-overlay' id="average-spinner-overlay"></div>
+    <div id='average-modal-dialog' class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="average-modal-label">Run Windowed Average</h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <form id="average-form" enctype="multipart/form-data">
+          <div class="modal-body">
+            <!-- Average Spinner Wheel -->
+            <div class="spinner-container d-flex justify-content-center">
+              <div id='average-spinner-wheel' class="spinner-wheel" role="status"></div>
+            </div>
+            <div class='row'>
+              <div class='col ml-3 mr-3'>
+                <div class='row'>
+                  <div id="no-annotation-message-average" class="alert alert-danger" role='alert' style="display: none;">No timepoints are selected for averaging (select time points with annotation tool)</div>
+                </div>
+                <div class='row mt-3'>
+                  <div class='col ml-3 mr-3'>
+                    <div class='row'>
+                      <h5>Window Parameters</h5>
+                      <span class="fa-solid fa-circle-info ml-1 toggle-immediate" data-toggle="tooltip" data-placement="top" title="Perform windowed averaging within the range specified by the left time point and the right time point" aria-hidden="true"></span>
+                    </div>
+                    <div class='row'>
+                      <div class='col-6'>
+                        <label for="average-left-edge">Left Edge</label>
+                        <span class="fa-solid fa-circle-info ml-1 toggle-immediate" data-toggle="tooltip" data-placement="top" title="Specified in time points. Must be less than or equal to zero." aria-hidden="true"></span>
+                        <input type="number" class="form-control" id="average-left-edge" max="0" step="1" value="0">
+                      </div>
+                      <div class='col-6'>
+                        <label for="average-right-edge">Right Edge</label>
+                        <span class="fa-solid fa-circle-info ml-1 toggle-immediate" data-toggle="tooltip" data-placement="top" title="Specified in time points. Must be greater than or equal to zero." aria-hidden="true"></span>
+                        <input type="number" class="form-control" id="average-right-edge" min="0" step="1" value="0">
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <div class="row">
+              <div class="col">
+                <div id="error-message-average" class="alert alert-danger" role='alert' style="display: none;"></div>
+              </div>
+            </div>
+            <div class="row">
+              <div class="col">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                <button type="submit" class="btn btn-primary" id='submit-average' data-dismiss="static">Compute</button>
+              </div>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>

@@ -79,11 +79,10 @@ class NiftiViewer {
         // Handle montage slice direction change - replot with new slice indices
         this.eventBus.subscribeMultiple(
             [
-                EVENT_TYPES.VISUALIZATION.FMRI.TIME_SLIDER_CHANGE, 
-                EVENT_TYPES.VISUALIZATION.FMRI.MONTAGE_SLICE_DIRECTION_CHANGE
+                EVENT_TYPES.VISUALIZATION.FMRI.TIME_SLIDER_CHANGE
             ], 
             async () => {
-                console.log('replotting nifti plot - time slider change or montage slice direction change');
+                console.log('replotting nifti plot - time slider change');
                 const viewer_data = await this.contextManager.data.getFMRIData();
                 this.sliceData = {
                     slice_1: viewer_data.data.func.slice_1,
@@ -154,11 +153,18 @@ class NiftiViewer {
             }
         );
 
-        // Handle view state change - update plot width and slice data and re-plot
-        this.eventBus.subscribe(EVENT_TYPES.VISUALIZATION.FMRI.VIEW_TOGGLE, 
+        // Handle view state change and/or montage slice direction change and perform full plot update
+        this.eventBus.subscribeMultiple(
+            [
+                EVENT_TYPES.VISUALIZATION.FMRI.VIEW_TOGGLE, 
+                EVENT_TYPES.VISUALIZATION.FMRI.MONTAGE_SLICE_DIRECTION_CHANGE
+            ], 
             async (viewState) => {
+                // change plot width
+                this.changeViewPlotWidth(viewState.view_state);
                 const viewer_data = await this.contextManager.data.getFMRIData();
-                console.log('replotting nifti plot - view state change');
+                console.log('initializing nifti plot');
+                // store temporary slice data
                 this.sliceData = {
                     slice_1: viewer_data.data.func.slice_1,
                     slice_2: viewer_data.data.func.slice_2,
@@ -166,33 +172,12 @@ class NiftiViewer {
                     slice_1_coords: viewer_data.data.coords.slice_1,
                     slice_2_coords: viewer_data.data.coords.slice_2,
                     slice_3_coords: viewer_data.data.coords.slice_3,
+                    slice_1_anat: viewer_data.data.anat.slice_1,
+                    slice_2_anat: viewer_data.data.anat.slice_2,
+                    slice_3_anat: viewer_data.data.anat.slice_3,
                 };
-                this.plotNiftiDataUpdate(
-                    this.slice1ContainerId, 
-                    this.sliceData.slice_1, 
-                    this.sliceData.slice_1_coords
-                );
-                this.plotNiftiDataUpdate(
-                    this.slice2ContainerId, 
-                    this.sliceData.slice_2, 
-                    this.sliceData.slice_2_coords
-                );
-                this.plotNiftiDataUpdate(
-                    this.slice3ContainerId, 
-                    this.sliceData.slice_3, 
-                    this.sliceData.slice_3_coords
-                );
-
-                // change plot width
-                this.changeViewPlotWidth(viewState.view_state);
-
-                // re-plot crosshairs
-                if (this.crosshairOn) {
-                    const crosshairCoords = await this.contextManager.data.getCrosshairCoords();
-                    this.plotCrosshairs(this.slice1ContainerId, crosshairCoords.slice_1);
-                    this.plotCrosshairs(this.slice2ContainerId, crosshairCoords.slice_2);
-                    this.plotCrosshairs(this.slice3ContainerId, crosshairCoords.slice_3);
-                }
+                // full plot update
+                this.plotNiftiFullUpdate(viewer_data.plot_options);
             }
         );
 
@@ -436,7 +421,7 @@ class NiftiViewer {
      * Change plot slice width based on view state
      * @param {string} viewState - The view state
      */
-    changeViewPlotWidth(viewState) {    
+    changeViewPlotWidth(viewState) {  
         // update montage slice indices if montage state
         if (viewState == 'montage') {
             // distribute slice containers evenly
@@ -449,8 +434,6 @@ class NiftiViewer {
             document.getElementById(this.slice2ContainerId).style.width = '31%';
             document.getElementById(this.slice3ContainerId).style.width = '31%';
         }
-        // resize windows
-        this.onWindowResize();
     }
 
     /**
@@ -474,6 +457,9 @@ class NiftiViewer {
         };
         // full plot update
         this.plotNiftiFullUpdate(viewer_data.plot_options);
+        // TODO: this is a workaround for a bug where the plot is not resized 
+        //  after the plot is initialized and the plot is not displayed correctly
+        this.onWindowResize();
         // emit event to indicate initialization of plot is complete
         this.eventBus.publish(EVENT_TYPES.VISUALIZATION.FMRI.INIT_NIFTI_VIEWER);
     }

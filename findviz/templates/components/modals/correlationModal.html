@@ -1,0 +1,65 @@
+<!-- Correlation Analysis Panel-->
+<div class="modal fade" id="correlation-modal" tabindex="-1" aria-labelledby="correlation-modal-label" aria-hidden="true">
+    <div class='spinner-overlay' id="correlate-spinner-overlay"></div>
+    <div id='correlation-modal-dialog' class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="correlation-modal-label">Run Correlation</h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <form id="correlation-form" enctype="multipart/form-data">
+          <div class="modal-body">
+            <!-- Correlation Spinner Wheel -->
+            <div class="spinner-container d-flex justify-content-center">
+              <div id='correlate-spinner-wheel' class="spinner-wheel" role="status"></div>
+            </div>
+            <div class='row'>
+              <div class='col ml-3 mr-3'>
+                <div class='row'>
+                  <div class='col'>
+                    <h5>Select Time Course</h5>
+                    <select class="custom-select" id="ts-correlate-select">
+                    </select>
+                  </div>
+                </div>
+                <!-- Preprocess Alert -->
+                <div class='row mt-1'>
+                  <div class='alert alert-secondary mt-3 ml-3' id='correlate-prep-alert' role='alert' style=' display: none;'>
+                    <i class='fa-solid fa-triangle-exclamation'></i>
+                    <span class='mr-2'>Using Preprocessed Time Course</span>
+                  </div>
+                </div>
+                <div class='row mt-3'>
+                  <div class='col ml-3 mr-3'>
+                    <div class='row'>
+                      <h5>Cross-Correlation Parameters</h5>
+                      <span class="fa-solid fa-circle-info ml-1 toggle-immediate" data-toggle="tooltip" data-placement="top" title="Perform cross-correlation with negative or positive lags of the selected time course. Correlation estimates from all lags within the interval [negative lag, positive lag] will be computed. Default is [0,0] (i.e. no lags)." aria-hidden="true"></span>
+                    </div>
+                    <div class='row'>
+                      <div class='col-6'>
+                        <label for="correlate-negative-lag">Negative Lag</label>
+                        <span class="fa-solid fa-circle-info ml-1 toggle-immediate" data-toggle="tooltip" data-placement="top" title="Negative lags must be less than or equal to zero. (Default is zero, i.e. no lags)" aria-hidden="true"></span>
+                        <input type="number" class="form-control" id="correlate-negative-lag" max="0" step="1" value="0">
+                      </div>
+                      <div class='col-6'>
+                        <label for="correlate-positive-lag">Positive Lag</label>
+                        <span class="fa-solid fa-circle-info ml-1 toggle-immediate" data-toggle="tooltip" data-placement="top" title="Positive lags must be greater than or equal to zero. (Default is zero, i.e. no lags)" aria-hidden="true"></span>
+                        <input type="number" class="form-control" id="correlate-positive-lag" min="0" step="1" value="0">
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <div id="error-message-correlation" class="alert alert-danger" role='alert' style="display: none;"></div>
+            <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+            <button type="submit" class="btn btn-primary" id='submit-correlation' data-dismiss="static">Compute</button>
+        </div>
+        </form>
+      </div>
+    </div>
+  </div>

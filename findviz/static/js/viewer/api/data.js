@@ -8,19 +8,20 @@
 // - getDistanceData
 // - getFMRIData
 // - getMontageData
-// - getNTimepoints
 // - getTaskConditions
 // - getTimeCourseData
 // - getTimeCourseLabels
 // - getTimeCourseLabelsPreprocessed
 // - getTimeCourseSource
 // - getTimePoint
+// - getTimePoints
+// - getVertexCoords
 // - getViewerMetadata
 // - getVoxelCoords
 // - getWorldCoords
 
 // Update functions:
-// - changeTimecourseScale
+// - convertTimepoints
 // - popFmriTimeCourse
 // - removeFmriTimeCourses
 // - updateFmriTimeCourse
@@ -28,31 +29,29 @@
 // - updateMontageSliceDir
 // - updateMontageSliceIdx
 // - updateTimepoint
+// - updateTr
 
 import { API_ENDPOINTS } from '../../constants/APIEndpoints.js';
 import { makeRequest, createFormData } from './utils.js';
 
 /**
- * Change timecourse scale
- * @param {string} label - Label of the timecourse to change
- * @param {string} scale_change - Direction of the scale change
+ * Convert timepoints to seconds
  * @param {string} context_id - ID of context to switch to
  * @returns {Promise} Promise object representing the API call
  */
-export const changeTimecourseScale = async (label, scale_change, context_id) => {
+export const convertTimepoints = async (context_id) => {
     return makeRequest(
-        API_ENDPOINTS.DATA.CHANGE_TIMECOURSE_SCALE,
+        API_ENDPOINTS.DATA.CONVERT_TIMEPOINTS,
         {
             method: 'POST',
-            body: createFormData(
-                { label, scale_change, context_id }
-            )
+            body: createFormData({ context_id })
         },
         {
-            errorPrefix: 'Error changing timecourse scale'
+            errorPrefix: 'Error converting timepoints to seconds'
         }
     );
 };
+
 
 /**
  * Fetches click coords from the server
@@ -198,24 +197,6 @@ export const getMontageData = async (context_id) => {
 };
 
 /**
- * Fetches number of timepoints from the server
- * @param {string} context_id - ID of context to switch to
- * @returns {Promise} Promise object representing the API call
- */
-export const getNTimepoints = async (context_id) => {
-    return makeRequest(
-        API_ENDPOINTS.DATA.GET_N_TIMEPOINTS,
-        { 
-            method: 'GET', 
-            body: createFormData({ context_id }) 
-        },
-        {
-            errorPrefix: 'Error fetching number of timepoints'
-        }
-    );
-};
-
-/**
  * Fetches task conditions from the server
  * @param {string} context_id - ID of context to switch to
  * @returns {Promise} Promise object representing the API call
@@ -307,7 +288,7 @@ export const getTimeCourseSource = async (context_id) => {
 };
 
 /**
- * Fetch timepoint from the server
+ * Fetch selected timepoint from the server
  * @returns {Promise} Promise object representing the API call
  */
 export const getTimePoint = async (context_id) => {
@@ -319,6 +300,43 @@ export const getTimePoint = async (context_id) => {
         },
         {
             errorPrefix: 'Error fetching timepoint'
+        }
+    );
+};
+
+/**
+ * Fetches timepoints from the server
+ * @param {string} context_id - ID of context to switch to
+ * @returns {Promise} Promise object representing the API call
+ */
+export const getTimePoints = async (context_id) => {
+    return makeRequest(
+        API_ENDPOINTS.DATA.GET_TIMEPOINTS,
+        {
+            method: 'GET',
+            body: createFormData({ context_id })
+        },
+        {
+            errorPrefix: 'Error fetching timepoints'
+        }
+    );
+};
+
+
+/**
+ * Fetches vertex coordinates from the server
+ * @param {string} context_id - ID of context to switch to
+ * @returns {Promise} Promise object representing the API call
+ */
+export const getVertexCoords = async (context_id) => {
+    return makeRequest(
+        API_ENDPOINTS.DATA.GET_VERTEX_COORDS,
+        {
+            method: 'GET',
+            body: createFormData({ context_id })
+        },
+        {
+            errorPrefix: 'Error fetching vertex coordinates'
         }
     );
 };
@@ -516,3 +534,21 @@ export const updateTimepoint = async (timePoint, context_id) => {
     );
 };
 
+/**
+ * Updates TR on the server
+ * @param {number} tr - TR to update
+ * @param {string} context_id - ID of context to switch to
+ * @returns {Promise} Promise object representing the API call
+ */
+export const updateTr = async (tr, context_id) => {
+    return makeRequest(
+        API_ENDPOINTS.DATA.UPDATE_TR,
+        {
+            method: 'POST',
+            body: createFormData({ tr, context_id })
+        },
+        {
+            errorPrefix: 'Error updating TR'
+        }
+    );
+};

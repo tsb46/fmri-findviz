@@ -9,6 +9,7 @@ class TimeSlider {
      * @param {string} timeSliderId - The ID of the time slider
      * @param {string} timeSliderTitle - The title of the time slider
      * @param {string} timeSliderTitleId - The ID of the time slider title
+     * @param {string} timePointDisplayId - The ID of the time point display
      * @param {ViewerEvents} eventBus - The event bus
      * @param {ContextManager} contextManager - The context manager
      */
@@ -17,6 +18,7 @@ class TimeSlider {
         timeSliderId,
         timeSliderTitle,
         timeSliderTitleId,
+        timePointDisplayId,
         eventBus,
         contextManager
     ) {
@@ -25,6 +27,7 @@ class TimeSlider {
         this.timeSliderId = timeSliderId;
         this.timeSlider = $(`#${this.timeSliderId}`);
         this.timeSliderTitle = $(`#${timeSliderTitleId}`);
+        this.timePointDisplay = $(`#${timePointDisplayId}`);
         this.eventBus = eventBus;
         this.contextManager = contextManager;
 
@@ -33,35 +36,54 @@ class TimeSlider {
 
         // Initialize time slider
         this.initializeTimeSlider();
+
+        // Attach event listeners
+        this.attachEventListeners();
+    }
+    
+    /**
+     * Attach event listeners
+     */
+    attachEventListeners() {
+        // attach change event listener to time slider
+        this.timeSlider.on('change', this.handleSlide.bind(this));
+
+        // listen for time point conversion event
+        this.eventBus.subscribe(
+            EVENT_TYPES.VISUALIZATION.FMRI.TR_CONVERT_BUTTON_CLICK,
+            (conversionState) => {
+                this.handleTimePointConversion(conversionState);
+            }
+        );
     }
 
     /**
      * Initialize time slider
      */
     async initializeTimeSlider() {
-        const metadata = await this.contextManager.data.getViewerMetadata();
-        this.timePoints = metadata.timepoints;
+        // get time points
+        const timePointsResponse = await this.contextManager.data.getTimePoints();
+        this.timePoints = timePointsResponse.timepoints;
+        // get selected time point
+        const selectedTimePointResponse = await this.contextManager.data.getTimePoint();
+        const selectedTimePoint = selectedTimePointResponse.timepoint;
         // Get display text for formatter
         const displayText = this.displayText;
-        // get time point to display text converter
-        const timeToDisplay = {}
-        this.timePoints.forEach((item, index) => {
-          timeToDisplay[index] = item
-        });
+        const timePoints = this.timePoints;
         // formatter function
         const formatter = function(value) {
-            return displayText + timeToDisplay[value];
+            return displayText + timePoints[value];
         }
         // initialize time slider
         initializeSingleSlider(
             this.timeSliderId,
-            0,
-            [0, this.timePoints.length - 1],
+            selectedTimePoint,
+            [0, timePoints.length - 1],
             1,
             formatter
         );
-         // Attach the `slide` event listener (for when the slider value changes)
-         this.timeSlider.on('change', this.handleSlide.bind(this));
+        // update time point display
+        this.timePointDisplay.text(timePoints[selectedTimePoint]);
     }
 
     /**
@@ -72,12 +94,37 @@ class TimeSlider {
         console.log(`time slider changed to ${timeIndex}`);
         // update time point
         await this.contextManager.data.updateTimepoint(timeIndex);
-
         // Trigger a time slider change event
         this.eventBus.publish(
             EVENT_TYPES.VISUALIZATION.FMRI.TIME_SLIDER_CHANGE, 
             timeIndex
         );
+        // update time point display
+        this.timePointDisplay.text(this.timePoints[timeIndex]);
+    }
+
+    /**
+     * Handle time point conversion
+     * @param {Object} conversionState - The conversion state
+     */
+    async handleTimePointConversion(conversionState) {
+        // get viewer metadata
+        const timePointsResponse = await this.contextManager.data.getTimePoints();
+        this.timePoints = timePointsResponse.timepoints;
+        
+        // update formatter function in time slider
+        const displayText = this.displayText;
+        const timePoints = this.timePoints;
+        const formatter = function(value) {
+            return displayText + timePoints[value];
+        }
+        // update time slider
+        this.timeSlider.slider('setAttribute', 'formatter', formatter);
+        // refresh time slider
+        this.timeSlider.slider('refresh', { useCurrentValue: true });
+        // update time point display
+        const timeIndex = this.timeSlider.slider('getValue');
+        this.timePointDisplay.text(timePoints[timeIndex]);
     }
 }
 

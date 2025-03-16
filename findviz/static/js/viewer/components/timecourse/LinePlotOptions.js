@@ -85,10 +85,8 @@ class LinePlotOptions {
         this.toggleConvolution = $(`#${toggleConvolutionId}`);
 
         // set state variables
-        this.timeMarkerPlotState = true;
         this.selectedTimeCourse = null;
         this.timeCourseType = {}
-        
 
         // get time course and task labels and initialize components
         this.getPlotLabels((labels) => {
@@ -110,7 +108,6 @@ class LinePlotOptions {
          // initialize time marker plot components
          this.initializeTimeMarkerPlotComponents();
 
-        
         // attach listeners
         this.attachListeners();
     }
@@ -387,7 +384,7 @@ class LinePlotOptions {
         timeMarkerWidthValue,
         timeMarkerOpacityValue,
     ) {
-        console.log('initializeTimeMarkerPlotSliders');
+        console.log('initialize time marker plot sliders');
         initializeSingleSlider(
             this.timeMarkerWidthSliderId, 
             timeMarkerWidthValue, 
@@ -430,7 +427,7 @@ class LinePlotOptions {
      * Handles the color change listener for the time course(s) and time marker
      */
     async handleTimeCourseColorChangeListener() {
-        console.log('timeCourseSelectColor change');
+        console.log('time course color change');
         if (this.timeCourseType[this.selectedTimeCourse] === 'task') {
             await this.contextManager.plot.updateTaskDesignPlotOptions(
                 this.selectedTimeCourse,
@@ -456,7 +453,7 @@ class LinePlotOptions {
      * Handles the line width slider change listener for the time course(s)
      */
     async handleTimeCourseLineWidthSliderChangeListener() {
-        console.log('timeCourseLineWidthSlider change');
+        console.log('time course line width slider change');
         if (this.timeCourseType[this.selectedTimeCourse] === 'task') {
             await this.contextManager.plot.updateTaskDesignPlotOptions(
                 this.selectedTimeCourse,
@@ -530,7 +527,7 @@ class LinePlotOptions {
      * Handles the opacity slider change listener for the time course(s)
      */
     async handleTimeCourseOpacitySliderChangeListener() {
-        console.log('timeCourseOpacitySlider change');
+        console.log('time course opacity slider change');
         if (this.timeCourseType[this.selectedTimeCourse] === 'task') {
             await this.contextManager.plot.updateTaskDesignPlotOptions(
                 this.selectedTimeCourse,
@@ -556,7 +553,7 @@ class LinePlotOptions {
      * Handles the time course select menu change listener
      */
     handleTimeCourseSelectMenuChangeListener() {
-        console.log('timeCourseSelectMenu change');
+        console.log('time course select menu change');
         this.selectedTimeCourse = this.timeCourseSelectMenu.val();
         this.changeLinePlotComponents();
         this.modifyShiftResetButtons();
@@ -566,7 +563,7 @@ class LinePlotOptions {
      * Handles the time course mode change listener
      */
     async handleTimeCourseSelectModeChangeListener() {
-        console.log('timeCourseSelectMode change');
+        console.log('time course select mode change');
         if (this.timeCourseType[this.selectedTimeCourse] === 'task') {
             await this.contextManager.plot.updateTaskDesignPlotOptions(
                 this.selectedTimeCourse,
@@ -592,7 +589,7 @@ class LinePlotOptions {
      * Handles the color change listener for the time marker
      */
     async handleTimeMarkerColorChangeListener() {
-        console.log('timeMarkerSelectColor change');
+        console.log('time marker color change');
         await this.contextManager.plot.updateTimeMarkerPlotOptions(
             { color: this.timeMarkerSelectColor.val() }
         );
@@ -606,7 +603,7 @@ class LinePlotOptions {
      * Handles the shape change listener for the time marker
      */
     async handleTimeMarkerShapeChangeListener() {
-        console.log('timeMarkerSelectShape change');
+        console.log('time marker shape change');
         await this.contextManager.plot.updateTimeMarkerPlotOptions(
             { shape: this.timeMarkerSelectShape.val() }
         );
@@ -620,7 +617,7 @@ class LinePlotOptions {
      * Handles the opacity slider change listener for the time marker
      */
     async handleTimeMarkerOpacitySliderChangeListener() {
-        console.log('timeMarkerOpacitySlider change');
+        console.log('time marker opacity slider change');
         await this.contextManager.plot.updateTimeMarkerPlotOptions(
             { opacity: this.timeMarkerOpacitySlider.val() }
         );
@@ -634,7 +631,7 @@ class LinePlotOptions {
      * Handles the width slider change listener for the time marker
      */
     async handleTimeMarkerWidthSliderChangeListener() {
-        console.log('timeMarkerWidthSlider change');
+        console.log('time marker width slider change');
         await this.contextManager.plot.updateTimeMarkerPlotOptions(
             { width: this.timeMarkerWidthSlider.val() }
         );
@@ -648,7 +645,7 @@ class LinePlotOptions {
      * Handles the toggle convolution change listener
      */
     async handleToggleConvolutionChangeListener() {
-        console.log('toggleConvolution change - only for task design input');
+        console.log('toggle convolution change - only for task design input');
         const convChecked = this.toggleConvolution.prop('checked');
         let convolution = null;
         if (convChecked) {

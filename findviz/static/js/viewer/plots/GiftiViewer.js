@@ -28,6 +28,9 @@ class GiftiViewer {
         this.eventBus = eventBus;
         this.contextManager = contextManager;
 
+        // initialize hover text state as true
+        this.hoverTextOn = true;
+
         // attach event listeners
         this.attachEventListeners();
     }
@@ -123,6 +126,19 @@ class GiftiViewer {
             }
         );
 
+        // Handle freeze view toggle
+        this.eventBus.subscribe(EVENT_TYPES.VISUALIZATION.FMRI.TOGGLE_FREEZE_VIEW, 
+            (freezeViewState) => {
+                if (freezeViewState.freezeViewState) {
+                    console.log('freezing view on gifti plot');
+                    this.freezeView();
+                } else {
+                    console.log('unfreezing view on gifti plot');
+                    this.unfreezeView();
+                }
+            }
+        );
+
         // resize window on colorbar toggle
         this.eventBus.subscribe(EVENT_TYPES.VISUALIZATION.FMRI.TOGGLE_COLORBAR, 
             () => {
@@ -132,6 +148,27 @@ class GiftiViewer {
 
         // Add event listener for window resize
         window.addEventListener('resize', () => this.onWindowResize());
+    }
+
+    /**
+     * Freeze zooming and panning of gifti plot
+     */
+    freezeView() {
+        const layoutUpdate = {
+            xaxis: {
+                fixedrange: true
+            },
+            yaxis: {
+                fixedrange: true
+            },
+            dragmode: false
+        };
+        if (this.leftInput) {
+            Plotly.relayout(this.leftPlotContainerId, layoutUpdate);
+        }
+        if (this.rightInput) {
+            Plotly.relayout(this.rightPlotContainerId, layoutUpdate);
+        }
     }
 
     /**
@@ -317,18 +354,18 @@ class GiftiViewer {
         if ((hemisphere == 'left') || (hemisphere == null && this.leftInput)) {
             let leftSurfaceUpdate = {
                 intensity: [this.surfaceData.left],
-                text: [this.surfaceData.left],
-                hoverinfo: hoverTextOn ? 'x+y+z' : 'none',
-                hovertemplate: hoverTextOn ? 'Intensity: %{text:.3f}<br>x: %{x}<br>y: %{y}<br>z: %{z} <extra></extra>': null
+                text: [this.formattedCoordLabelsLeft],
+                hoverinfo: this.hoverTextOn ? 'all' : 'none',
+                hovertemplate: this.hoverTextOn ? 'Intensity: %{intensity:.3f}<br> %{text}<extra></extra>': null
             }
             Plotly.restyle(this.leftPlotContainerId, leftSurfaceUpdate);
         }
         if ((hemisphere == 'right') || (hemisphere == null && this.rightInput)) {
             let rightSurfaceUpdate = {
                 intensity: [this.surfaceData.right],
-                text: [this.surfaceData.right],
-                hoverinfo: hoverTextOn ? 'x+y+z' : 'none',
-                hovertemplate: hoverTextOn ? 'Intensity: %{text:.3f}<br>x: %{x}<br>y: %{y}<br>z: %{z} <extra></extra>': null
+                text: [this.formattedCoordLabelsRight],
+                hoverinfo: this.hoverTextOn ? 'all' : 'none',
+                hovertemplate: this.hoverTextOn ? 'Intensity: %{intensity:.3f}<br> %{text}<extra></extra>': null
             }
             Plotly.restyle(this.rightPlotContainerId, rightSurfaceUpdate);
         }
@@ -456,6 +493,27 @@ class GiftiViewer {
         }
         if (this.rightInput) {
             Plotly.Plots.resize(document.getElementById(this.rightPlotContainerId));
+        }
+    }
+
+    /**
+     * Allow zooming and panning of gifti plot
+     */
+    unfreezeView() {
+        const layoutUpdate = {
+            xaxis: {
+                fixedrange: false
+            },
+            yaxis: {
+                fixedrange: false
+            },
+            dragmode: 'rotate'
+        };
+        if (this.leftInput) {
+            Plotly.relayout(this.leftPlotContainerId, layoutUpdate);
+        }
+        if (this.rightInput) {
+            Plotly.relayout(this.rightPlotContainerId, layoutUpdate);
         }
     }
 }

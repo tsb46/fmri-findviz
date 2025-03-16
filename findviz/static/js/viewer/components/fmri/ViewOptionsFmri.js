@@ -14,13 +14,14 @@ class ViewOptionsFmri {
      * @param {string} colormapContainerId - The ID of the colormap container
      * @param {string} colormapDropdownMenuId - The ID of the colormap dropdown menu
      * @param {string} colormapDropdownToggleId - The ID of the colormap dropdown toggle
-     * @param {string} [viewToggleId = null] - The ID of the view toggle
-     * @param {string} [crosshairToggleId = null] - The ID of the crosshair toggle
-     * @param {string} [hoverToggleId = null] - The ID of the hover toggle
-     * @param {string} [directionMarkerToggleId = null] - The ID of the direction marker toggle
-     * @param {string} [colorbarToggleId = null] - The ID of the colorbar toggle
-     * @param {string} [reverseColorbarToggleId = null] - The ID of the reverse colorbar toggle
-     * @param {string} [screenshotButtonId = null] - The ID of the screenshot button
+     * @param {string} viewToggleId - The ID of the view toggle
+     * @param {string} crosshairToggleId - The ID of the crosshair toggle
+     * @param {string} hoverToggleId - The ID of the hover toggle
+     * @param {string} directionMarkerToggleId - The ID of the direction marker toggle
+     * @param {string} colorbarToggleId - The ID of the colorbar toggle
+     * @param {string} reverseColorbarToggleId - The ID of the reverse colorbar toggle
+     * @param {string} freezeViewToggleId - The ID of the freeze view toggle
+     * @param {string} screenshotButtonId - The ID of the screenshot button
      * @param {ViewerEvents} eventBus - The event bus
      * @param {ContextManager} contextManager - The context manager
      */
@@ -32,13 +33,14 @@ class ViewOptionsFmri {
         colormapContainerId,
         colormapDropdownMenuId,
         colormapDropdownToggleId,
-        viewToggleId = null,
-        crosshairToggleId = null,
-        hoverToggleId = null,
-        directionMarkerToggleId = null,
-        colorbarToggleId = null,
-        reverseColorbarToggleId = null,
-        screenshotButtonId = null,
+        viewToggleId,
+        crosshairToggleId,
+        hoverToggleId,
+        directionMarkerToggleId,
+        colorbarToggleId,
+        reverseColorbarToggleId,
+        freezeViewToggleId,
+        screenshotButtonId,
         eventBus,
         contextManager
     ) {
@@ -55,6 +57,7 @@ class ViewOptionsFmri {
         this.directionMarkerToggleId = directionMarkerToggleId;
         this.colorbarToggleId = colorbarToggleId;
         this.reverseColorbarToggleId = reverseColorbarToggleId;
+        this.freezeViewToggleId = freezeViewToggleId;
         this.screenshotButtonId = screenshotButtonId;
         // get event bus and context manager
         this.eventBus = eventBus;
@@ -94,6 +97,12 @@ class ViewOptionsFmri {
                     await this.contextManager.plot.updateNiftiViewState(
                         this.toggleState['viewToggle']
                     );
+                    // if view state is montage, set text to ortho
+                    if (this.toggleState['viewToggle'] == 'montage') {
+                        this.viewToggle.text('Ortho');
+                    } else {
+                        this.viewToggle.text('Montage');
+                    }
                     this.eventBus.publish(
                         EVENT_TYPES.VISUALIZATION.FMRI.VIEW_TOGGLE,
                         { view_state: this.toggleState['viewToggle'] }
@@ -129,6 +138,31 @@ class ViewOptionsFmri {
                     this.eventBus.publish(
                         EVENT_TYPES.VISUALIZATION.FMRI.TOGGLE_CROSSHAIR,
                         { crosshairState: this.toggleState['crosshairToggle'] }
+                    );
+                });
+            }
+        } else {
+            // Freeze view listener
+            if (this.freezeViewToggleId) {
+                this.freezeViewToggle = $(`#${this.freezeViewToggleId}`);
+                this.freezeViewToggle.on('click', async () => {
+                    console.log('freeze view toggle clicked');
+                    this.toggleState['freezeViewToggle'] = !this.toggleState['freezeViewToggle'];
+                    await this.contextManager.plot.updateFmriPlotOptions(
+                        { freeze_view_on: this.toggleState['freezeViewToggle'] }
+                    );
+                    if (this.toggleState['freezeViewToggle']) {
+                        // set icon to unlock
+                        this.freezeViewToggle.find('i').addClass('fa-unlock');
+                        this.freezeViewToggle.find('i').removeClass('fa-lock');
+                    } else {
+                        // set icon to lock
+                        this.freezeViewToggle.find('i').addClass('fa-lock');
+                        this.freezeViewToggle.find('i').removeClass('fa-unlock');
+                    }
+                    this.eventBus.publish(
+                        EVENT_TYPES.VISUALIZATION.FMRI.TOGGLE_FREEZE_VIEW,
+                        { freezeViewState: this.toggleState['freezeViewToggle'] }
                     );
                 });
             }
@@ -200,6 +234,8 @@ class ViewOptionsFmri {
             $(`#${this.viewToggleId}`).prop('disabled', false);
             $(`#${this.crosshairToggleId}`).prop('disabled', false);
             $(`#${this.directionMarkerToggleId}`).prop('disabled', false);
+        } else {
+            $(`#${this.freezeViewToggleId}`).prop('disabled', false);
         }
         $(`#${this.hoverToggleId}`).prop('disabled', false);
         $(`#${this.colorbarToggleId}`).prop('disabled', false);
@@ -217,6 +253,7 @@ class ViewOptionsFmri {
         this.toggleState['colorbarToggle'] = plotOptions.colorbar_on;
         this.toggleState['reverseColorbarToggle'] = plotOptions.reverse_colormap;
         this.toggleState['viewToggle'] = viewState.view_state;
+        this.toggleState['freezeViewToggle'] = plotOptions.freeze_view_on;
     }
 }
 

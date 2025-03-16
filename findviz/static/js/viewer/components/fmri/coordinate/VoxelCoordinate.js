@@ -6,7 +6,7 @@ import ContextManager from '../../../api/ContextManager.js';
 
 class VoxelCoordinate {
     /**
-     * @param {("nifti" | "gifti")} plotType - The type of plot
+     * @param {string} containerId - The id of the voxel coordinate container
      * @param {string} xCoordinateId - The id of the x coordinate display box
      * @param {string} yCoordinateId - The id of the y coordinate display box
      * @param {string} zCoordinateId - The id of the z coordinate display box
@@ -14,7 +14,7 @@ class VoxelCoordinate {
      * @param {ContextManager} contextManager - The context manager
      */
     constructor(
-        plotType,
+        containerId,
         xCoordinateId,
         yCoordinateId,
         zCoordinateId,
@@ -26,18 +26,18 @@ class VoxelCoordinate {
         this.xCoordinate = $(`#${xCoordinateId}`);
         this.yCoordinate = $(`#${yCoordinateId}`);
         this.zCoordinate = $(`#${zCoordinateId}`);
+        this.container = $(`#${containerId}`);
 
-        // only enable event listeners for nifti plot
-        if (plotType === 'nifti') {
-            // enable coordinate display boxes
-            this.xCoordinate.prop('disabled', false);
-            this.yCoordinate.prop('disabled', false);
-            this.zCoordinate.prop('disabled', false);
-            // update coordinates
-            this.updateCoordinates();
-            // attach event listeners
-            this.attachEventListeners();
-        }
+        // display container
+        this.container.show();
+        // enable coordinate display boxes
+        this.xCoordinate.prop('disabled', false);
+        this.yCoordinate.prop('disabled', false);
+        this.zCoordinate.prop('disabled', false);
+        // update coordinates
+        this.updateCoordinates();
+        // attach event listeners
+        this.attachEventListeners();
     }
 
     /**

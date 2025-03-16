@@ -45,35 +45,46 @@ export const DOM_IDS = {
         SPINNER_WHEEL: 'distance-spinner-wheel'
     },
     FILE_UPLOAD: {
-        ADD_TS: 'add-time-series',
         ERROR_MESSAGE: 'error-message-upload',
+        ERROR_MODAL_SERVER: 'error-server-modal',
+        ERROR_MODAL_SCENE: 'error-scene-modal',
         FMRI: {
-          GIFTI: {
-            LEFT_FUNC: 'left-hemisphere-gifti-func',
-            RIGHT_FUNC: 'right-hemisphere-gifti-func',
-            LEFT_MESH: 'left-hemisphere-gifti-mesh',
-            RIGHT_MESH: 'right-hemisphere-gifti-mesh'
-          },
-          NIFTI: {
-            FUNC: 'nifti-func',
-            ANAT: 'nifti-anat',
-            MASK: 'nifti-mask',
-          },
+            GIFTI: {
+                LEFT_FUNC: 'left-hemisphere-gifti-func',
+                RIGHT_FUNC: 'right-hemisphere-gifti-func',
+                LEFT_MESH: 'left-hemisphere-gifti-mesh',
+                RIGHT_MESH: 'right-hemisphere-gifti-mesh'
+            },
+            NIFTI: {
+                FUNC: 'nifti-func',
+                ANAT: 'nifti-anat',
+                MASK: 'nifti-mask',
+            },
         },
+        FORM: 'upload-form',
+        MODAL: 'upload-modal',
         SPINNERS: {
-          OVERLAY: 'file-load-spinner-overlay',
-          WHEEL: 'file-load-spinner-wheel'
+            OVERLAY: 'file-load-spinner-overlay',
+            WHEEL: 'file-load-spinner-wheel'
         },
         TS: {
-          FILE: 'time-series-file',
-          LABEL: 'time-series-label',
-          HEADER: 'has-header'
+            ADD_TS: 'add-time-series',
+            CONTAINER: 'time-series-file-container',
+            FILE: 'time-series-file',
+            LABEL: 'time-series-label',
+            HEADER: 'has-header',
+            REMOVE_BUTTON: 'remove-time-series',
+            FILE_PAIR: 'times-series-file-pair'
         },
         TASK: {
           FILE: 'task-design-file',
           TR: 'task-design-tr',
           SLICETIME: 'task-design-slicetime'
         },
+        SCENE: {
+            BUTTON: 'upload-scene',
+            FILE: 'file-scene'
+        }
     },
     FMRI: {
         COORDINATE: {
@@ -82,7 +93,12 @@ export const DOM_IDS = {
             WORLD_Z: 'z-world',
             VOXEL_X: 'x-voxel',
             VOXEL_Y: 'y-voxel',
-            VOXEL_Z: 'z-voxel'
+            VOXEL_Z: 'z-voxel',
+            WORLD_COORD_CONTAINER: 'world-coord-container',
+            VOXEL_COORD_CONTAINER: 'voxel-coord-container',
+            VERTEX_COORD_CONTAINER: 'vertex-coord-container',
+            VERTEX_NUMBER: 'vertex-number',
+            SELECTED_HEMISPHERE: 'selected-hemisphere'
         },
         GIFTI_CONTAINERS: {
             COLORBAR: 'colorbar-container-gii',
@@ -120,6 +136,7 @@ export const DOM_IDS = {
             COLORMAP_DROPDOWN_MENU: 'colormap-dropdown-menu',
             COLORMAP_DROPDOWN_TOGGLE: 'colormap-dropdown-toggle',
             CROSSHAIR_TOGGLE: 'toggle-crosshair',
+            FREEZE_VIEW_TOGGLE: 'toggle-freeze-view',
             HOVER_TOGGLE: 'toggle-hover',
             DIRECTION_LABELS_TOGGLE: 'toggle-direction-labels',
             MONTAGE_POPOVER: 'montage-popover',
@@ -134,6 +151,8 @@ export const DOM_IDS = {
             RESET_SLIDER_BUTTON: 'reset-slider-button',
             REVERSE_COLORBAR_TOGGLE: 'reverse-colorbar',
             THRESHOLD_SLIDER: 'threshold-slider',
+            TR_CONVERT_FORM: 'tr-convert-form',
+            TR_CONVERT_BUTTON: 'toggle-tr-convert',
             TOGGLE_VIEW_BUTTON: 'toggle-view',
             SCREENSHOT_BUTTON: 'select-screenshot',
         }
@@ -145,9 +164,18 @@ export const DOM_IDS = {
         ERROR: 'error-modal'
     },
     PARENT_CONTAINER: 'parent-container',
+    SAVE_SCENE: {
+        MODAL: 'save-scene-modal',
+        SUBMIT_BUTTON: 'save-scene-button',
+        FILE_NAME: 'scene-name',
+        ERROR_MESSAGE: 'error-message-save-scene',
+        SPINNER_OVERLAY: 'save-scene-spinner-overlay',
+        SPINNER_WHEEL: 'save-scene-spinner-wheel'
+    },
     TIME_SLIDER: {
         TIME_SLIDER: 'time-slider',
         TIME_SLIDER_TITLE: 'time-slider-title',
+        TIME_POINT_DISPLAY: 'time-point-display'
     },
     TIMECOURSE : {
         ANNOTATE: {
@@ -220,7 +248,6 @@ export const DOM_IDS = {
             TOGGLE_TS_HOVER: 'toggle-ts-hover'
         }
     },
-    SAVE_SCENE: 'save-scene-display',
     SPINNERS: {
         OVERLAY: 'spinner-overlay',
         WHEEL: 'spinner-wheel',

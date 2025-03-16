@@ -18,7 +18,10 @@ import Montage from './components/fmri/Montage.js';
 import Movie from './components/fmri/movie/Movie.js';
 import MoviePopover from './components/fmri/movie/moviePopover.js';
 import TimeSlider from './components/fmri/TimeSlider.js';
+import TimeConvert from './components/fmri/TimeConvert.js';
 import ViewOptionsFmri from './components/fmri/ViewOptionsFmri.js';
+// fmri coordinate components
+import VertexCoordinate from './components/fmri/coordinate/VertexCoordinate.js';
 import VoxelCoordinate from './components/fmri/coordinate/VoxelCoordinate.js';
 import WorldCoordinate from './components/fmri/coordinate/WorldCoordinate.js';
 // timecourse plot components
@@ -103,6 +106,15 @@ class AnalysisViewer {
 
         // initialize time course components
         this.initializeTimecourseComponents();
+
+        // initialize save scene component
+        this.saveScene = new SaveScene(
+            DOM_IDS.SAVE_SCENE.MODAL,
+            DOM_IDS.SAVE_SCENE.SUBMIT_BUTTON,
+            DOM_IDS.SAVE_SCENE.FILE_NAME,
+            DOM_IDS.SAVE_SCENE.ERROR_MESSAGE,
+            this.eventBus,
+        );
     }
 
     /**
@@ -116,6 +128,15 @@ class AnalysisViewer {
             DOM_IDS.TIME_SLIDER.TIME_SLIDER,
             this.textLabels.timeSliderTitle,
             DOM_IDS.TIME_SLIDER.TIME_SLIDER_TITLE,
+            DOM_IDS.TIME_SLIDER.TIME_POINT_DISPLAY,
+            this.eventBus,
+            this.contextManager
+        );
+
+         // initialize time conversion component
+         this.timeConvert = new TimeConvert(
+            DOM_IDS.FMRI.VISUALIZATION_OPTIONS.TR_CONVERT_FORM,
+            DOM_IDS.FMRI.VISUALIZATION_OPTIONS.TR_CONVERT_BUTTON,
             this.eventBus,
             this.contextManager
         );
@@ -187,6 +208,7 @@ class AnalysisViewer {
             DOM_IDS.FMRI.VISUALIZATION_OPTIONS.DIRECTION_LABELS_TOGGLE,
             DOM_IDS.FMRI.VISUALIZATION_OPTIONS.COLORBAR_TOGGLE,
             DOM_IDS.FMRI.VISUALIZATION_OPTIONS.REVERSE_COLORBAR_TOGGLE,
+            DOM_IDS.FMRI.VISUALIZATION_OPTIONS.FREEZE_VIEW_TOGGLE,
             DOM_IDS.FMRI.VISUALIZATION_OPTIONS.SCREENSHOT_BUTTON,
             this.eventBus,
             this.contextManager
@@ -208,25 +230,36 @@ class AnalysisViewer {
             this.contextManager
         );
 
-        // initialize voxel coordinate display
-        this.voxelCoordinate = new VoxelCoordinate(
-            this.plotType,
-            DOM_IDS.FMRI.COORDINATE.VOXEL_X,
-            DOM_IDS.FMRI.COORDINATE.VOXEL_Y,
-            DOM_IDS.FMRI.COORDINATE.VOXEL_Z,
-            this.eventBus,
-            this.contextManager
-        );
-        
-        // initialize world coordinate display
-        this.worldCoordinate = new WorldCoordinate(
-            this.plotType,
-            DOM_IDS.FMRI.COORDINATE.WORLD_X,
-            DOM_IDS.FMRI.COORDINATE.WORLD_Y,
-            DOM_IDS.FMRI.COORDINATE.WORLD_Z,
-            this.eventBus,
-            this.contextManager
-        );
+        // coordinate display for nifti plot
+        if (this.plotType === 'nifti') {
+            // initialize voxel coordinate display
+            this.voxelCoordinate = new VoxelCoordinate(
+                DOM_IDS.FMRI.COORDINATE.VOXEL_COORD_CONTAINER,
+                DOM_IDS.FMRI.COORDINATE.VOXEL_X,
+                DOM_IDS.FMRI.COORDINATE.VOXEL_Y,
+                DOM_IDS.FMRI.COORDINATE.VOXEL_Z,
+                this.eventBus,
+                this.contextManager
+            );
+            // initialize world coordinate display
+            this.worldCoordinate = new WorldCoordinate(
+                DOM_IDS.FMRI.COORDINATE.WORLD_COORD_CONTAINER,
+                DOM_IDS.FMRI.COORDINATE.WORLD_X,
+                DOM_IDS.FMRI.COORDINATE.WORLD_Y,
+                DOM_IDS.FMRI.COORDINATE.WORLD_Z,
+                this.eventBus,
+                this.contextManager
+            );
+        } else {
+            // initialize vertex coordinate display
+            this.vertexCoordinate = new VertexCoordinate(
+                DOM_IDS.FMRI.COORDINATE.VERTEX_COORD_CONTAINER,
+                DOM_IDS.FMRI.COORDINATE.VERTEX_NUMBER,
+                DOM_IDS.FMRI.COORDINATE.SELECTED_HEMISPHERE,
+                this.eventBus,
+                this.contextManager
+            )
+        }
 
     }
 

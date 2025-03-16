@@ -41,37 +41,45 @@
   <div id="spinner-overlay" class="spinner-overlay"></div>
   <!-- FMRI Container -->
   <div id="fmri-container" class='row justify-content-center'>
-    <!-- FMRI User Options Container -->
-    <div id="fmri-user-options-container">
-      <!-- Visualization Options -->
-      {% include 'components/fmriVisualizationOptions.html' %}
-      <!-- Preprocessing Options -->
-      {% include 'components/fmriPreprocessingOptions.html' %}
+    <div class="col-2 pr-1">
+      <!-- FMRI User Options Container -->
+      <div id="fmri-user-options-container" class="h-100">
+        <!-- Visualization Options -->
+        {% include 'components/fmriVisualizationOptions.html' %}
+        <!-- Preprocessing Options -->
+        {% include 'components/fmriPreprocessingOptions.html' %}
+      </div>
     </div>
-    <!-- Visualization Container -->
-    <div id="fmri-visualization-container">
-      <!-- fmri visualization card -->
-      {% include 'components/fmriVisualizationCard.html' %}
+    <div class="col-10 pr-2">
+      <!-- Visualization Container -->
+      <div id="fmri-visualization-container" class="h-100">
+        <!-- fmri visualization card -->
+        {% include 'components/fmriVisualizationCard.html' %}
+      </div>
     </div>
     <!-- Spinner wheel for upload, preprocessing, and analysis wait -->
-    <div class="spinner-containerd-flex justify-content-center">
+    <div class="spinner-container d-flex justify-content-center">
       <div id="spinner-wheel" class="spinner-wheel"></div>
     </div>
   </div>
   <!-- Time Course Container -->
   <div id="time-course-container" class='row justify-content-center mt-2' style="visibility: hidden;">
-    <!-- Time Course User Options Container -->
-    <div id="time-course-user-options-container">
-      <!-- Visualization Options -->
-      {% include 'components/timeCourseVisualizationOptions.html' %}
-      <!-- Time Marker Options -->
-      {% include 'components/timeCourseMarkerOptions.html' %}
-      <!-- Preprocessing Options -->
-      {% include 'components/timeCoursePreprocessingOptions.html' %}
+    <div class="col-2 pr-1">
+      <!-- Time Course User Options Container -->
+      <div id="time-course-user-options-container" class="h-100">
+        <!-- Visualization Options -->
+        {% include 'components/timeCourseVisualizationOptions.html' %}
+        <!-- Time Marker Options -->
+        {% include 'components/timeCourseMarkerOptions.html' %}
+        <!-- Preprocessing Options -->
+        {% include 'components/timeCoursePreprocessingOptions.html' %}
+      </div>
     </div>
-    <div id='time-course-visualization-container'>
-      <!-- time course visualization card -->
-      {% include 'components/timeCourseVisualizationCard.html' %}
+    <div class="col-10 pr-2">
+      <div id='time-course-visualization-container' class="h-100">
+        <!-- time course visualization card -->
+        {% include 'components/timeCourseVisualizationCard.html' %}
+      </div>
     </div>
   </div>
   <!-- Viewer Error Modal -->

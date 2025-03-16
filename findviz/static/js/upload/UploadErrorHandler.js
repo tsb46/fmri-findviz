@@ -6,12 +6,17 @@ class UploadErrorHandler {
     /**
      * Create error handler instance
      * @param {string} errorMessageDivId - ID of main error message div
+     * @param {string} serverErrorModalId - ID of server error modal
+     * @param {string} sceneErrorModalId - ID of scene error modal
      */
     constructor(
-        errorMessageDivId
+        errorMessageDivId,
+        serverErrorModalId,
+        sceneErrorModalId
     ) {
         this.errorMessageDiv = document.getElementById(errorMessageDivId);
-
+        this.serverErrorModal = $(`#${serverErrorModalId}`);
+        this.sceneErrorModal = $(`#${sceneErrorModalId}`);
         // set clear error message listener on form input change
         this.clearErrorMessageOnFormChange();
     }
@@ -37,7 +42,7 @@ class UploadErrorHandler {
     displayError(
         message, 
         errorIconDivs = null, 
-        fieldDivs = null, 
+        fieldDivs = null,
         setErrorTimeout = false, 
         timeOut = 5000
     ) {
@@ -129,14 +134,14 @@ class UploadErrorHandler {
      * Show generic server error modal
      */
     showServerErrorModal() {
-        $('#error-server-modal').modal('show');
+        this.serverErrorModal.modal('show');
     }
 
     /**
      * Show scene upload error modal
      */
     showSceneErrorModal() {
-        $('#error-scene-modal').modal('show');
+        this.sceneErrorModal.modal('show');
     }
 }
 

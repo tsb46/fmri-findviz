@@ -27,6 +27,7 @@ class VisualizationState:
         tr: Repetition time. If not provided, set to None.
         slicetime_ref: Slicetime reference. If not provided, set to None.
         timepoints: Timepoint indices. Default is None
+        timepoints_seconds: Timepoint indices in seconds. Default is None
         global_min: Global minimum value across all timepoints. Default is None
         global_max: Global maximum value across all timepoints. Default is None
         file_type: Type of visualization data ('nifti' or 'gifti'). Default is None
@@ -69,6 +70,7 @@ class VisualizationState:
     tr: Optional[float] = None
     slicetime_ref: Optional[float] = None
     timepoints: Optional[List[int]] = None
+    timepoints_seconds: Optional[List[float]] = None
     global_min: Optional[float] = None
     global_max: Optional[float] = None
     file_type: Optional[Literal['nifti', 'gifti']] = None

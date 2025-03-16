@@ -30,6 +30,7 @@ def create_app():
     from findviz.routes.viewer.analysis import analysis_bp
     from findviz.routes.viewer.color import color_bp
     from findviz.routes.viewer.data import data_bp
+    from findviz.routes.viewer.io import io_bp
     from findviz.routes.viewer.plot import plot_bp
     from findviz.routes.viewer.preprocess import preprocess_bp
 
@@ -40,6 +41,7 @@ def create_app():
     app.register_blueprint(analysis_bp)
     app.register_blueprint(color_bp)
     app.register_blueprint(data_bp)
+    app.register_blueprint(io_bp)
     app.register_blueprint(plot_bp)
     app.register_blueprint(preprocess_bp)
 

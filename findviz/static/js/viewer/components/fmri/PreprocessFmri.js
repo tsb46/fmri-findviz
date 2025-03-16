@@ -77,13 +77,25 @@ class PreprocessFmri {
             DOM_IDS.SPINNERS.OVERLAY, 
             DOM_IDS.SPINNERS.WHEEL
         );
-
+        // check if fmri data is preprocessed
+        this.checkPreprocess();
         // initialize preprocessing switches
         this.initializeSwitches();
         // initialize preprocess submit
         this.prepSubmit.on('click', (event) => this.handlePreprocessSubmit(event));
         // initialize preprocess reset
         this.prepReset.on('click', (event) => this.handlePreprocessReset(event));
+    }
+
+    /**
+     * Check if fmri data is preprocessed
+     */
+    async checkPreprocess() {
+        const preprocessed = await this.contextManager.plot.checkFmriPreprocessed();
+        if (preprocessed.is_preprocessed) {
+            // show preprocess alert
+            this.preprocessAlert.css("display", "block");
+        }
     }
 
     /**

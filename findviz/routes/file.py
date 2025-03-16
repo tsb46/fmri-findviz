@@ -4,7 +4,7 @@ Routes for file upload and validation
 from findviz.logger_config import setup_logger
 from flask import Blueprint, request, make_response, jsonify
 from findviz.routes.shared import data_manager
-from findviz.routes.utils import convert_value
+from findviz.routes.utils import convert_value, Routes
 from findviz.viz import exception
 from findviz.viz.io.cache import Cache
 from findviz.viz.io.nifti import NiftiFiles
@@ -19,7 +19,7 @@ logger = setup_logger(__name__)
 file_bp = Blueprint('file', __name__)
 
 
-@file_bp.route('/check_cache', methods=['GET'])
+@file_bp.route(Routes.CHECK_CACHE.value, methods=['GET'])
 def check_cache():
     """Check if cache exists and return cached data if it does"""
     logger.info("Checking cache status")
@@ -47,7 +47,7 @@ def check_cache():
 
 
 # Get header of time course file
-@file_bp.route('/get_header', methods=['POST'])
+@file_bp.route(Routes.GET_HEADER.value, methods=['POST'])
 def get_header():
     # get time course file and its index
     ts_file = request.files.get('ts_file')
@@ -57,8 +57,7 @@ def get_header():
         logger.info("Successfully extracted header from file: %s", ts_file.filename)
     except (
         exception.FileInputError,
-        exception.FileUploadError,
-        exception.FileValidationError
+        exception.FileUploadError
     ) as e:
         logger.error("Error reading time series file header: %s", 
                         str(e), exc_info=True)
@@ -83,7 +82,7 @@ def get_header():
         }, 201)
 
 # Upload file input
-@file_bp.route('/upload', methods=['POST'])
+@file_bp.route(Routes.UPLOAD_FILES.value, methods=['POST'])
 def upload():
     logger.info("Starting file upload process")
     # get form parameters
@@ -177,4 +176,46 @@ def upload():
         viewer_metadata,
         201
     )
+
+
+@file_bp.route(Routes.UPLOAD_SCENE.value, methods=['POST'])
+def upload_scene() -> dict:
+    """Upload a scene file"""
+    logger.info("Uploading scene file")
+    # Check if a file was uploaded
+    if 'scene_file' not in request.files:
+        logger.error("No scene file provided")
+        return make_response({"error": "No scene file provided"}, 400)
+    
+    scene_file = request.files['scene_file']
+    
+    # Check if file is empty
+    if scene_file.filename == '':
+        logger.error("Empty file provided")
+        return make_response({"error": "Empty file provided"}, 400)
+    
+    # Validate file extension
+    if not scene_file.filename.endswith('.fvstate'):
+        logger.error("Invalid file format. Expected .fvstate file")
+        return make_response({"error": "Invalid file format. Expected .fvstate file"}, 400)
+    
+    try:
+        # Read the file data
+        scene_file_data = scene_file.read()
+        
+        # Load the state
+        data_manager.load(scene_file_data)
+        
+        # Get viewer metadata for the restored state
+        viewer_metadata = data_manager.ctx.get_viewer_metadata()
+        
+        return make_response(viewer_metadata, 200)
+    except exception.FVStateVersionIncompatibleError as e:
+        logger.error(f"Error loading scene file: {str(e)}")
+        return make_response(
+            {"error": f"Failed to load scene: {str(e)}"}, 400)
+    except Exception as e:
+        logger.error(f"Error loading scene file: {str(e)}")
+        return make_response({"error": f"Failed to load scene: {str(e)}"}, 500)
+    
 

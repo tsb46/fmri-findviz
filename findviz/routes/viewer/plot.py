@@ -3,7 +3,7 @@ Plot routes
 Routes:
     ADD_ANNOTATION_MARKER: Add annotation marker
     CHANGE_TASK_CONVOLUTION: Change task convolution
-    CHANGE_TIMECOURSE_SCALE: Change timecourse scale
+    CHECK_FMRI_PREPROCESSED: Check if fmri data is preprocessed
     CHECK_TS_PREPROCESSED: Check if timecourse is preprocessed
     CLEAR_ANNOTATION_MARKERS: Clear annotation markers
     GET_ANNOTATION_MARKERS: Get annotation markers
@@ -15,6 +15,7 @@ Routes:
     GET_TIMECOURSE_GLOBAL_PLOT_OPTIONS: Get timecourse global plot options
     GET_TIMECOURSE_PLOT_OPTIONS: Get timecourse plot options
     GET_TIMEMARKER_PLOT_OPTIONS: Get timemarker plot options
+    GET_TS_FMRI_PLOTTED: Get whether an fmri timecourse is plotted
     MOVE_ANNOTATION_SELECTION: Move annotation selection
     RESET_FMRI_COLOR_OPTIONS: Reset fMRI color options
     REMOVE_DISTANCE_PLOT: Remove distance plot
@@ -87,22 +88,16 @@ def change_task_convolution() -> int:
     return {'status': 'success'}
 
 
-@plot_bp.route(Routes.CHANGE_TIMECOURSE_SCALE.value, methods=['POST'])
+@plot_bp.route(Routes.CHECK_FMRI_PREPROCESSED.value, methods=['POST'])
 @handle_context()
 @handle_route_errors(
-    error_msg='Unknown error in change timecourse scale change request',
-    log_msg='Timecourse scale change successful',
-    route_parameters=['label', 'ts_type', 'scale_change'],
-    fmri_file_type=lambda: data_manager.ctx.fmri_file_type,
-    route=Routes.CHANGE_TIMECOURSE_SCALE
+    error_msg='Unknown error in check fmri preprocessed request',
+    log_msg='Checked fmri preprocessed successfully',
+    route=Routes.CHECK_FMRI_PREPROCESSED
 )
-def change_timecourse_scale() -> dict:
-    """Change timecourse scale"""
-    label = convert_value(request.form['label'])
-    ts_type = convert_value(request.form['ts_type'])
-    scale_change = convert_value(request.form['scale_change'])
-    data_manager.ctx.change_timecourse_scale(label, ts_type, scale_change)
-    return {'status': 'success'}
+def check_fmri_preprocessed() -> dict:
+    """Check if fmri data is preprocessed"""
+    return {'is_preprocessed': data_manager.ctx.fmri_preprocessed}
 
 
 @plot_bp.route(Routes.CHECK_TS_PREPROCESSED.value, methods=['POST'])
@@ -283,6 +278,19 @@ def get_timecourse_shift_history() -> dict:
 def get_timemarker_plot_options() -> dict:
     """Get current timemarker plot options"""
     return data_manager.ctx.get_time_marker_plot_options()
+
+
+@plot_bp.route(Routes.GET_TS_FMRI_PLOTTED.value, methods=['GET'])
+@handle_context()
+@handle_route_errors(
+    error_msg='Unknown error in get ts fmri plotted request',
+    log_msg='Retrieved ts fmri plotted successfully',
+    fmri_file_type=lambda: data_manager.ctx.fmri_file_type,
+    route=Routes.GET_TS_FMRI_PLOTTED
+)
+def get_ts_fmri_plotted() -> dict:
+    """Get whether an fmri timecourse is plotted"""
+    return {'ts_fmri_plotted': data_manager.ctx.ts_fmri_plotted}
 
 
 @plot_bp.route(Routes.MOVE_ANNOTATION_SELECTION.value, methods=['POST'])

@@ -99,7 +99,7 @@ class AnnotationMarkerPlotOptions:
                 setattr(self, key, TimeCourseColor(value))
             else:
                 setattr(self, key, value)
-
+    
 @dataclass
 class DistancePlotOptions:
     """Distance plot options.
@@ -169,6 +169,7 @@ class FmriPlotOptions:
         threshold_min: Minimum value for threshold mapping. Default is 0
         threshold_max: Maximum value for threshold mapping. Default is 0
         threshold_range: Threshold range for threshold mapping. Default is None
+        tr_convert_on: Whether TR conversion is enabled. Default is False
         color_map: Color map for color mapping. Default is 'Viridis'
         reverse_colormap: Whether the colormap is reversed. Default is False
         hover_text_on: Whether hover text is enabled. Default is True
@@ -182,6 +183,12 @@ class FmriPlotOptions:
             Default is True
         direction_marker_on: Whether direction marker is enabled for NIFTI data. 
             Default is False
+        freeze_view_on: Whether freeze view is enabled for GIFTI data. 
+            Default is False
+        fmri_timecourse_enabled: Whether fmri timecourse plottingis enabled. 
+            Default is False
+        fmri_timecourse_freeze: Whether fmri timecourse plot selections are frozen. 
+            Default is False
     """
     # fmri plot options
     color_min: Optional[float] = None
@@ -192,6 +199,7 @@ class FmriPlotOptions:
     threshold_min: float = 0
     threshold_max: float = 0
     threshold_range: Optional[Tuple[float, float]] = None
+    tr_convert_on: bool = False
     color_map: ColorMaps = ColorMaps.VIRIDIS
     reverse_colormap: bool = False
     hover_text_on: bool = True
@@ -201,6 +209,9 @@ class FmriPlotOptions:
     allowed_precision: int = 6
     crosshair_on: bool = True
     direction_marker_on: bool = False
+    freeze_view_on: bool = False
+    fmri_timecourse_enabled: bool = False
+    fmri_timecourse_freeze: bool = False
 
     def to_dict(self) -> Dict[str, float]:
         """Convert to dictionary."""
@@ -214,6 +225,7 @@ class FmriPlotOptions:
             'threshold_min': self.threshold_min,
             'threshold_max': self.threshold_max,
             'threshold_range': self.threshold_range,
+            'tr_convert_on': self.tr_convert_on,
             'opacity': self.opacity,
             'hover_text_on': self.hover_text_on,
             'precision': self.precision,
@@ -221,7 +233,10 @@ class FmriPlotOptions:
             'slider_step_size': self.slider_step_size,
             'allowed_precision': self.allowed_precision,
             'crosshair_on': self.crosshair_on,
-            'direction_marker_on': self.direction_marker_on
+            'direction_marker_on': self.direction_marker_on,
+            'freeze_view_on': self.freeze_view_on,
+            'fmri_timecourse_enabled': self.fmri_timecourse_enabled,
+            'fmri_timecourse_freeze': self.fmri_timecourse_freeze
         }
     
 
@@ -375,6 +390,15 @@ class TimeCoursePlotOptions:
             # handle enum values
             if key == 'color':
                 setattr(self, key, TimeCourseColor(value))
+            # handle SignalScaler and SignalShifter
+            elif key == 'constant':
+                self.constant.set_history(value)
+            elif key == 'scale':
+                self.scale.set_history(value)
+            elif key == 'preprocess_constant':
+                self.preprocess_constant.set_history(value)
+            elif key == 'preprocess_scale':
+                self.preprocess_scale.set_history(value)
             else:
                 setattr(self, key, value)
 
@@ -472,5 +496,10 @@ class TaskDesignPlotOptions:
             # handle enum values
             if key == 'color':
                 setattr(self, key, TimeCourseColor(value))
+            # handle SignalScaler and SignalShifter
+            elif key == 'scale':
+                self.scale.set_history(value)
+            elif key == 'constant':
+                self.constant.set_history(value)
             else:
                 setattr(self, key, value)

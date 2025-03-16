@@ -68,6 +68,7 @@ class VisualizationContext:
         clear_fmri_preprocessed(): Clear preprocessed fMRI data
         clear_timecourse_preprocessed(): Clear preprocessed timecourse data
         clear_state(): Clear state
+        convert_timepoints(): Convert timepoints to seconds
         create_distance_plot_state(): Create distance plot state
         create_nifti_state(): Initialize state for NIFTI data
         create_gifti_state(): Initialize state for GIFTI data
@@ -82,6 +83,7 @@ class VisualizationContext:
         get_timecourse_global_plot_options(): Get time course global plot options
         get_timecourse_plot_options(): Get time course plot options for a given label
         get_timecourse_shift_history(): Get time course shift history
+        get_timepoints(): Get all timepoints
         get_time_marker_plot_options(): Get time marker plot options
         get_world_coords(): Get world coordinates of currently selected coordinates
         get_viewer_metadata(): Get metadata for viewer
@@ -91,6 +93,8 @@ class VisualizationContext:
         pop_fmri_timecourse(): Pop most recent fmri timecourse from state
         reset_fmri_color_options(): Reset fMRI color options to original
         reset_timecourse_shift(): Reset time course shift (scale or constant)
+        set_timepoints(): set the timepoints for the time course
+        set_tr(): set the fMRI TR (repitition time)
         store_fmri_preprocessed(): Store preprocessed fMRI data
         store_timecourse_preprocessed(): Store preprocessed timecourse data
         update_annotation_marker_plot_options(): Update annotation marker plot options
@@ -229,7 +233,16 @@ class VisualizationContext:
         else:
             logger.warning("right_surface_input attribute does not exist for NIFTI data")
             return False
-        
+    
+    @requires_state
+    @property
+    def selected_hemi(self) -> Literal['left', 'right']:
+        if self._state.file_type == 'gifti':
+            return self._state.selected_hemi
+        else:
+            logger.warning("Selected hemisphere attribute does not exist for NIFTI data")
+            return None
+    
     @requires_state
     @property
     def selected_slice(self) -> Literal['slice_1', 'slice_2', 'slice_3']:
@@ -237,6 +250,15 @@ class VisualizationContext:
             return self._state.selected_slice
         else:
             logger.warning("Selected slice attribute does not exist for GIFTI data")
+            return None
+    
+    @requires_state
+    @property
+    def selected_vertex(self) -> int:
+        if self._state.file_type == 'gifti':
+            return self._state.selected_vertex
+        else:
+            logger.warning("Selected vertex attribute does not exist for NIFTI data")
             return None
     
     @requires_state
@@ -293,6 +315,11 @@ class VisualizationContext:
             else:
                 timecourse_source[label] = 'timecourse'
         return timecourse_source
+    
+    @requires_state
+    @property
+    def ts_fmri_plotted(self) -> bool:
+        return self._state.ts_fmri_plotted
     
     @requires_state
     @property
@@ -412,7 +439,7 @@ class VisualizationContext:
         self._state.task_data = task_data
         self._state.task_enabled = True
         # add metadata
-        self._state.tr = tr
+        self.set_tr(tr)
         self._state.slicetime_ref = slicetime_ref
 
         # Create plot options for each task condition with unique colors
@@ -423,6 +450,11 @@ class VisualizationContext:
             )
             self._state.used_colors.add(plot_options.color)
             self._state.task_plot_options[label] = plot_options
+        
+        # update global ts min and max
+        self._update_ts_minmax()
+        # update shift unit
+        self._update_shift_unit()
     
     @requires_state
     def check_ts_preprocessed(self, label: str) -> bool:
@@ -498,6 +530,18 @@ class VisualizationContext:
         """Clear state."""
         logger.info("Clearing data manager state")
         self._state = None
+    
+    @requires_state
+    def convert_timepoints(self, round_to: int = 5) -> None:
+        """Convert timepoints to seconds"""
+        logger.info("Converting timepoints to seconds")
+        tr = self._state.tr
+        if tr is None:
+            logger.error("TR is not set")
+            return
+        self._state.timepoints_seconds = [
+            round(tp * tr, round_to) for tp in self._state.timepoints
+        ]
     
     @requires_state
     def create_distance_plot_state(
@@ -615,7 +659,20 @@ class VisualizationContext:
         """
         metadata = package_gii_metadata(left_func_img, right_func_img)
         
+        # check right and/or left hemisphere inputs
+        if left_func_img:
+            left_input = True
+        else:
+            left_input = False
+
+        if right_func_img:
+            right_input = True
+        else:
+            right_input = False
+
         self._state = GiftiVisualizationState(
+            left_input=left_input,
+            right_input=right_input,
             timepoints=metadata['timepoints'],
             global_min=metadata['global_min'],
             global_max=metadata['global_max'],
@@ -644,12 +701,6 @@ class VisualizationContext:
         # Store functional data
         self._state.gifti_data['left_func_img'] = left_func_img
         self._state.gifti_data['right_func_img'] = right_func_img
-        
-        # Store inputs
-        if left_func_img:
-            self._state.left_input = True
-        if right_func_img:
-            self._state.right_input = True
             
         # Store mesh data
         # TODO: ensure first position is coordinates, and second is faces
@@ -936,6 +987,18 @@ class VisualizationContext:
             'scale': scale.scale_history, 
             'constant': constant.shift_history
         }
+
+    @requires_state
+    def get_timepoints(self) -> List[float | int]:
+        """Return timepoints in seconds or in TRs
+        
+        Returns:
+            List[float | int]: All timepoints
+        """
+        if self._state.fmri_plot_options.tr_convert_on:
+            return self._state.timepoints_seconds
+        else:
+            return self._state.timepoints
     
     @requires_state
     def get_time_marker_plot_options(self) -> TimeMarkerPlotOptionsDict:
@@ -985,6 +1048,7 @@ class VisualizationContext:
                 tr=self._state.tr,
                 slicetime_ref=self._state.slicetime_ref,
                 timepoints=self._state.timepoints,
+                timepoints_seconds=self._state.timepoints_seconds,
                 global_min=self._state.global_min,
                 global_max=self._state.global_max,
                 slice_len=self._state.slice_len,
@@ -1006,6 +1070,7 @@ class VisualizationContext:
                 vertices_right=self._state.vertices_right,
                 faces_right=self._state.faces_right,
                 timepoints=self._state.timepoints,
+                timepoints_seconds=self._state.timepoints_seconds,
                 global_min=self._state.global_min,
                 global_max=self._state.global_max,
                 fmri_preprocessed=self._state.fmri_preprocessed,
@@ -1382,6 +1447,20 @@ class VisualizationContext:
             )
         self._state.timepoints = timepoints
         logger.info("Set timepoints to %s", timepoints)
+    
+    @requires_state
+    def set_tr(self, tr: float) -> None:
+        """Override the TR (repitition time) with a new value.
+        
+        Arguments:
+            tr: New TR value.
+        """
+        # check if TR is valid
+        if tr <= 0:
+            raise ValueError("TR must be greater than 0")
+        # set TR
+        self._state.tr = tr
+        logger.info("Set TR to %s", tr)
 
     @requires_state
     def store_fmri_preprocessed(self, data: Dict) -> None:

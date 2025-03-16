@@ -8,11 +8,13 @@ It implements a singleton pattern to ensure consistent state across the applicat
 Classes:
     DataManager: Singleton manager for visualization state
 """
+
 from typing import Dict, Optional, ClassVar, List
 
 from findviz.logger_config import setup_logger
 from findviz.viz.viewer.context import VisualizationContext
-
+from findviz.viz.viewer.state.state_file import StateFile
+from findviz.viz import exception
 logger = setup_logger(__name__)
 
 
@@ -34,7 +36,9 @@ class DataManager:
         create_analysis_context: Create a new context for analysis results
         get_context: Get a context by its ID
         get_context_ids: Get all available context IDs
+        load: Load a scene file
         get_active_context_id: Get the ID of the currently active context
+        save: save the current scene
         switch_context: Switch the active context to the specified ID
     """
     _instance: ClassVar[Optional['DataManager']] = None
@@ -108,6 +112,48 @@ class DataManager:
             str: ID of the active context
         """
         return self._active_context_id
+    
+    def load(self, scene_file_data: bytes) -> None:
+        """Load a scene file and replace current context.
+        
+        Arguments:
+            scene_file_data: The data to load
+        """
+        try:
+            # Deserialize context from bytes
+            context = StateFile.deserialize_from_bytes(scene_file_data)
+
+            # Replace the main context with the loaded one
+            self.switch_context("main")
+            self._contexts["main"] = context
+            logger.info(f"Loaded context from file with ID: {context.context_id}")
+        # handle version incompatibility error higher up
+        except exception.FVStateVersionIncompatibleError as e:
+            raise
+        except ValueError as e:
+            logger.error(f"Error loading state file: {str(e)}")
+            raise
+        except Exception as e:
+            logger.error(f"Unexpected error during state loading: {str(e)}")
+            raise ValueError(f"Failed to load state: {str(e)}")
+
+    def save(self, file_name: str = "scene.fvstate") -> bytes:
+        """Save the current scene to a .fvstate file and return the serialized data.
+        
+        Arguments:
+            file_name: Name of the file to save to
+            
+        Returns:
+            bytes: Serialized context data that can be served as a download
+        """        
+        # Get current context
+        context = self.get_context(self._active_context_id)
+        
+        # Serialize context using our custom format
+        serialized_data = StateFile.serialize_to_bytes(context)
+        logger.info(f"Prepared context {self._active_context_id} for download as {file_name}")
+        
+        return serialized_data
 
     def switch_context(self, context_id: str) -> None:
         """Switch the active context to the specified ID.

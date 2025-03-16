@@ -1,4 +1,6 @@
-// set montage box popup options
+// Montage.js
+// This component is used to set the montage box popup options
+
 import { EVENT_TYPES } from '../../../constants/EventTypes.js';
 import { initializeSingleSlider } from '../sliders.js';
 import ContextManager from '../../api/ContextManager.js';

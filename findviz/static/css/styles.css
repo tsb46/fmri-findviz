@@ -68,16 +68,6 @@
     100% { transform: rotate(360deg); }
 }
 
-/*FMRI Container Layout*/
-#fmri-user-options-container {
-    flex: 0 0 17%; /* Adjust this percentage as needed */
-    max-width: 17%;
-    padding-right: 20px;
-  }
-#fmri-visualization-container {
-    flex: 0 0 80%; /* Adjust this percentage as needed */
-    max-width: 80%;
-}
 
 /*Surface Viewer*/
 #surface-container {
@@ -133,17 +123,6 @@
 #slice-3-container {
     width: 31%;
     height: 100%;
-}
-
-/*Time Course Container Layout*/
-#time-course-user-options-container {
-    flex: 0 0 17%; /* Adjust this percentage as needed */
-    max-width: 17%;
-    padding-right: 20px;
-  }
-#time-course-visualization-container {
-    flex: 0 0 80%; /* Adjust this percentage as needed */
-    max-width: 80%;
 }
 
 /*Time course plots*/

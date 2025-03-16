@@ -459,29 +459,34 @@ def get_ts_header(
         If file extension is invalid
     FileUploadError
         If there are issues reading the file
-    FileValidationError
-        If file contents fail validation
     """
     # load time course file and validate
     # check file extension
-    if not validate.validate_ts_ext(utils.get_filename(file.filename)):
+    filename = utils.get_filename(file)
+    if not validate.validate_ts_ext(filename):
         raise exception.FileInputError(
-            f'Unrecognized file extension for {utils.get_filename(file)}.'
+            f'Unrecognized file extension for {filename}.'
                 ' Only .csv or .txt are allowed.',
             exception.ExceptionFileTypes.TIMECOURSE.value, 'browser',
             [browser_fields[TimeCourseFiles.FILES.value]],
             index=[file_index]
         )
+    # get header
     try:
-        ts = read_ts_file(
-            file, header=False, method='browser', 
-            index=file_index, validate_numeric=False
-        )
+        delimiter = ','
+        reader = utils.get_csv_reader(file, delimiter, 'browser')
+        header = next(reader)
+    # raise generic exception to be handled higher in stack
     except Exception as e:
-        raise e
+        raise exception.FileUploadError(
+            f'Error in reading time course file:  {filename}',
+            exception.ExceptionFileTypes.TIMECOURSE.value, 'browser',
+            [browser_fields[TimeCourseFiles.FILES.value]],
+            index=[file_index]
+        ) from e
 
     # return first row
-    return str(ts[0])
+    return str(header[0])
 
 
 def read_task_file(
@@ -700,7 +705,7 @@ def read_ts_file(
                 else:
                     row_i = i+1
                 raise exception.FileValidationError(
-                    f'Non-numeric entry found in time course file {filename} on {row_i}.'
+                    f'Non-numeric entry found in time course file {filename} on Line {row_i}.'
                     ' All elements must be numeric. If there is a header, '
                     'specify in input.',
                     validate.validate_ts_numeric.__name__,

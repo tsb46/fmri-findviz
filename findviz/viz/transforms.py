@@ -105,7 +105,7 @@ def gifti_to_array(
     # Get the length of left hemisphere data
     split_index = len(left_gifti.darrays[0].data)
     # Concatenate the data from both hemispheres
-    concat_data = np.concatenate([
+    concat_data = np.hstack([
         _gifti_extract_data(left_gifti),
         _gifti_extract_data(right_gifti)
     ])

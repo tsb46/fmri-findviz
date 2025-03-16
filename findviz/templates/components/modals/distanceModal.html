@@ -1,0 +1,56 @@
+<!-- Time Point Distance Modal-->
+<div class="modal fade" id="distance-modal" tabindex="-1" aria-labelledby="distance-modal-label" aria-hidden="true">
+    <div id='distance-modal-dialog' class="modal-dialog modal-dialog-centered">
+    <!-- Distance spinner overlay-->
+    <div class='spinner-overlay' id="distance-spinner-overlay"></div>
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="distance-modal-label">Compute Time Point Distance</h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <form id="distance-form" enctype="multipart/form-data">
+          <div class="modal-body">
+            <!-- Distance Spinner Wheel -->
+            <div class="spinner-container d-flex justify-content-center">
+              <div id='distance-spinner-wheel' class="spinner-wheel" role="status"></div>
+            </div>
+            <div class="row">
+              <div class='col ml-3 mr-3'>
+                <div class='row'>
+                  <div class="alert alert-primary" role="alert">
+                    <span class='mr-2'>Selected Time Point:</span>
+                    <span id='timepoint-distance-label' class="fs-4 fw-bold">0</span>
+                  </div>
+                </div>
+                <div class='row'>
+                  <div class="alert alert-secondary" id="distance-prep-alert" role="alert" style="display: none;">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                    <span class='mr-2'>Using Preprocessed Data</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class='row'>
+              <div class='col ml-3 mr-3'>
+                <h5>Select Distance Metric</h5>
+                <select class="custom-select" id="distance-metric-select">
+                  <option value="euclidean">Euclidean</option>
+                  <option value="sqeuclidean">Squared Euclidean</option>
+                  <option value="cityblock">City Block</option>
+                  <option value="cosine">Cosine</option>
+                  <option value="correlation">Correlation</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <div id="error-message-distance" class="alert alert-danger" role='alert' style="display: none;"></div>
+            <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+            <button type="submit" class="btn btn-primary" id='run-average' data-dismiss="static">Compute</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>

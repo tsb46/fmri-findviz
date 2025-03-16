@@ -392,7 +392,7 @@ def get_ts_minmax(
     if task_data is not None:
         task_min = float(np.nanmin([task_data[task] for task in task_data]))
         task_max = float(np.nanmax([task_data[task] for task in task_data]))
-    
+
     global_min = float(np.nanmin([ts_min, task_min]))
     global_max = float(np.nanmax([ts_max, task_max]))
 

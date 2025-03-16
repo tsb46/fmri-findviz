@@ -7,6 +7,15 @@ export const EVENT_TYPES = {
         DISTANCE: 'distanceSuccessful',
         DISTANCE_REMOVE: 'distanceRemoveSuccessful',
     },
+    PREPROCESSING: {
+        PREPROCESS_FMRI_RESET: 'preprocessFmriReset',
+        PREPROCESS_FMRI_SUCCESS: 'preprocessFmriSuccess',
+        PREPROCESS_TIMECOURSE_RESET: 'preprocessTimecourseReset',
+        PREPROCESS_TIMECOURSE_SUCCESS: 'preprocessTimecourseSuccess',
+    },
+    SAVE_SCENE: {
+        SAVE_SCENE_SUCCESS: 'saveSceneSuccess',
+    },
     VISUALIZATION: {
         ANNOTATE: {
             ANNOTATE_STATE_CHANGED: 'annotateStateChanged',
@@ -45,7 +54,9 @@ export const EVENT_TYPES = {
             TOGGLE_COLORBAR: 'toggleColorbarChange',
             TOGGLE_CROSSHAIR: 'toggleCrosshairChange',
             TOGGLE_DIRECTION_MARKER: 'toggleDirectionMarkerChange',
+            TOGGLE_FREEZE_VIEW: 'toggleFreezeViewChange',
             TOGGLE_REVERSE_COLORBAR: 'toggleReverseColorbarChange',
+            TR_CONVERT_BUTTON_CLICK: 'trConvertButtonClick',
             VIEW_TOGGLE: 'toggleViewChange',
         },
         TIMECOURSE: {
@@ -71,11 +82,5 @@ export const EVENT_TYPES = {
             TOGGLE_CONVOLUTION_GLOBAL: 'toggleConvolutionGlobalChange',
             UNDO_FMRI_TIMECOURSE: 'undoFmriTimecourse',
         },
-    },
-    PREPROCESSING: {
-        PREPROCESS_FMRI_RESET: 'preprocessFmriReset',
-        PREPROCESS_FMRI_SUCCESS: 'preprocessFmriSuccess',
-        PREPROCESS_TIMECOURSE_RESET: 'preprocessTimecourseReset',
-        PREPROCESS_TIMECOURSE_SUCCESS: 'preprocessTimecourseSuccess',
     }
 };

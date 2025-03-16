@@ -2,6 +2,7 @@
 
 // Data API functions
 import {
+    convertTimepoints,
     getCrosshairCoords,
     getDirectionLabelCoords,
     getDistanceData,
@@ -10,13 +11,14 @@ import {
     getCoordLabels,
     getLastTimecourse,
     getMontageData,
-    getNTimepoints,
     getTaskConditions,
     getTimeCourseData,
     getTimeCourseLabels,
     getTimeCourseLabelsPreprocessed,
     getTimeCourseSource,
     getTimePoint,
+    getTimePoints,
+    getVertexCoords,
     getViewerMetadata,
     getWorldCoords,
     getVoxelCoords,
@@ -27,10 +29,12 @@ import {
     updateMontageSliceDir,
     updateMontageSliceIdx,
     updateTimepoint,
+    updateTr,
 } from './data.js';
 
 // Plot API functions
 import {
+    checkFmriPreprocessed,
     checkTsPreprocessed,
     getAnnotationMarkers,
     getAnnotationMarkerPlotOptions,
@@ -44,6 +48,7 @@ import {
     getTimeCourseGlobalPlotOptions,
     getTimeMarkerPlotOptions,
     getTimeCourseShiftHistory,
+    getTSFmriPlotted,
     addAnnotationMarker,
     changeTaskConvolution,
     clearAnnotationMarkers,
@@ -100,7 +105,7 @@ class ViewerContextManager {
         // Group API functions by category
         // Data API functions
         this.data = {
-            checkTsPreprocessed: (...args) => this.wrapApiCall(checkTsPreprocessed, ...args),
+            convertTimepoints: (...args) => this.wrapApiCall(convertTimepoints, ...args),
             getCrosshairCoords: (...args) => this.wrapApiCall(getCrosshairCoords, ...args),
             getDirectionLabelCoords: (...args) => this.wrapApiCall(getDirectionLabelCoords, ...args),
             getDistanceData: (...args) => this.wrapApiCall(getDistanceData, ...args),
@@ -109,15 +114,16 @@ class ViewerContextManager {
             getCoordLabels: (...args) => this.wrapApiCall(getCoordLabels, ...args),
             getLastTimecourse: (...args) => this.wrapApiCall(getLastTimecourse, ...args),
             getMontageData: (...args) => this.wrapApiCall(getMontageData, ...args),
-            getNTimepoints: (...args) => this.wrapApiCall(getNTimepoints, ...args),
             getTaskConditions: (...args) => this.wrapApiCall(getTaskConditions, ...args),
             getTimeCourseData: (...args) => this.wrapApiCall(getTimeCourseData, ...args),
             getTimeCourseLabels: (...args) => this.wrapApiCall(getTimeCourseLabels, ...args),
             getTimeCourseLabelsPreprocessed: (...args) => this.wrapApiCall(getTimeCourseLabelsPreprocessed, ...args),
             getTimeCourseSource: (...args) => this.wrapApiCall(getTimeCourseSource, ...args),
             getTimePoint: (...args) => this.wrapApiCall(getTimePoint, ...args),
-            getVoxelCoords: (...args) => this.wrapApiCall(getVoxelCoords, ...args),
+            getTimePoints: (...args) => this.wrapApiCall(getTimePoints, ...args),
+            getVertexCoords: (...args) => this.wrapApiCall(getVertexCoords, ...args),
             getViewerMetadata: (...args) => this.wrapApiCall(getViewerMetadata, ...args),
+            getVoxelCoords: (...args) => this.wrapApiCall(getVoxelCoords, ...args),
             getWorldCoords: (...args) => this.wrapApiCall(getWorldCoords, ...args),
             popFmriTimeCourse: (...args) => this.wrapApiCall(popFmriTimeCourse, ...args),
             removeFmriTimeCourses: (...args) => this.wrapApiCall(removeFmriTimeCourses, ...args),
@@ -126,10 +132,12 @@ class ViewerContextManager {
             updateMontageSliceDir: (...args) => this.wrapApiCall(updateMontageSliceDir, ...args),
             updateMontageSliceIdx: (...args) => this.wrapApiCall(updateMontageSliceIdx, ...args),
             updateTimepoint: (...args) => this.wrapApiCall(updateTimepoint, ...args),
+            updateTr: (...args) => this.wrapApiCall(updateTr, ...args),
         };
 
         // Plot API functions
         this.plot = {
+            checkFmriPreprocessed: (...args) => this.wrapApiCall(checkFmriPreprocessed, ...args),
             checkTsPreprocessed: (...args) => this.wrapApiCall(checkTsPreprocessed, ...args),
             getAnnotationMarkers: (...args) => this.wrapApiCall(getAnnotationMarkers, ...args),
             getAnnotationMarkerPlotOptions: (...args) => this.wrapApiCall(getAnnotationMarkerPlotOptions, ...args),
@@ -143,6 +151,7 @@ class ViewerContextManager {
             getTimeCourseGlobalPlotOptions: (...args) => this.wrapApiCall(getTimeCourseGlobalPlotOptions, ...args),
             getTimeMarkerPlotOptions: (...args) => this.wrapApiCall(getTimeMarkerPlotOptions, ...args),
             getTimeCourseShiftHistory: (...args) => this.wrapApiCall(getTimeCourseShiftHistory, ...args),
+            getTSFmriPlotted: (...args) => this.wrapApiCall(getTSFmriPlotted, ...args),
             addAnnotationMarker: (...args) => this.wrapApiCall(addAnnotationMarker, ...args),
             changeTaskConvolution: (...args) => this.wrapApiCall(changeTaskConvolution, ...args),
             clearAnnotationMarkers: (...args) => this.wrapApiCall(clearAnnotationMarkers, ...args),

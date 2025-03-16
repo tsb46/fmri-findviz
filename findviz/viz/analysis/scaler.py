@@ -9,9 +9,13 @@ class SignalScaler:
     def __init__(self):
         self.scale_history = []  # Store scaling factors
 
-    def clear_history(self):
+    def clear_history(self) -> None:
         """Clears the scale history."""
         self.scale_history = []
+    
+    def set_history(self, history: List[float]) -> None:
+        """Sets the scale history directly"""
+        self.scale_history = history
 
     def scale(
         self, 
@@ -87,9 +91,13 @@ class SignalShifter:
     def __init__(self):
         self.shift_history = []
     
-    def clear_history(self):
+    def clear_history(self) -> None:
         """Clears the shift history."""
         self.shift_history = []
+    
+    def set_history(self, history: List[float]) -> None:
+        """Sets the shift history directly"""
+        self.shift_history = history
 
     def shift(
         self, 

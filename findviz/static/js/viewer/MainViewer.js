@@ -11,6 +11,8 @@ import { EVENT_TYPES } from '../constants/EventTypes.js';
 // Context Manager
 import ViewerContextManager from './api/ContextManager.js';
 // Components
+// io components
+import SaveScene from './SaveScene.js';
 // general components
 import ColorMap from './components/ColorMap.js';
 // distance plot components
@@ -22,11 +24,13 @@ import Montage from './components/fmri/Montage.js';
 import Movie from './components/fmri/movie/Movie.js';
 import MoviePopover from './components/fmri/movie/moviePopover.js';
 import PreprocessFmri from './components/fmri/PreprocessFmri.js';
+import TimeConvert from './components/fmri/TimeConvert.js';
 import TimeSlider from './components/fmri/TimeSlider.js';
 import ViewOptionsFmri from './components/fmri/ViewOptionsFmri.js';
+// fmri coordinate components
+import VertexCoordinate from './components/fmri/coordinate/VertexCoordinate.js';
 import VoxelCoordinate from './components/fmri/coordinate/VoxelCoordinate.js';
 import WorldCoordinate from './components/fmri/coordinate/WorldCoordinate.js';
-
 // timecourse plot components
 import Annotate from './components/timecourse/annotate/Annotate.js';
 import AnnotatePopover from './components/timecourse/annotate/AnnotatePopover.js';
@@ -93,6 +97,15 @@ class MainViewer{
 
         // initialize time course components
         this.initializeTimecourseComponents();
+
+        // initialize save scene component
+        this.saveScene = new SaveScene(
+            DOM_IDS.SAVE_SCENE.MODAL,
+            DOM_IDS.SAVE_SCENE.SUBMIT_BUTTON,
+            DOM_IDS.SAVE_SCENE.FILE_NAME,
+            DOM_IDS.SAVE_SCENE.ERROR_MESSAGE,
+            this.eventBus,
+        );
     }
 
     /**
@@ -106,6 +119,15 @@ class MainViewer{
             DOM_IDS.TIME_SLIDER.TIME_SLIDER,
             'Time Point: ',
             DOM_IDS.TIME_SLIDER.TIME_SLIDER_TITLE,
+            DOM_IDS.TIME_SLIDER.TIME_POINT_DISPLAY,
+            this.eventBus,
+            this.contextManager
+        );
+
+        // initialize time conversion component
+        this.timeConvert = new TimeConvert(
+            DOM_IDS.FMRI.VISUALIZATION_OPTIONS.TR_CONVERT_FORM,
+            DOM_IDS.FMRI.VISUALIZATION_OPTIONS.TR_CONVERT_BUTTON,
             this.eventBus,
             this.contextManager
         );
@@ -198,6 +220,7 @@ class MainViewer{
             DOM_IDS.FMRI.VISUALIZATION_OPTIONS.DIRECTION_LABELS_TOGGLE,
             DOM_IDS.FMRI.VISUALIZATION_OPTIONS.COLORBAR_TOGGLE,
             DOM_IDS.FMRI.VISUALIZATION_OPTIONS.REVERSE_COLORBAR_TOGGLE,
+            DOM_IDS.FMRI.VISUALIZATION_OPTIONS.FREEZE_VIEW_TOGGLE,
             DOM_IDS.FMRI.VISUALIZATION_OPTIONS.SCREENSHOT_BUTTON,
             this.eventBus,
             this.contextManager
@@ -254,25 +277,37 @@ class MainViewer{
             this.contextManager
         );
 
-        // initialize voxel coordinate display
-        this.voxelCoordinate = new VoxelCoordinate(
-            this.plotType,
-            DOM_IDS.FMRI.COORDINATE.VOXEL_X,
-            DOM_IDS.FMRI.COORDINATE.VOXEL_Y,
-            DOM_IDS.FMRI.COORDINATE.VOXEL_Z,
-            this.eventBus,
-            this.contextManager
-        );
         
-        // initialize world coordinate display
-        this.worldCoordinate = new WorldCoordinate(
-            this.plotType,
-            DOM_IDS.FMRI.COORDINATE.WORLD_X,
-            DOM_IDS.FMRI.COORDINATE.WORLD_Y,
-            DOM_IDS.FMRI.COORDINATE.WORLD_Z,
-            this.eventBus,
-            this.contextManager
-        );
+        // coordinate display for nifti plot
+        if (this.plotType === 'nifti') {
+            // initialize voxel coordinate display
+            this.voxelCoordinate = new VoxelCoordinate(
+                DOM_IDS.FMRI.COORDINATE.VOXEL_COORD_CONTAINER,
+                DOM_IDS.FMRI.COORDINATE.VOXEL_X,
+                DOM_IDS.FMRI.COORDINATE.VOXEL_Y,
+                DOM_IDS.FMRI.COORDINATE.VOXEL_Z,
+                this.eventBus,
+                this.contextManager
+            );
+            // initialize world coordinate display
+            this.worldCoordinate = new WorldCoordinate(
+                DOM_IDS.FMRI.COORDINATE.WORLD_COORD_CONTAINER,
+                DOM_IDS.FMRI.COORDINATE.WORLD_X,
+                DOM_IDS.FMRI.COORDINATE.WORLD_Y,
+                DOM_IDS.FMRI.COORDINATE.WORLD_Z,
+                this.eventBus,
+                this.contextManager
+            );
+        } else {
+            // initialize vertex coordinate display
+            this.vertexCoordinate = new VertexCoordinate(
+                DOM_IDS.FMRI.COORDINATE.VERTEX_COORD_CONTAINER,
+                DOM_IDS.FMRI.COORDINATE.VERTEX_NUMBER,
+                DOM_IDS.FMRI.COORDINATE.SELECTED_HEMISPHERE,
+                this.eventBus,
+                this.contextManager
+            )
+        }
     }
 
 
@@ -497,9 +532,6 @@ class MainViewer{
             window.location.href = API_ENDPOINTS.CLEAR_CACHE;
             location.reload()
         });
-        // set saveScene button to display
-        const saveSceneDisplay = document.getElementById(DOM_IDS.SAVE_SCENE);
-        saveSceneDisplay.style.display = 'block';
     }
 
 }

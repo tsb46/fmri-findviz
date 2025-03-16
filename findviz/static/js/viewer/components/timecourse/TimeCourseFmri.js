@@ -36,6 +36,9 @@ class TimeCourseFmri {
         this.timeCourseEnabled = false;
         this.timeCourseFreeze = false;
 
+        // initialize time course fmri component
+        this.initialize();
+
         // attach event listeners
         this.attachEventListeners();
     }
@@ -45,9 +48,12 @@ class TimeCourseFmri {
      */
     attachEventListeners() {
         // enable fmri time course plotting
-        this.enableFmriTimeCourseButton.on('click', () => {
+        this.enableFmriTimeCourseButton.on('click', async () => {
             console.log('fmri time course enable button clicked');
             this.timeCourseEnabled = !this.timeCourseEnabled;
+            await this.contextManager.plot.updateFmriPlotOptions(
+                {fmri_timecourse_enabled: this.timeCourseEnabled}
+            );
             this.eventBus.publish(
                 EVENT_TYPES.VISUALIZATION.TIMECOURSE.ENABLE_FMRI_TIMECOURSE, 
                 this.timeCourseEnabled
@@ -85,9 +91,12 @@ class TimeCourseFmri {
         });
 
         // freeze currently plotted fmri time course
-        this.timeCourseFreezeButton.on('click', () => {
+        this.timeCourseFreezeButton.on('click', async () => {
             console.log('fmri time course freeze button clicked');
             this.timeCourseFreeze = !this.timeCourseFreeze;
+            await this.contextManager.plot.updateFmriPlotOptions(
+                {fmri_timecourse_freeze: this.timeCourseFreeze}
+            );
             if (this.timeCourseFreeze) {
                 console.log('freezing fmri time course selections');
                 // toggle icon to lock
@@ -105,6 +114,25 @@ class TimeCourseFmri {
                 this.timeCourseFreeze
             );
         });
+    }
+
+    // initialize time course fmri component
+    async initialize() {
+        const plotOptions = await this.contextManager.plot.getFmriPlotOptions();
+        this.timeCourseEnabled = plotOptions.fmri_timecourse_enabled;
+        this.timeCourseFreeze = plotOptions.fmri_timecourse_freeze;
+        if (this.timeCourseEnabled) {
+            this.enableFmriTimeCourseButton.prop('checked', true);
+        }
+        if (this.timeCourseFreeze) {
+            this.timeCourseFreezeButton.prop('disabled', false);
+            this.freezeIcon.removeClass('fa-unlock');
+            this.freezeIcon.addClass('fa-lock');
+        } else {
+            this.timeCourseFreezeButton.prop('disabled', true);
+            this.freezeIcon.removeClass('fa-lock');
+            this.freezeIcon.addClass('fa-unlock');
+        }
     }
 }
 

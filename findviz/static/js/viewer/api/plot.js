@@ -1,6 +1,7 @@
-// plot.js
+
 // API calls for modifying plot display
 // Fetch functions:
+// - checkFmriPreprocessed
 // - checkTsPreprocessed
 // - getAnnotationMarkers
 // - getAnnotationMarkerPlotOptions
@@ -14,6 +15,7 @@
 // - getTimeCourseGlobalPlotOptions
 // - getTimeMarkerPlotOptions
 // - getTimeCourseShiftHistory
+// - getTSFmriPlotted
 
 // Update functions:
 // - addAnnotationMarker
@@ -91,6 +93,24 @@ export const changeTaskConvolution = async (convolution, context_id) => {
         { errorPrefix: 'Error changing task convolution' }
     );
 };
+
+
+/**
+ * Check if fmri data is preprocessed
+ * @param {string} context_id - ID of context to switch to
+ * @returns {Promise} Promise object representing the API call
+ */
+export const checkFmriPreprocessed = async (context_id) => {
+    return makeRequest(
+        API_ENDPOINTS.PLOT_OPTIONS.CHECK_FMRI_PREPROCESSED, 
+        { 
+            method: 'POST', 
+            body: createFormData({ context_id }) 
+        }, 
+        { errorPrefix: 'Error checking fmri preprocessed' }
+    );
+};
+
 
 /**
  * Check if time course is preprocessed
@@ -300,6 +320,22 @@ export const getTimeMarkerPlotOptions = async (context_id) => {
             body: createFormData({ context_id }) 
         },
         { errorPrefix: 'Error fetching time marker plot options' }
+    );
+};
+
+
+/**
+ * Get whether an fmri timecourse is plotted
+ * @returns {Promise} Promise object representing the API call
+ */
+export const getTSFmriPlotted = async (context_id) => {
+    return makeRequest(
+        API_ENDPOINTS.PLOT_OPTIONS.GET_TS_FMRI_PLOTTED, 
+        { 
+            method: 'GET', 
+            body: createFormData({ context_id }) 
+        }, 
+        { errorPrefix: 'Error fetching ts fmri plotted' }
     );
 };
 
