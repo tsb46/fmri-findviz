@@ -14,10 +14,46 @@ matplotlib = "3.9.2"
 nilearn = "0.10.4"
 plotly = "5.23.0"
 
-# Development dependencies
-[tool.poetry.dev-dependencies]
-pytest = "^7.0"
-
 # Scripts
 [tool.poetry.scripts]
 findviz = "findviz.cli:main"
+
+# Development dependencies
+[tool.poetry.dev-dependencies]
+pytest = "^7.0"
+pytest-cov = "^4.1"
+pytest-mock = "^3.12"
+
+# Pytest configuration
+[tool.pytest.ini_options]
+minversion = "7.0"
+addopts = "-ra -q --cov=findviz --cov-report=term-missing"
+testpaths = [
+    "tests",
+]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+filterwarnings = [
+    "ignore::DeprecationWarning",
+    "ignore::UserWarning",
+]
+
+# Coverage configuration
+[tool.coverage.run]
+source = ["findviz"]
+omit = [
+    "tests/*",
+    "**/__init__.py",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "if self.debug:",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "pass",
+    "raise ImportError",
+]

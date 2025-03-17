@@ -1,5 +1,5 @@
 <!-- FMRI Visualization Card -->
-<div class='card'>
+<div class='card h-100'>
   <div class="card-header pt-1 pb-1">
     <div class='row'>
       <div class='col-1 pl-1 pr-1 pb-1 pt-0'>
@@ -7,90 +7,52 @@
           <i class="fa-solid fa-p"></i>
         </div>
       </div>
-      <div class='col-2'>
-        <!-- Toggle slice montage or othoview -->
-        <button class="btn btn-outline-secondary btn-sm toggle-wait" id='toggle-view' data-toggle="tooltip" data-placement="top" title="Toggle between ortho and slice montage views.">
-          <i class="fa-solid fa-brain"></i>
-        </button>
-        <button id="montage-popover" title="Slice Montage Options" type="button" class="btn btn-outline-secondary btn-sm" data-container="body" data-toggle="popover" data-placement="top"
-        data-content= "
-          <div class='row'>
-            <div class='col'>
-              <div id='sliceSliders'>
-                <div class='row'>
-                    <span>Select Slice Direction</span>
-                    <select id ='montage-slice-select' class='custom-select'>
-                      <option value='x' selected>X (Saggital)</option>
-                      <option value='y'>Y (Coronal) </option>
-                      <option value='z'>Z (Axial)</option>
-                    </select>
-                </div>
-                <div class='row mt-2'>
-                  <label for='slice1Slider' class='mb-1'>Slice 1</label>
-                  <input id='slice1Slider' type='text' class='slider' data-slider-responsive='true' />
-                </div>
-                <div class='row'>
-                  <label for='slice2Slider' class='mb-1'>Slice 2</label>
-                  <input id='slice2Slider' type='text' class='slider' data-slider-responsive='true' />
-                </div>
-                <div class='row'>
-                  <label for='slice3Slider' class='mb-1'>Slice 3</label>
-                  <input id='slice3Slider' type='text' class='slider' data-slider-responsive='true' />
-                </div>
-              </div>
-            </div>
+      <!-- Time point to seconds conversion -->
+      <div class="col-2">
+        <div class="row">
+          <div class="col-sm-2 pl-0 pr-0 pt-1">
+            <span class="mr-1 toggle-immediate" data-toggle="tooltip" data-placement="top" title="The repetition time of the time courses (should be same as fMRI). Must be positive." aria-hidden="true">TR:</span>
           </div>
-        ">
-          Montage
-        </button>
+          <div class="col-sm-6 pl-1 pr-1">
+            <input type="number" class="form-control form-control-sm" id="tr-convert-form" step="0.01">
+          </div>
+          <div class="col-sm-2 pl-0 pr-0">
+            <button class="btn btn-outline-secondary btn-sm toggle-wait" id='toggle-tr-convert' data-toggle="tooltip" data-placement="top" title="Toggle time point units" disabled>
+              <i class="fa-solid fa-arrows-rotate"></i>
+            </button>
+          </div>
+        </div>
       </div>
-      <div class='col'>
-        <!-- Toggle crosshair for Nifti -->
-        <button class="btn btn-outline-secondary btn-sm toggle-wait" id='toggle-crosshair' data-toggle="tooltip" data-placement="top" title="Toggle crosshair">
-          <i class="fa-solid fa-plus"></i>
-        </button>
-        <!-- Toggle plotly hover text -->
-        <button class="btn btn-outline-secondary btn-sm toggle-wait" id='toggle-hover' data-toggle="tooltip" data-placement="top" title="Toggle hover text">
-          <i class="fa-solid fa-message"></i>
-        </button>
-        <!-- Toggle direction labels for Nifti -->
-        <button class="btn btn-outline-secondary btn-sm toggle-wait" id='toggle-direction' data-toggle="tooltip" data-placement="top" title="Toggle direction labels">
-          <i class="fa-solid fa-text-slash"></i>
-        </button>
-        <!-- Take screenshot of visualization container -->
-        <button class="btn btn-outline-secondary btn-sm toggle-wait" id='select-screenshot' data-toggle="tooltip" data-placement="top" title="Take screenshot">
-          <i class="fa-solid fa-image"></i>
-        </button>
-        <!-- Play movie -->
-        <button class="btn btn-outline-secondary btn-sm toggle-wait" id='play-movie' data-toggle="tooltip" data-placement="top" title="Cycle through timepoints">
-          <i class="fa-solid fa-play"></i>
-        </button>
-      </div>
-      <div class = 'col-2 mr-2'>
-        <div class='row'>
-          <button type="button" class="btn btn-outline-primary btn-sm" data-toggle="modal" id='distanceModalButton' data-target="#distanceModal">Distance
+      <div class='col ml-1'>
+        <!-- Toggle slice montage or ortho view (for nifti) -->
+        <div class="btn-group">
+          <button class="btn btn-outline-secondary btn-sm toggle-wait" id='toggle-view' data-toggle="tooltip" data-placement="top" title="Toggle between ortho and slice montage views." disabled>
+            Montage
           </button>
-          <button class="btn btn-outline-primary btn-sm toggle-wait pr-1 pl-1 mr-2" id='distance-popover' title="Time Point Distance Plot Options" data-container="body" data-toggle="popover" data-placement="top" disabled data-content= "
+          <button id="montage-popover" title="Slice Montage Options" type="button" class="btn btn-outline-secondary btn-sm pr-1 pl-1 mr-1" data-container="body" data-toggle="popover" data-placement="top" disabled
+          data-content= "
             <div class='row'>
-              <div class='col mr-5 ml-5'>
-                <div id='distancePlotOptions'>
+              <div class='col'>
+                <div id='slice-sliders'>
                   <div class='row'>
-                    <label for='distancePlotColorMap'>Choose Colormap:</label>
-                    <div class='custom-dropdown' id='distancePlotColorMap'>
-                      <!-- Dropdown content goes here -->
-                    </div>
+                      <span>Select Slice Direction</span>
+                      <select id ='montage-slice-select' class='custom-select'>
+                        <option value='x' selected>X (Saggital)</option>
+                        <option value='y'>Y (Coronal) </option>
+                        <option value='z'>Z (Axial)</option>
+                      </select>
                   </div>
                   <div class='row mt-2'>
-                    <label for='distancePlotColorRange' class='mb-1'>Color Range:</label>
-                    <input id='distancePlotColorRange' type='text' class='slider' data-slider-responsive='true' />
+                    <label for='slice-1-slider' class='mb-1'>Slice 1</label>
+                    <input id='slice-1-slider' type='text' class='slider' data-slider-responsive='true' />
                   </div>
                   <div class='row'>
-                    <label for='distancePlotTimeMarkerWidth' class='mb-1'>Time Marker Width:</label>
-                    <input id='distancePlotTimeMarkerWidth' type='text' class='slider' data-slider-responsive='true' />
+                    <label for='slice-2-slider' class='mb-1'>Slice 2</label>
+                    <input id='slice-2-slider' type='text' class='slider' data-slider-responsive='true' />
                   </div>
-                  <div class='row mb-2'>
-                    <label for='distancePlotTimeMarkerOpacity' class='mb-1'>Time Marker Opacity</label>
-                    <input id='distancePlotTimeMarkerOpacity' type='text' class='slider' data-slider-responsive='true' />
+                  <div class='row'>
+                    <label for='slice-3-slider' class='mb-1'>Slice 3</label>
+                    <input id='slice-3-slider' type='text' class='slider' data-slider-responsive='true' />
                   </div>
                 </div>
               </div>
@@ -98,8 +60,55 @@
           ">
             <i class="fa-solid fa-caret-up"></i>
           </button>
-          <button class="btn btn-outline-secondary btn-sm toggle-wait" id='remove-distance-plot' data-toggle="tooltip" data-placement="top" title="Remove distance plot" disabled>
-            <i class="fa-solid fa-trash"></i>
+        </div>
+        <!-- Toggle crosshair (for nifti) -->
+        <button class="btn btn-outline-secondary btn-sm toggle-wait" id='toggle-crosshair' data-toggle="tooltip" data-placement="top" title="Toggle crosshair" disabled>
+          <i class="fa-solid fa-plus"></i>
+        </button>
+        <!-- Toggle plotly hover text -->
+        <button class="btn btn-outline-secondary btn-sm toggle-wait" id='toggle-hover' data-toggle="tooltip" data-placement="top" title="Toggle hover text" disabled>
+          <i class="fa-solid fa-message"></i>
+        </button>
+        <!-- Toggle direction labels (for nifti) -->
+        <button class="btn btn-outline-secondary btn-sm toggle-wait" id='toggle-direction-labels' data-toggle="tooltip" data-placement="top" title="Toggle direction labels" disabled>
+          <i class="fa-solid fa-text-slash"></i>
+        </button>
+        <!-- Toggle colorbar -->
+        <button class="btn btn-outline-secondary btn-sm toggle-wait" id='toggle-colorbar' data-toggle="tooltip" data-placement="top" title="Toggle colorbar" disabled>
+          <i class="fa-solid fa-ruler-vertical"></i>
+        </button>
+        <!-- Reverse colorscale -->
+        <button class="btn btn-outline-secondary btn-sm toggle-wait" id='reverse-colorbar' data-toggle="tooltip" data-placement="top" title="Reverse colorscale" disabled>
+          <i class="fa-solid fa-arrows-up-down"></i>
+        </button>
+        <!-- Freeze view (for gifti) -->
+        <button class="btn btn-outline-secondary btn-sm toggle-wait" id='toggle-freeze-view' data-toggle="tooltip" data-placement="top" title="Toggle freeze/unfreeze surface view" disabled>
+          <i class="fa-solid fa-lock"></i>
+        </button>
+        <!-- Take screenshot of visualization container -->
+        <button class="btn btn-outline-secondary btn-sm toggle-wait" id='select-screenshot' data-toggle="tooltip" data-placement="top" title="Take screenshot" disabled>
+          <i class="fa-solid fa-image"></i>
+        </button>
+        <!-- Movie controls -->
+        <div class="btn-group">
+          <!-- Play movie -->
+          <button class="btn btn-outline-secondary btn-sm toggle-wait" id='play-movie' data-toggle="tooltip" data-placement="top" title="Cycle through timepoints">
+            <i class="fa-solid fa-play"></i>
+          </button>
+          <!-- Play movie options popover -->
+          <button class="btn btn-outline-secondary btn-sm toggle-wait pr-1 pl-1" id='play-movie-popover' title="Play Movie Options" data-container="body" data-toggle="popover" data-placement="top" data-content= "
+            <div class='row'>
+              <div class='col mr-5 ml-5'>
+                <div id='play-movie-options'>
+                  <div class='row'>
+                    <label for='play-movie-speed' class='mb-1'>Frame Update Interval (ms)</label>
+                    <input id='play-movie-speed' type='text' class='slider' data-slider-responsive='true' />
+                  </div>
+                </div>
+              </div>
+            </div>
+          ">
+            <i class="fa-solid fa-caret-up"></i>
           </button>
         </div>
       </div>
@@ -107,22 +116,22 @@
         <div class='row'>
           <div class="custom-control custom-switch mr-3">
             <!-- Enable fmri time course -->
-            <input type="checkbox" class="custom-control-input" id="enable-time-course">
-            <label class="custom-control-label small" for="enable-time-course">Enable Time Course</label>
+            <input type="checkbox" class="custom-control-input" id="enable-fmri-time-course">
+            <label class="custom-control-label small" for="enable-fmri-time-course">Enable Time Course</label>
             <span class="fa-solid fa-circle-info toggle-immediate mr-2" data-toggle="tooltip" data-placement="top" title="Plot time course of selected voxel/vertex" aria-hidden="true"></span>
           </div>
           <div class="fa-solid fa-unlock pt-1 pr-1 toggle-immediate" id='freeze-icon' data-toggle="tooltip" data-placement="top" title="Freeze/unfreeze fmri time course selection"></div>
           <div class="custom-control custom-switch">
             <!-- Freeze fmri time course -->
-            <input type="checkbox" class="custom-control-input" id="freeze-time-course" disabled>
-            <label class="custom-control-label small" for="freeze-time-course"></label>
+            <input type="checkbox" class="custom-control-input" id="freeze-fmri-time-course" disabled>
+            <label class="custom-control-label small" for="freeze-fmri-time-course"></label>
           </div>
           <!-- Undo fmri time course -->
-          <button class="btn btn-outline-secondary btn-sm toggle-wait" id='undo-time-course' data-toggle="tooltip" data-placement="top" title="Remove most recent frozen fmri time course in plot" disabled>
+          <button class="btn btn-outline-secondary btn-sm toggle-wait" id='undo-fmri-time-course' data-toggle="tooltip" data-placement="top" title="Remove most recent frozen fmri time course in plot" disabled>
             <i class="fa-solid fa-rotate-left"></i>
           </button>
           <!-- Remove all fmri time course -->
-          <button class="btn btn-outline-secondary btn-sm toggle-wait" id='remove-time-course' data-toggle="tooltip" data-placement="top" title="Remove all fmri time courses from plot" disabled>
+          <button class="btn btn-outline-secondary btn-sm toggle-wait" id='remove-fmri-time-course' data-toggle="tooltip" data-placement="top" title="Remove all fmri time courses from plot" disabled>
             <i class="fa-solid fa-xmark"></i>
           </button>
         </div>
@@ -131,16 +140,16 @@
   </div>
   <div class="card-body pt-1 pb-1">
     <div class='row'>
-      <div id="surface_container" class="mt-2 p-0" style="display: none; width: 100%; height: 100%;">
+      <div id="surface-container" class="mt-2 p-0" style="display: none; width: 100%; height: 100%;">
         <!-- JavaScript will dynamically create and insert left and right hemisphere visualizations here -->
       </div>
         <!-- Orthogonal Slices Container: X, Y, Z slices arranged horizontally -->
-      <div id="slices_container" class="d-flex mt-2 p-0" style="display: none;">
+      <div id="slice-container" class="d-flex mt-2 p-0" style="display: none;">
       </div>
     </div>
     <div class='row'>
-      <div class='col mr-5 ml-2 mt-2' id="distance_container" style="display: none;">
-        <div id="distancePlot"></div>
+      <div class='col mr-5 ml-2 mt-2' id="distance-container" style="display: none;">
+        <div id="distance-plot"></div>
       </div>
     </div>
   </div>
@@ -148,11 +157,34 @@
     <div class='row' id='slider-container'>
       <div class='col'>
         <div class='row'>
-          <div class='col-sm-4'>
-            <!-- Container for time slider -->
-            <label for="time_slider" id='time-slider-title' style="font-weight: bolder;"></label>
+          <!-- Time slider title and display container -->
+          <div class='col-sm-3'>
+            <div class='row'>
+              <div class='col-sm-5 p-1 text-center'>
+                <!-- time slider title -->
+                <label for="time_slider" id='time-slider-title' style="font-weight: bolder;"></label>
+              </div>
+              <!-- time point display -->
+              <div class='col-sm-7 p-1 d-flex'>
+                <div class="shadow-sm bg-light rounded small p-1 mr-1 w-50 d-inline" id='time-point-display'></div>
+              </div>
+            </div>
           </div>
-          <div class='col-sm-3 offset-sm-5'>
+          <!-- Voxel coordinate container -->
+          <div id='voxel-coord-container' class='col-sm-3 offset-sm-1 mr-1' style="display: none;">
+            <div class='row'>
+              <div class='col-sm-5 p-1 text-center'>
+                <div class='small'>Voxel Coord:</div>
+              </div>
+              <div class='col-sm-7 pl-0 d-flex'>
+                <div class="shadow-sm bg-light rounded small p-1 mr-1 w-25 d-inline" id='x-voxel'></div>
+                <div class="shadow-sm bg-light rounded small p-1 mr-1 w-25 d-inline" id='y-voxel'></div>
+                <div class="shadow-sm bg-light rounded small p-1 w-25 d-inline" id='z-voxel'></div>
+              </div>
+            </div>
+          </div>
+          <!-- World coordinate container -->
+          <div id='world-coord-container' class='col-sm-3' style="display: none;">
             <div class='row'>
               <div class='col-sm-5 p-1 text-center'>
                 <div class='small'>World Coord:</div>
@@ -164,65 +196,24 @@
               </div>
             </div>
           </div>
+          <!-- Vertex coordinate container -->
+          <div id='vertex-coord-container' class='col-sm-3 offset-sm-3' style="display: none;">
+            <div class='row'>
+              <div class='col-sm-5 p-1 text-center'>
+                <div class='small'>Vertex:</div>
+              </div>
+              <div class='col-sm-7 pl-0 d-flex'>
+                <div class="shadow-sm bg-light rounded small p-1 mr-1 w-50 d-inline" id='vertex-number'></div>
+                <div class="shadow-sm bg-light rounded small p-1 mr-1 w-25 d-inline" id='selected-hemisphere'></div>
+              </div>
+            </div>
+          </div>
         </div>
+        <!-- Time slider -->
         <div class='row justify-content-center pt-0'>
-          <input id="time_slider" type="text" class="slider"/>
+          <input id="time-slider" type="text" class="slider"/>
         </div>
       </div>
-    </div>
-  </div>
-</div>
-<!-- Time Point Distance Modal-->
-<div class="modal fade" id="distanceModal" tabindex="-1" aria-labelledby="distanceModalLabel" aria-hidden="true">
-  <div class='spinner-overlay' id="distance-spinner-overlay"></div>
-  <div id='distanceModalDialog' class="modal-dialog modal-dialog-centered">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="distanceModalLabel">Compute Time Point Distance</h5>
-        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-          <span aria-hidden="true">&times;</span>
-        </button>
-      </div>
-      <form id="distanceForm" enctype="multipart/form-data">
-        <div class="modal-body">
-          <div id='distance-spinner' class="spinner-border spinner-viz" role="status">
-              <span class="sr-only">Computing...</span>
-          </div>
-          <div class="row">
-            <div class='col ml-3 mr-3'>
-              <div class='row'>
-                <div class="alert alert-primary" role="alert">
-                  <span class='mr-2'>Selected Time Point:</span>
-                  <span id='timepoint-distance-label' class="fs-4 fw-bold">0</span>
-                </div>
-              </div>
-              <div class='row'>
-                <div class="alert alert-secondary" id="distancePrepAlert" role="alert" style="display: none;">
-                  <i class="fa-solid fa-triangle-exclamation"></i>
-                  <span class='mr-2'>Using Preprocessed Data</span>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class='row'>
-            <div class='col ml-3 mr-3'>
-              <h5>Select Distance Metric</h5>
-              <select class="custom-select" id="distance-metric-select">
-                <option value="euclidean">Euclidean</option>
-                <option value="sqeuclidean">Squared Euclidean</option>
-                <option value="cityblock">City Block</option>
-                <option value="cosine">Cosine</option>
-                <option value="correlation">Correlation</option>
-              </select>
-            </div>
-          </div>
-        </div>
-        <div class="modal-footer">
-          <div id="error-message-distance" class="alert alert-danger" role='alert' style="display: none;"></div>
-          <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-          <button type="submit" class="btn btn-primary" id='runAverage' data-dismiss="static">Compute</button>
-        </div>
-      </form>
     </div>
   </div>
 </div>

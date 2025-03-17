@@ -7,9 +7,9 @@
           <!-- Select time course drop down -->
           <div class='row pt-0'>
             <label for="ts-select" class='small'><strong> Choose Time Course</strong></label>
-              <select class="custom-select w-100" id="ts-select">
-                <!-- Options will be dynamically added here -->
-              </select>
+            <select class="custom-select w-100" id="ts-select">
+              <!-- Options will be dynamically added here -->
+            </select>
           </div>
           <!-- Time Course Color Selection Options -->
           <div class='row mt-1'>
@@ -26,7 +26,7 @@
                 <option value="yellow">Yellow</option>
                 <option value="brown">Brown</option>
                 <option value="darkred">Dark Red</option>
-                <option value="darkred">Tomato</option>
+                <option value="tomato">Tomato</option>
                 <option value="magenta">Magenta</option>
                 <option value="crimson">Crimson</option>
                 <option value="salmon">Salmon</option>
@@ -58,13 +58,65 @@
             </div>
           </div>
           <div class='row mt-1'>
-            <div class='col-6 pr-3 pl-0'>
-              <label for="ts-width-slider" class='small'><strong>Line Width</strong></label>
+            <!-- Line Width and Opacity -->
+            <div class='col-4 pr-3 pl-0'>
+              <label for="ts-width-slider" class='small mb-0'><strong>Width</strong></label>
                 <input id="ts-width-slider" type="text" class="slider" data-slider-responsive="true"/>
             </div>
-            <div class='col-6 pr-3 pl-0'>
-              <label for="ts-opacity-slider" class='small'><strong>Opacity</strong></label>
+            <div class='col-4 pr-3 pl-0'>
+              <label for="ts-opacity-slider" class='small mb-0'><strong>Opacity</strong></label>
               <input id="ts-opacity-slider" type="text" class="slider" data-slider-responsive="true"/>
+            </div>
+            <!-- Convolution with HRF checkbox-->
+            <div class='col-4 pr-1 pl-1 d-flex align-items-end'>
+              <div class="custom-control custom-checkbox">
+                <input type="checkbox" id="ts-convolution-checkbox" class="custom-control-input">
+                <label class="custom-control-label" for="ts-convolution-checkbox">HRF</label>
+              </div>
+              <span class="fa-solid fa-circle-info ml-1 pb-1 toggle-immediate" data-toggle="tooltip" data-placement="top" title="Whether to convolve the time course with a canonical HRF (only for task design input)" aria-hidden="true"></span>
+            </div>
+          </div>
+          <!-- Time Course Shift Options -->
+          <div class='row mt-1'>
+            <div class='col-6 pr-3 pl-0'>
+              <span class='small mb-0'><strong>Constant Shift</strong></span>
+              <div class="row no-gutters">
+                <div class="col-4 pr-1">
+                  <button class="btn btn-outline-secondary btn-sm w-100" type="button" id='ts-increase-constant'>
+                    <i class="fa-solid fa-arrow-up"></i>
+                  </button>
+                </div>
+                <div class="col-4 pr-1">
+                  <button class="btn btn-outline-secondary btn-sm w-100" type="button" id='ts-decrease-constant'>
+                    <i class="fa-solid fa-arrow-down"></i>
+                  </button>
+                </div>
+                <div class="col-4">
+                  <button class="btn btn-outline-secondary btn-sm w-100 text-center justify-content-center align-items-center" type="button" id='ts-reset-constant'>
+                    <i class="fa-solid fa-xmark"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div class='col-6 pr-3 pl-0'>
+              <span class='small mb-0'><strong>Scale Shift</strong></span>
+              <div class="row no-gutters">
+                <div class="col-4 pr-1">
+                  <button class="btn btn-outline-secondary btn-sm w-100" type="button" id='ts-increase-scale'>
+                    <i class="fa-solid fa-arrow-up"></i>
+                  </button>
+                </div>
+                <div class="col-4 pr-1">
+                  <button class="btn btn-outline-secondary btn-sm w-100" type="button" id='ts-decrease-scale'>
+                    <i class="fa-solid fa-arrow-down"></i>
+                  </button>
+                </div>
+                <div class="col-4">
+                  <button class="btn btn-outline-secondary btn-sm w-100 text-center justify-content-center align-items-center" type="button" id='ts-reset-scale'>
+                    <i class="fa-solid fa-xmark"></i>
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </form>

@@ -1,0 +1,304 @@
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <!-- <h1>FIND Viewer</h1> -->
+        <div class="jumbotron">
+          <div class='row justify-content-center'>
+            <img src="{{ url_for('static', filename='images/FIND.png') }}", alt="FIND Logo" />
+            <h1 class="display-4">FIND Viewer</h1>
+          </div>
+          <p class="lead">FMRI Interactive Navigation and Discovery Viewer</p>
+          <hr class="my-4">
+          <div class='row'>
+            <div class='col'>
+              <button type="button" class="btn btn-primary btn-lg mt-4" data-toggle="modal" id='upload-file' data-target="#upload-modal">
+                Upload Files
+              </button>
+            </div>
+          </div>
+        </div>
+    </div>
+    <!-- Modal File Upload-->
+    <div class="modal fade" id="upload-modal" tabindex="-1" aria-labelledby="upload-modal-label" aria-hidden="true">
+      <div class='spinner-overlay' id="file-load-spinner-overlay"></div>
+      <div id='upload-modal-dialog' class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header">
+            <div class="container-fluid">
+              <div class='row'>
+                <div class='col-4'>
+                  <h5 class="modal-title" id="upload-modal-dialog">Upload Files</h5>
+                </div>
+                <div class='col-3 offset-4'>
+                  <button id='upload-scene' type="button" class="btn btn-outline-secondary">Upload Scene</button>
+                  <!-- Hidden JSON File Input -->
+                  <input type="file" id="file-scene" style="display: none;">
+                </div>
+                <div class='col-1'>
+                  <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- Navigation Bar inside the modal -->
+          <nav class="navbar navbar-expand-lg navbar-light bg-light">
+            <a class="navbar-brand">FMRI File Type</a>
+            <ul class="nav nav-pills mb-3">
+              <li class="nav-item">
+                <a class="nav-link active" id="nifti-tab" data-toggle="pill" href="#nifti" role="tab" aria-controls="pills-home" aria-selected="true">Nifti</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" id="gifti-tab" data-toggle="pill" href="#gifti" role="tab" aria-controls="pills-profile" aria-selected="false">Gifti</a>
+              </li>
+              <li class="nav-item">
+                <a class="nav-link" id="cifti-tab" data-toggle="pill" href="#cifti" role="tab" aria-controls="pills-contact" aria-selected="false">Cifti</a>
+              </li>
+            </ul>
+          </nav>
+          <!-- Unified Form for Both Tabs -->
+          <form id="upload-form" enctype="multipart/form-data">
+            <div class="modal-body">
+              <!-- Spinner Wheel -->
+              <div class="spinner-container d-flex justify-content-center">
+                <div id='file-load-spinner-wheel' class="spinner-wheel" role="status"></div>
+              </div>
+              <!-- Tab Content -->
+              <div class="tab-content" id="fileupload-content">
+                <!-- Nifti Tab -->
+                <div class="tab-pane fade show active" id="nifti" role="tabpanel" aria-labelledby="nifti-tab">
+                  <div class='card'>
+                    <div class="card-header">
+                      <h5 class="card-title">FMRI Files</h5>
+                    </div>
+                    <div class='card-body'>
+                      <div class='row justify-content-start'>
+                        <div class="form-group ml-1">
+                          <label for="nifti-func" class="text-secondary">Functional File (.nii, .nii.gz)</label>
+                          <i class="fa-solid fa-triangle-exclamation" id = "nifti-func-error" style="color: #e93407; display: none;"></i>
+                          <input type="file" class="form-control-file" id="nifti-func">
+                        </div>
+                      </div>
+                      <div class='row justify-content-start'>
+                        <div class="form-group ml-1">
+                          <label for="nifti-anat" class="d-inline-block text-secondary">Anatomical File (.nii, .nii.gz, optional)</label>
+                          <i class="fa-solid fa-triangle-exclamation" id = "nifti-anat-error" style="color: #e93407; display: none;"></i>
+                          <span class="fa-solid fa-circle-info d-inline-block toggle-immediate" data-toggle="tooltip" data-placement="top" title=" (Optional) The fMRI volumes must be aligned to the anatomical volume for correct overlay. Anatomical file should be the same resolution and field of view as fMRI volumes. Otherwise, one should be resampled to the other." aria-hidden="true"></span>
+                          <input type="file" class="form-control-file" id="nifti-anat">
+                        </div>
+                      </div>
+                      <div class='row justify-content-start'>
+                        <div class="form-group ml-1">
+                          <label for="nifti-mask" class="d-inline-block text-secondary">Brain Mask File (.nii, .nii.gz, optional)</label>
+                          <i class="fa-solid fa-triangle-exclamation" id = "nifti-mask-error" style="color: #e93407; display: none;"></i>
+                          <span class="fa-solid fa-circle-info d-inline-block toggle-immediate" data-toggle="tooltip" data-placement="top" title=" (Optional) Provide brain mask to mask voxel values not belonging to brain tissue. Mask values should be binary, with 1 for brain tissue and 0 for non-brain tissue. Mask should be the same resolution and field of view as fMRI volumes." aria-hidden="true"></span>
+                          <input type="file" class="form-control-file" id="nifti-mask">
+                        </div>
+                        <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                          <div class="fa fa-exclamation-triangle d-inline-block"></div>
+                          <div class="d-inline-block">A brain mask is required for preprocessing and analysis features</div>
+                          <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <!-- Gifti Tab -->
+                <div class="tab-pane fade" id="gifti" role="tabpanel" aria-labelledby="gifti-tab">
+                  <div class='card'>
+                    <div class="card-header">
+                      <h5 class="card-title">FMRI Files</h5>
+                    </div>
+                    <div class='card-body'>
+                      <!-- Left Hemisphere files -->
+                      <div class='row justify-content-start'>
+                        <div class='col pl-0'>
+                          <p class="pl-2 mt-0 mb-1"><strong>Left Hemisphere Files</strong></p>
+                          <div class='row'>
+                            <div class="form-group pl-4">
+                              <label for="left-hemisphere-gifti-func" class="text-secondary">Functional File (func.gii)</label>
+                              <i class="fa-solid fa-triangle-exclamation" id = "left-hemisphere-gifti-func-error" style="color: #e93407; display: none;"></i>
+                              <input type="file" class="form-control-file" id="left-hemisphere-gifti-func">
+                            </div>
+                          </div>
+                          <div class='row'>
+                            <div class="form-group pl-4">
+                              <label for="left-hemisphere-gifti-mesh" class="text-secondary">Surface Geometry File (surf.gii)</label>
+                              <i class="fa-solid fa-triangle-exclamation" id = "left-hemisphere-gifti-mesh-error" style="color: #e93407; display: none;"></i>
+                              <span class="fa-solid fa-circle-info d-inline-block toggle-immediate" data-toggle="tooltip" data-placement="top" title="Surface mesh geometry file (surf.gii) for the left hemisphere. The mesh file is a 3D representation of the brain's outer surface." aria-hidden="true"></span>
+                              <input type="file" class="form-control-file" id="left-hemisphere-gifti-mesh">
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <!-- Right Hemisphere Files -->
+                      <div class='row justify-content-start mt-3'>
+                        <div class='col pl-0'>
+                          <p class="pl-2 mt-0 mb-1"><strong>Right Hemisphere Files</strong></p>
+                          <div class='row'>
+                            <div class="form-group pl-4">
+                              <label for="right-hemisphere-gifti-func" class="text-secondary">Functional File (func.gii)</label>
+                              <i class="fa-solid fa-triangle-exclamation" id = "right-hemisphere-gifti-func-error" style="color: #e93407; display: none;"></i>
+                              <input type="file" class="form-control-file" id="right-hemisphere-gifti-func">
+                            </div>
+                          </div>
+                          <div class='row'>
+                            <div class="form-group pl-4">
+                              <label for="right-hemisphere-gifti-mesh" class="text-secondary">Surface Geometry File (surf.gii)</label>
+                              <i class="fa-solid fa-triangle-exclamation" id = "right-hemisphere-gifti-mesh-error" style="color: #e93407; display: none;"></i>
+                              <span class="fa-solid fa-circle-info d-inline-block toggle-immediate" data-toggle="tooltip" data-placement="top" title="Surface mesh geometry file (surf.gii) for the right hemisphere. The mesh file is a 3D representation of the brain's outer surface." aria-hidden="true"></span>
+                              <input type="file" class="form-control-file" id="right-hemisphere-gifti-mesh">
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <!-- Cifti Tab -->
+                <div class="tab-pane fade" id="cifti" role="tabpanel" aria-labelledby="cifti-tab">
+                  <div class='card'>
+                    <div class="card-header">
+                      <h5 class="card-title">CIFTI Files</h5>
+                    </div>
+                    <div class='card-body'>
+                      <!-- Dense Time Series files -->
+                      <div class='row justify-content-start'>
+                        <div class='col pl-0'>
+                          <p class="pl-2 mt-0 mb-1"><strong>Dense Time Series Cifti File</strong></p>
+                          <div class='row'>
+                            <div class="form-group pl-4">
+                              <label for="cifti-dtseries" class="text-secondary">Dense Time Series file (.dtseries.nii)</label>
+                              <i class="fa-solid fa-triangle-exclamation" id = "cifti-dtseries-error" style="color: #e93407; display: none;"></i>
+                              <input type="file" class="form-control-file" id="cifti-dtseries">
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <!-- Surface Mesh Files -->
+                      <div class='row justify-content-start mt-3'>
+                        <div class='col pl-0'>
+                          <p class="pl-2 mt-0 mb-1"><strong>Surface Geometry Files</strong></p>
+                          <div class='row'>
+                            <div class="form-group pl-4">
+                              <label for="cifti-surf-left" class="text-secondary">Left Hemisphere Geometry File (surf.gii)</label>
+                              <i class="fa-solid fa-triangle-exclamation" id = "cifti-surf-left-error" style="color: #e93407; display: none;"></i>
+                              <span class="fa-solid fa-circle-info d-inline-block toggle-immediate" data-toggle="tooltip" data-placement="top" title="Surface mesh geometry file (surf.gii) for the left hemisphere. The mesh file is a 3D representation of the brain's outer surface." aria-hidden="true"></span>
+                              <input type="file" class="form-control-file" id="cifti-surf-left">
+                            </div>
+                          </div>
+                          <div class='row'>
+                            <div class="form-group pl-4">
+                              <label for="cifti-surf-right" class="text-secondary">Right Hemisphere Geometry File (surf.gii)</label>
+                              <i class="fa-solid fa-triangle-exclamation" id = "cifti-surf-right-error" style="color: #e93407; display: none;"></i>
+                              <span class="fa-solid fa-circle-info d-inline-block toggle-immediate" data-toggle="tooltip" data-placement="top" title="Surface mesh geometry file (surf.gii) for the right hemisphere. The mesh file is a 3D representation of the brain's outer surface." aria-hidden="true"></span>
+                              <input type="file" class="form-control-file" id="cifti-surf-right">
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class='card mt-2'>
+                  <div class="card-header">
+                    <h5 class="card-title d-inline-block">Time Course Files</h5>
+                    <span class="fa-solid fa-circle-info d-inline-block toggle-immediate" data-toggle="tooltip" data-placement="top" title=" (Optional) time course files must be uploaded as .csv or .txt. Time courses must be aligned to (and have the same # of time points) as the fMRI file. Time courses must be arranged in one column." aria-hidden="true"></span>
+                  </div>
+                  <div class='card-body'>
+                    <div class='row ml-1 justify-content-start'>
+                      <div class="form-group">
+                        <div id="time-series-file-container">
+                        </div>
+                      </div>
+                    </div>
+                    <div class='row ml-1 mb-3 justify-content-start'>
+                      <button id='add-time-series' type="button" class="btn btn-secondary">Add Another File</button>
+                    </div>
+                  </div>
+                </div>
+                <div class='card mt-2'>
+                  <div class="card-header">
+                    <h5 class="card-title d-inline-block">Task Design File</h5>
+                    <span class="fa-solid fa-circle-info d-inline-block toggle-immediate" id='tooltip-task' data-toggle="tooltip" data-placement="top" title=" (Optional) A task design file in .csv or .tsv format. The file must contain an 'onset' and 'duration' column. Values in these columns must be in seconds. Optionally, for multiple event types, you can include an 'trial_type' column. Example: <br><br>
+                    <img width=180 src='{{ url_for('static', filename='images/task_design_file.png') }}'/>
+                    " aria-hidden="true"></span>
+                  </div>
+                  <div class='card-body'>
+                    <div class='row ml-1 justify-content-start'>
+                        <div class="col-6">
+                          <span class="d-inline-block text-secondary">Task Design File (.csv, .tsv, optional)</span>
+                          <i class="fa-solid fa-triangle-exclamation" id = "task-design-file-error" style="color: #e93407; display: none;"></i>
+                          <input type="file" id ='task-design-file' class="form-control-file pt-2">
+                        </div>
+                        <div class="col-3">
+                          <label for="task-design-tr">TR:</label>
+                          <span class="fa fa-info-circle ml-1 toggle-immediate" data-toggle="tooltip" data-placement="top" title="The repetition time of the fmri data. This is needed for aligning the task events with the fmri data. " aria-hidden="true"></span>
+                          <input type="number" class="form-control" id="task-design-tr" step="0.01">
+                        </div>
+                        <div class="col-3">
+                          <label for="task-design-slicetime">Slicetime Ref:</label>
+                          <span class="fa fa-info-circle ml-1 toggle-immediate" data-toggle="tooltip" data-placement="top" title="The time of the reference slice used in the fmri slice timing correction. It is expressed as a percentage of the TR (repetition time): 0 - 1. For example, if slicetiming was referenced to the slice at the middle of the fmri acquisition, it would be 0.5. Default is 0.5, which is commonly used in fmri preprocessing pipelines." aria-hidden="true"></span>
+                          <input type="number" class="form-control" id="task-design-slicetime" step="0.01" min="0", max="1" value="0.5">
+                        </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <!-- Within-Modal Error Message Placeholder -->
+              <div id="error-message-upload" class="alert alert-danger" role='alert' style="display: none;"></div>
+            </div>
+
+            <div class="modal-footer">
+              <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+              <button type="submit" class="btn btn-primary" id='submit-file' data-dismiss="static">Upload and Visualize</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+    <!-- Error Modal for Upload Cache Errors -->
+    <div class="modal fade" id="error-scene-modal" tabindex="-1" role="dialog" aria-labelledby="error-scene-modal-label" aria-hidden="true">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="error-scene-modal-label">Error in Scene Upload</h5>
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+          <div class="modal-body">
+            <div class="alert alert-danger" role="alert">
+              Error uploading scene file. Ensure that the uploaded file was downloaded via the 'save scene' button in the FIND viewer, and that the downloaded file came from the same FIND viewer version as the current FIND viewer version.
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- Error Modal for unknown server errors -->
+    <div class="modal fade" id="error-server-modal" tabindex="-1" role="dialog" aria-labelledby="error-server-modal-label" aria-hidden="true">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="error-server-modal-label">Unknown Error in Uploading Files</h5>
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+            </button>
+          </div>
+          <div class="modal-body">
+            <div class="alert alert-danger" role="alert">
+              There was an unknown error in processing the file uploads. Please check format of file inputs.
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>

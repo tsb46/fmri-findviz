@@ -1,12 +1,15 @@
 """Flask routes"""
-from findviz.routes import common
-from findviz.routes import gifti
-from findviz.routes import nifti
+from findviz.routes import file
+from findviz.routes.viewer import color, io, plot, preprocess, data
 from findviz.routes import utils
 
+
 __all__ = [
-    'common',
-    'gifti',
-    'nifti',
-    'utils'
+    'color',
+    'data',
+    'file',
+    'io',
+    'plot',
+    'preprocess',
+    'utils',
 ]

@@ -23,55 +23,61 @@
 }
 
 /*File Upload Modal*/
-#uploadModalDialog {
+#upload-modal-dialog {
     max-width: 50%
 }
 
 /*Spinner Overlay*/
 .spinner-overlay {
-  position: fixed;
-  display: none;
-  width: 100%;
-  height: 100%;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0,0,0,0.5);
-  z-index: 10;
+    position: fixed;
+    display: none;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0,0,0,0.5);
+    z-index: 10;
 }
 
-.spinner-viz {
-  position: fixed;
-  text-align: center;
-  z-index: 20;
-  top: 50%;
-  left: 50%;
-  display: none;
-  width: 64px;
-  height: 64px;
+/* Spinner Container */
+.spinner-container {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 20;
+    display: none;
 }
 
-/*FMRI Container Layout*/
-#fmriUserOptionsContainer {
-    flex: 0 0 17%; /* Adjust this percentage as needed */
-    max-width: 17%;
-    padding-right: 20px;
-  }
-#fmriVisualizationContainer {
-    flex: 0 0 80%; /* Adjust this percentage as needed */
-    max-width: 80%;
+/* Spinner Wheel */
+.spinner-wheel {
+    width: 64px;
+    height: 64px;
+    margin: 0;
+    border: 5px solid #f3f3f3;
+    border-top: 5px solid #3498db;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    display: none;
 }
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
 
 /*Surface Viewer*/
-#surface_container {
+#surface-container {
     padding: 0;
     margin: 0;
     width: 100%;
     height: 100%;
 }
 
-#left_brain_visualization_container, #right_brain_visualization_container {
+#left-surface-container, #right-surface-container {
     padding: 0;
     margin: 0;
     display: flex;
@@ -83,7 +89,7 @@
 
 /*Nifti slices viewer*/
 /* Slices container */
-#slices_container {
+#slice-container {
     display: flex;
     width: 100%;
     height: 100%;
@@ -108,34 +114,23 @@
     overflow: hidden;
 }
 /*Give x_slice_container (saggital view) a little more room*/
-#x_slice_container {
+#slice-1-container {
     width: 38%;
     height: 100%;
 }
 
-#y_slice_container,
-#z_slice_container {
+#slice-2-container,
+#slice-3-container {
     width: 31%;
     height: 100%;
 }
 
-/*Time Course Container Layout*/
-#timeCourseUserOptionsContainer {
-    flex: 0 0 17%; /* Adjust this percentage as needed */
-    max-width: 17%;
-    padding-right: 20px;
-  }
-#timeCourseVisualizationContainer {
-    flex: 0 0 80%; /* Adjust this percentage as needed */
-    max-width: 80%;
-}
-
 /*Time course plots*/
-.time-course-plot {
+#time-course-plot {
     display: flex;
     width: 100%;
     align-items: center; /* Vertically center the slices and colorbar */
-    justify-content: space-between; /* Distribute space between slices */
+    justify-content: space-between;
     overflow: hidden;
     box-sizing: border-box; /* Include padding and border in the element's total width and height */
 }
@@ -210,7 +205,7 @@
     min-width: 400px !important;
 }
 
-#sliceSliders{
+#slice-sliders{
     padding-left: 15px;
     padding-right: 15px;
 }

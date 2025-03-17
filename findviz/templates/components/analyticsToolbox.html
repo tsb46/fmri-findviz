@@ -1,0 +1,79 @@
+<!-- Analytics Toolbox Card -->
+<div class="col pr-2 pl-1">
+    <!-- Toolbox User Options Bar -->
+    <div class="card bg-light p-2">
+        <div class="row">
+            <div class="col-sm-1">
+                <div class="h-100 d-flex align-items-center justify-content-center" style="background-color: #e2e3e5; border-radius: 4px;">
+                    <strong>Toolbox</strong>
+                </div>
+            </div>
+            <!-- Transform Options -->
+            <div class="col-sm-2 offset-sm-1">
+                <button type="button" class="btn btn-outline-secondary btn-sm mr-1" data-toggle="modal" id='transform-modal-button' data-target="#transform-modal" disabled>Transform
+                </button>
+                <button class="btn btn-outline-secondary btn-sm toggle-wait" id='remove-transform' data-toggle="tooltip" data-placement="top" title="Remove transform" disabled>
+                    <i class="fa-solid fa-trash"></i>
+                </button>
+            </div>
+            <!-- Distance plot -->
+            <div class="col-sm-2 offset-sm-1">
+                <div class="btn-group">
+                    <button type="button" class="btn btn-outline-secondary btn-sm" data-toggle="modal" id='distance-modal-button' data-target="#distance-modal" disabled>Distance
+                    </button>
+                    <!-- Distance plot options popover -->
+                    <button class="btn btn-outline-secondary btn-sm toggle-wait pr-1 pl-1 mr-1" id='distance-popover' disabled title="Time Point Distance Plot Options" data-container="body" data-toggle="popover" data-placement="top" disabled data-content= "
+                    <div class='row'>
+                        <div class='col mr-5 ml-5'>
+                        <div id='distance-plot-options'>
+                            <div class='row'>
+                            <label for='distance-plot-colormap'>Choose Colormap:</label>
+                            <div class='custom-dropdown' id='distance-plot-colormap'>
+                                <!-- Dropdown content goes here -->
+                            </div>
+                            </div>
+                            <div class='row mt-2'>
+                            <label for='distance-plot-color-range' class='mb-1'>Color Range:</label>
+                            <input id='distance-plot-color-range' type='text' class='slider' data-slider-responsive='true' />
+                            </div>
+                            <div class='row'>
+                            <label for='distance-plot-time-marker-width' class='mb-1'>Time Marker Width:</label>
+                            <input id='distance-plot-time-marker-width' type='text' class='slider' data-slider-responsive='true' />
+                            </div>
+                            <div class='row mb-2'>
+                            <label for='distance-plot-time-marker-opacity' class='mb-1'>Time Marker Opacity</label>
+                            <input id='distance-plot-time-marker-opacity' type='text' class='slider' data-slider-responsive='true' />
+                            </div>
+                        </div>
+                        </div>
+                    </div>
+                    ">
+                    <i class="fa-solid fa-caret-up"></i>
+                    </button>
+                </div>  
+                <button class="btn btn-outline-secondary btn-sm toggle-wait" id='remove-distance-plot' data-toggle="tooltip" data-placement="top" title="Remove distance plot" disabled>
+                    <i class="fa-solid fa-trash"></i>
+                </button>  
+            </div>
+            <!-- Compare Options -->
+            <div class="col-sm-2 offset-sm-1">
+                <button type="button" class="btn btn-outline-secondary btn-sm" data-toggle="modal" id='compare-modal-button' data-target="#compare-modal" disabled>Compare
+                </button>
+                <button class="btn btn-outline-secondary btn-sm toggle-wait" id='remove-compare-map' data-toggle="tooltip" data-placement="top" title="Remove compare map" disabled>
+                    <i class="fa-solid fa-trash"></i>
+                </button>
+            </div>
+            <!-- Save Options -->
+            <div class="col-sm-2 text-right">
+                <button class="btn btn-outline-secondary btn-sm" data-toggle="modal" id='save-scene-modal-button' data-target="#save-scene-modal">
+                    Save Scene
+                </button>
+            </div>
+        </div>
+    </div>
+    <!-- Distance modal -->
+    {% include 'components/modals/distanceModal.html' %}
+    <!-- Save scene modal -->
+    {% include 'components/modals/saveSceneModal.html' %}
+</div>
+

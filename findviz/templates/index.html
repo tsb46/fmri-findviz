@@ -36,46 +36,62 @@
 </head>
 <body>
   <!-- Upload Modal -->
-  {% include 'components/uploadModal.html' %}
+  {% include 'components/modals/uploadModal.html' %}
 
   <!-- Parent Visualization Container -->
   <div id="parent-container" class="container-fluid mt-5" style="display: none;">
-    <!-- Spinner overlay for preprocessing wait -->
-    <div class='spinner-overlay' id="preproc-spinner-overlay"></div>
+    <!-- Spinner overlay for upload, preprocessing, and analysis wait -->
+    <div id="spinner-overlay" class="spinner-overlay"></div>
+    <!-- Analytics Toolbox Container -->
+    <div id="analytics-toolbox-container" class="row justify-content-center">
+      <!-- Analytics Toolbox Card -->
+      {% include 'components/analyticsToolbox.html' %}
+    </div>
     <!-- FMRI Container -->
-    <div id="fmriContainer" class='row justify-content-center'>
-      <!-- FMRI User Options Container -->
-      <div id="fmriUserOptionsContainer">
-        <!-- Visualization Options -->
-        {% include 'components/fmriVisualizationOptions.html' %}
-        <!-- Preprocessing Options -->
-        {% include 'components/fmriPreprocessingOptions.html' %}
-      </div>
-      <!-- Visualization Container -->
-      <div id="fmriVisualizationContainer">
-        <div id='preproc-load-spinner' class="spinner-border spinner-viz" role="status">
-          <span class="sr-only">Preprocessing...</span>
+    <div id="fmri-container" class='row justify-content-center mt-1'>
+      <div class="col-2 pr-1">
+        <!-- FMRI User Options Container -->
+        <div id="fmri-user-options-container" class="h-100">
+          <!-- Visualization Options -->
+          {% include 'components/fmriVisualizationOptions.html' %}
+          <!-- Preprocessing Options -->
+          {% include 'components/fmriPreprocessingOptions.html' %}
         </div>
-        <!-- fmri visualization card -->
-        {% include 'components/fmriVisualizationCard.html' %}
+      </div>
+      <div class="col-10 pr-2">
+        <!-- Visualization Container -->
+        <div id="fmri-visualization-container" class="h-100">
+          <!-- fmri visualization card -->
+          {% include 'components/fmriVisualizationCard.html' %}
+        </div>
+      </div>
+      <!-- Spinner wheel for upload, preprocessing, and analysis wait -->
+      <div class="spinner-container d-flex justify-content-center">
+        <div id="spinner-wheel" class="spinner-wheel"></div>
       </div>
     </div>
     <!-- Time Course Container -->
-    <div id="timeCourseContainer" class='row justify-content-center mt-2' style="visibility: hidden;">
-      <!-- Time Course User Options Container -->
-      <div id="timeCourseUserOptionsContainer">
-        <!-- Visualization Options -->
-        {% include 'components/timeCourseVisualizationOptions.html' %}
-        <!-- Time Marker Options -->
-        {% include 'components/timeCourseMarkerOptions.html' %}
-        <!-- Preprocessing Options -->
-        {% include 'components/timeCoursePreprocessingOptions.html' %}
+    <div id="time-course-container" class='row justify-content-center mt-2' style="visibility: hidden;">
+      <div class="col-2 pr-1">
+        <!-- Time Course User Options Container -->
+        <div id="time-course-user-options-container" class="h-100">
+          <!-- Visualization Options -->
+          {% include 'components/timeCourseVisualizationOptions.html' %}
+          <!-- Time Marker Options -->
+          {% include 'components/timeCourseMarkerOptions.html' %}
+          <!-- Preprocessing Options -->
+          {% include 'components/timeCoursePreprocessingOptions.html' %}
+        </div>
       </div>
-      <div id='timeCourseVisualizationContainer'>
-        <!-- time course visualization card -->
-        {% include 'components/timeCourseVisualizationCard.html' %}
+      <div class="col-10 pr-2">
+        <div id='time-course-visualization-container' class="h-100">
+          <!-- time course visualization card -->
+          {% include 'components/timeCourseVisualizationCard.html' %}
+        </div>
       </div>
     </div>
+    <!-- Viewer Error Modal -->
+    {% include 'components/modals/viewerErrorModal.html' %}
   </div>
 
   <!-- Include the main JavaScript module -->
