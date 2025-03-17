@@ -27,14 +27,7 @@ class GiftiFiles(Enum):
     RIGHT_MESH = 'right_gii_mesh'
 
 # gifti form fields in upload modal
-browser_fields = {
-    GiftiFiles.LEFT_FUNC.value: 'left-hemisphere-gifti-func',
-    GiftiFiles.RIGHT_FUNC.value: 'right-hemisphere-gifti-func',
-    GiftiFiles.LEFT_MESH.value: 'left-hemisphere-gifti-mesh',
-    GiftiFiles.RIGHT_MESH.value: 'right-hemisphere-gifti-mesh'
-}
-
-browser_fields: Dict[str, str]  = {
+browser_fields: Dict[str, str] = {
     GiftiFiles.LEFT_FUNC.value: 'left-hemisphere-gifti-func',
     GiftiFiles.RIGHT_FUNC.value: 'right-hemisphere-gifti-func',
     GiftiFiles.LEFT_MESH.value: 'left-hemisphere-gifti-mesh',
@@ -50,10 +43,6 @@ class GiftiUpload:
     ----------
     method : Literal['cli', 'browser']
         The method used for file uploads
-    left_input : bool
-        Whether left hemisphere files were provided
-    right_input : bool
-        Whether right hemisphere files were provided
     """
 
     def __init__(
@@ -191,6 +180,21 @@ class GiftiUpload:
             
             gifti_out[GiftiFiles.LEFT_MESH.value] = gii_left_mesh
 
+            # check length of functional and mesh files
+            if not validate.validate_gii_func_mesh_len(gii_left_func, gii_left_mesh):
+                raise exception.FileValidationError(
+                    f"The left hemisphere func.gii file and mesh (geometry) file "
+                    f"are not the same length - {len(gii_left_func.darrays[0].data)} != "
+                    f"{len(gii_left_mesh.darrays[0].data)}. Check files are consistent "
+                    "in length.",
+                    validate.validate_gii_func_mesh_len.__name__,
+                    exception.ExceptionFileTypes.GIFTI.value,
+                    [
+                        browser_fields[GiftiFiles.LEFT_FUNC.value], 
+                        browser_fields[GiftiFiles.LEFT_MESH.value]
+                    ]
+                )
+
             # Process right hemisphere inputs
             if self.right_input:
                 # check left functional file extension
@@ -263,6 +267,21 @@ class GiftiUpload:
                     )
             
                 gifti_out[GiftiFiles.RIGHT_MESH.value] = gii_left_mesh
+
+            # check length of functional and mesh files
+            if not validate.validate_gii_func_mesh_len(gii_left_func, gii_left_mesh):
+                raise exception.FileValidationError(
+                    f"The right hemisphere func.gii file and mesh (geometry) file "
+                    f"are not the same length - {len(gii_right_func.darrays[0].data)} != "
+                    f"{len(gii_right_mesh.darrays[0].data)}. Check files are consistent "
+                    "in length.",
+                    validate.validate_gii_func_mesh_len.__name__,
+                    exception.ExceptionFileTypes.GIFTI.value,
+                    [
+                        browser_fields[GiftiFiles.RIGHT_FUNC.value], 
+                        browser_fields[GiftiFiles.RIGHT_MESH.value]
+                    ]
+                )
             
             # if left and right hemispheres passed, check length is consistent
             if self.left_input & self.right_input:

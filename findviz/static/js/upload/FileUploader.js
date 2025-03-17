@@ -2,6 +2,7 @@
 import { DOM_IDS } from '../constants/DomIds.js';
 import { API_ENDPOINTS } from '../constants/APIEndpoints.js';
 // file upload components
+import CiftiFileManager from './components/CiftiFileManager.js';
 import NiftiFileManager from './components/NiftiFileManager.js';
 import GiftiFileManager from './components/GiftiFileManager.js';
 import TRFormListener from './components/TRFormListener.js';
@@ -58,6 +59,13 @@ class FileUploader {
 			DOM_IDS.FILE_UPLOAD.FMRI.GIFTI.LEFT_MESH,
 			DOM_IDS.FILE_UPLOAD.FMRI.GIFTI.RIGHT_MESH
 		)
+
+		// Initialize cifti file manager
+		this.ciftiFileManager = new CiftiFileManager(
+			DOM_IDS.FILE_UPLOAD.FMRI.CIFTI.DTSERIES,
+			DOM_IDS.FILE_UPLOAD.FMRI.CIFTI.LEFT_MESH,
+			DOM_IDS.FILE_UPLOAD.FMRI.CIFTI.RIGHT_MESH
+		);
 
 		// Initialize time series file manager
 		this.timeSeriesFileManager = new TimeSeriesFileManager(
@@ -173,12 +181,15 @@ class FileUploader {
 	 * @param {string} fmriType - Type of fMRI files to clear ('nifti' or 'gifti')
 	 */
 	clearfMRIFiles(fmriType) {
-		// Get nifti files
+		// remove nifti files
 		if (fmriType == 'nifti') {
 			this.niftiFileManager.clearFiles();
 		// remove gifti files
 		} else if (fmriType == 'gifti') {
 			this.giftiFileManager.clearFiles();
+		// remove cifti files
+		} else if (fmriType == 'cifti') {
+			this.ciftiFileManager.clearFiles();
 		}
 	}
 
@@ -193,6 +204,8 @@ class FileUploader {
 		const niftiData = this.niftiFileManager.getFiles();
 		// Get gifti file data
 		const giftiData = this.giftiFileManager.getFiles();
+		// Get cifti file data
+		const ciftiData = this.ciftiFileManager.getFiles();
 		// Get task design file data
 		const taskDesignData = this.taskDesignFileManager.getFiles();
 		// Get time series file data
@@ -210,6 +223,11 @@ class FileUploader {
 
 		// Append entries from gifti data
 		Object.entries(giftiData).forEach(([key, value]) => {
+			masterFormData.append(key, value);
+		});
+
+		// Append entries from cifti data
+		Object.entries(ciftiData).forEach(([key, value]) => {
 			masterFormData.append(key, value);
 		});
 
@@ -254,6 +272,9 @@ class FileUploader {
 			else if (activeTab == '#gifti') {
 				fmriFileType = 'gifti';
 			}
+			else if (activeTab == '#cifti') {
+				fmriFileType = 'cifti';
+			}
 			this.uploadFiles(event, fmriFileType);
 		};
 		
@@ -269,6 +290,9 @@ class FileUploader {
 				}
 				else if (activeTab == '#gifti') {
 					fileType = 'gifti';
+				}
+				else if (activeTab == '#cifti') {
+					fileType = 'cifti';
 				}
 				// Reset only the FMRI inputs (Nifti or Gifti based on active tab)
 				self.clearfMRIFiles(fileType);

@@ -15,14 +15,16 @@ from findviz import viz
 logger = setup_logger(__name__)
 
 
-def create_app():
+def create_app(clear_cache=False):
     """Application factory function."""
     app = Flask(__name__)
 
     # Clean up any existing cache on startup
-    cache = Cache()
-    if cache.exists():
-        cache.clear()
+    if clear_cache:
+        cache = Cache()
+        if cache.exists():
+            cache.clear()
+            logger.info("Cache cleared on startup")
         
     # Import the blueprints
     from findviz.routes.file import file_bp

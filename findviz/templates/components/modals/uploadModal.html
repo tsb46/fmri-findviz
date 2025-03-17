@@ -51,6 +51,9 @@
               <li class="nav-item">
                 <a class="nav-link" id="gifti-tab" data-toggle="pill" href="#gifti" role="tab" aria-controls="pills-profile" aria-selected="false">Gifti</a>
               </li>
+              <li class="nav-item">
+                <a class="nav-link" id="cifti-tab" data-toggle="pill" href="#cifti" role="tab" aria-controls="pills-contact" aria-selected="false">Cifti</a>
+              </li>
             </ul>
           </nav>
           <!-- Unified Form for Both Tabs -->
@@ -147,6 +150,51 @@
                               <i class="fa-solid fa-triangle-exclamation" id = "right-hemisphere-gifti-mesh-error" style="color: #e93407; display: none;"></i>
                               <span class="fa-solid fa-circle-info d-inline-block toggle-immediate" data-toggle="tooltip" data-placement="top" title="Surface mesh geometry file (surf.gii) for the right hemisphere. The mesh file is a 3D representation of the brain's outer surface." aria-hidden="true"></span>
                               <input type="file" class="form-control-file" id="right-hemisphere-gifti-mesh">
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <!-- Cifti Tab -->
+                <div class="tab-pane fade" id="cifti" role="tabpanel" aria-labelledby="cifti-tab">
+                  <div class='card'>
+                    <div class="card-header">
+                      <h5 class="card-title">CIFTI Files</h5>
+                    </div>
+                    <div class='card-body'>
+                      <!-- Dense Time Series files -->
+                      <div class='row justify-content-start'>
+                        <div class='col pl-0'>
+                          <p class="pl-2 mt-0 mb-1"><strong>Dense Time Series Cifti File</strong></p>
+                          <div class='row'>
+                            <div class="form-group pl-4">
+                              <label for="cifti-dtseries" class="text-secondary">Dense Time Series file (.dtseries.nii)</label>
+                              <i class="fa-solid fa-triangle-exclamation" id = "cifti-dtseries-error" style="color: #e93407; display: none;"></i>
+                              <input type="file" class="form-control-file" id="cifti-dtseries">
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <!-- Surface Mesh Files -->
+                      <div class='row justify-content-start mt-3'>
+                        <div class='col pl-0'>
+                          <p class="pl-2 mt-0 mb-1"><strong>Surface Geometry Files</strong></p>
+                          <div class='row'>
+                            <div class="form-group pl-4">
+                              <label for="cifti-surf-left" class="text-secondary">Left Hemisphere Geometry File (surf.gii)</label>
+                              <i class="fa-solid fa-triangle-exclamation" id = "cifti-surf-left-error" style="color: #e93407; display: none;"></i>
+                              <span class="fa-solid fa-circle-info d-inline-block toggle-immediate" data-toggle="tooltip" data-placement="top" title="Surface mesh geometry file (surf.gii) for the left hemisphere. The mesh file is a 3D representation of the brain's outer surface." aria-hidden="true"></span>
+                              <input type="file" class="form-control-file" id="cifti-surf-left">
+                            </div>
+                          </div>
+                          <div class='row'>
+                            <div class="form-group pl-4">
+                              <label for="cifti-surf-right" class="text-secondary">Right Hemisphere Geometry File (surf.gii)</label>
+                              <i class="fa-solid fa-triangle-exclamation" id = "cifti-surf-right-error" style="color: #e93407; display: none;"></i>
+                              <span class="fa-solid fa-circle-info d-inline-block toggle-immediate" data-toggle="tooltip" data-placement="top" title="Surface mesh geometry file (surf.gii) for the right hemisphere. The mesh file is a 3D representation of the brain's outer surface." aria-hidden="true"></span>
+                              <input type="file" class="form-control-file" id="cifti-surf-right">
                             </div>
                           </div>
                         </div>

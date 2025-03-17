@@ -16,6 +16,7 @@ class PreprocessFmri {
      * @param {string} prepResetId - ID of preprocessing reset button
      * @param {string} meanCenterId - ID of mean center checkbox
      * @param {string} zScoreId - ID of z-score checkbox
+     * @param {string} detrendId - ID of detrend checkbox
      * @param {string} TRId - ID of TR input
      * @param {string} lowCutId - ID of low cut input
      * @param {string} highCutId - ID of high cut input
@@ -34,6 +35,7 @@ class PreprocessFmri {
         prepResetId,
         meanCenterId,
         zScoreId,
+        detrendId,
         TRId,
         lowCutId,
         highCutId,
@@ -57,6 +59,7 @@ class PreprocessFmri {
         // get parameters for preprocessing
         this.meanCenter = $(`#${meanCenterId}`);
         this.zScore = $(`#${zScoreId}`);
+        this.detrend = $(`#${detrendId}`);
         this.TR = $(`#${TRId}`);
         this.lowCut = $(`#${lowCutId}`);
         this.highCut = $(`#${highCutId}`);
@@ -105,6 +108,7 @@ class PreprocessFmri {
         this.normSwitch.prop('disabled', false);
         this.filterSwitch.prop('disabled', false);
         this.smoothSwitch.prop('disabled', false);
+        this.detrend.prop('disabled', false);
         this.prepSubmit.prop('disabled', false);
         this.prepReset.prop('disabled', false);
     }
@@ -116,6 +120,7 @@ class PreprocessFmri {
         this.normSwitch.prop('disabled', true);
         this.filterSwitch.prop('disabled', true);
         this.smoothSwitch.prop('disabled', true);
+        this.detrend.prop('disabled', true);
         this.prepSubmit.prop('disabled', true);
         this.prepReset.prop('disabled', true);
     }
@@ -189,7 +194,7 @@ class PreprocessFmri {
             normalize: this.normSwitchEnabled,
             filter: this.filterSwitchEnabled,
             smooth: this.smoothSwitchEnabled,
-            detrend: false,
+            detrend: this.detrend.prop('checked'),
             mean_center: this.meanCenter.prop('checked'),
             zscore: this.zScore.prop('checked'),
             tr: this.TR.val(),
@@ -235,6 +240,7 @@ class PreprocessFmri {
         this.filterSwitchEnabled = false;
         this.smoothSwitchEnabled = false;
         // clear parameters
+        this.detrend.prop('checked', false);
         this.meanCenter.prop('checked', false);
         this.zScore.prop('checked', false);
         this.TR.val('');
@@ -248,6 +254,7 @@ class PreprocessFmri {
         this.lowCut.prop('disabled', true);
         this.highCut.prop('disabled', true);
         this.smoothFwhm.prop('disabled', true);
+        this.detrend.prop('disabled', true);
         // reset preprocess
         try {
             const result = await this.contextManager.preprocess.resetFMRIPreprocess(this.errorInlineId);

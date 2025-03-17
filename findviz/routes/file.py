@@ -24,17 +24,17 @@ def check_cache():
     """Check if cache exists and return cached data if it does"""
     logger.info("Checking cache status")
     cache = Cache()
-    
-    if cache.exists():
+    has_cache = cache.exists()
+    logger.info(f"Cache check: exists={has_cache}, path={cache.get_cache_path()}")
+    if has_cache:
         try:
             cached_data = cache.load()
             # Determine plot type from cached data
-            plot_type = 'nifti' if 'nii_func' in cached_data else 'gifti'
             logger.info("Cache found and loaded successfully")
             return jsonify({
                 'has_cache': True,
                 'cache_data': cached_data,
-                'plot_type': plot_type
+                'plot_type': cached_data['file_type']
             })
         except Exception as e:
             logger.error("Error loading cached data: %s", str(e), exc_info=True)
@@ -45,6 +45,18 @@ def check_cache():
     
     return jsonify({'has_cache': False})
 
+
+@file_bp.route(Routes.CLEAR_CACHE.value, methods=['POST'])
+def clear_cache():
+    """Clear the cache"""
+    logger.info("Clearing cache")
+    try:
+        cache = Cache()
+        cache.clear()
+        return jsonify({'success': True})
+    except Exception as e:
+        logger.error("Error clearing cache: %s", str(e), exc_info=True)
+        return jsonify({'success': False, 'error': str(e)})
 
 # Get header of time course file
 @file_bp.route(Routes.GET_HEADER.value, methods=['POST'])

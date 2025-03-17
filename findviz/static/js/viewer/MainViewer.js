@@ -176,6 +176,7 @@ class MainViewer{
             DOM_IDS.FMRI.PREPROCESSING_OPTIONS.RESET_PREPROCESS_BUTTON,
             DOM_IDS.FMRI.PREPROCESSING_OPTIONS.SELECT_MEAN_CENTER,
             DOM_IDS.FMRI.PREPROCESSING_OPTIONS.SELECT_Z_SCORE,
+            DOM_IDS.FMRI.PREPROCESSING_OPTIONS.ENABLE_DETRENDING,
             DOM_IDS.FMRI.PREPROCESSING_OPTIONS.FILTER_TR,
             DOM_IDS.FMRI.PREPROCESSING_OPTIONS.FILTER_LOW_CUT,
             DOM_IDS.FMRI.PREPROCESSING_OPTIONS.FILTER_HIGH_CUT,
@@ -412,6 +413,7 @@ class MainViewer{
             DOM_IDS.TIMECOURSE.PREPROCESSING_OPTIONS.RESET_PREPROCESS_BUTTON,
             DOM_IDS.TIMECOURSE.PREPROCESSING_OPTIONS.SELECT_MEAN_CENTER,
             DOM_IDS.TIMECOURSE.PREPROCESSING_OPTIONS.SELECT_Z_SCORE,
+            DOM_IDS.TIMECOURSE.PREPROCESSING_OPTIONS.ENABLE_DETRENDING,
             DOM_IDS.TIMECOURSE.PREPROCESSING_OPTIONS.FILTER_TR,
             DOM_IDS.TIMECOURSE.PREPROCESSING_OPTIONS.FILTER_LOW_CUT,
             DOM_IDS.TIMECOURSE.PREPROCESSING_OPTIONS.FILTER_HIGH_CUT,
@@ -527,9 +529,14 @@ class MainViewer{
         // Change button text to reupload file
         uploadButton.innerHTML = 'Reupload Files'
         // Set listener to refresh page when user clicks reupload files
-        uploadButton.addEventListener("click", () => {
+        uploadButton.addEventListener("click", async() => {
             // clear cache
-            window.location.href = API_ENDPOINTS.CLEAR_CACHE;
+            await fetch(API_ENDPOINTS.CLEAR_CACHE, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
             location.reload()
         });
     }

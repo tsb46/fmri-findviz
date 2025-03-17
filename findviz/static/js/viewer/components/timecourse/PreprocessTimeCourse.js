@@ -13,6 +13,7 @@ class PreprocessTimeCourse {
      * @param {string} prepResetId - ID of preprocessing reset button
      * @param {string} meanCenterId - ID of mean center checkbox
      * @param {string} zScoreId - ID of z-score checkbox
+     * @param {string} detrendId - ID of detrend checkbox
      * @param {string} TRId - ID of TR input
      * @param {string} lowCutId - ID of low cut input
      * @param {string} highCutId - ID of high cut input
@@ -29,6 +30,7 @@ class PreprocessTimeCourse {
         prepResetId,
         meanCenterId,
         zScoreId,
+        detrendId,
         TRId,
         lowCutId,
         highCutId,
@@ -49,6 +51,7 @@ class PreprocessTimeCourse {
         // get parameters for preprocessing
         this.meanCenter = $(`#${meanCenterId}`);
         this.zScore = $(`#${zScoreId}`);
+        this.detrend = $(`#${detrendId}`);
         this.TR = $(`#${TRId}`);
         this.lowCut = $(`#${lowCutId}`);
         this.highCut = $(`#${highCutId}`);
@@ -105,7 +108,7 @@ class PreprocessTimeCourse {
         const labels = await this.contextManager.data.getTimeCourseLabels();
         // Loop through time courses and check if they are preprocessed
         for (let ts of labels) {
-            const preprocessed = await this.contextManager.plot.checkTsPreprocessed(ts);
+            const preprocessed = await this.contextManager.plot.checkTsPreprocessed(ts, 'timecourse');
             if (preprocessed.is_preprocessed) {
                 this.preprocessAlert.css("display", "block");
             }
@@ -116,6 +119,7 @@ class PreprocessTimeCourse {
         this.timeCoursePrepMenu.prop('disabled', true);
         this.normSwitch.prop('disabled', true);
         this.filterSwitch.prop('disabled', true);
+        this.detrend.prop('disabled', true);
         this.meanCenter.prop('disabled', true);
         this.zScore.prop('disabled', true);
         this.TR.prop('disabled', true);
@@ -129,6 +133,7 @@ class PreprocessTimeCourse {
         this.timeCoursePrepMenu.prop('disabled', false);
         this.normSwitch.prop('disabled', false);
         this.filterSwitch.prop('disabled', false);
+        this.detrend.prop('disabled', false);
         this.meanCenter.prop('disabled', false);
         this.zScore.prop('disabled', false);
         this.TR.prop('disabled', false);
@@ -203,7 +208,7 @@ class PreprocessTimeCourse {
         const preprocessParams = {
             normalize: this.normSwitchEnabled,
             filter: this.filterSwitchEnabled,
-            detrend: false,
+            detrend: this.detrend.prop('checked'),
             mean_center: this.meanCenter.prop('checked'),
             zscore: this.zScore.prop('checked'),
             tr: this.TR.val(),
@@ -241,6 +246,8 @@ class PreprocessTimeCourse {
         this.meanCenter.prop('disabled', true);
         this.zScore.prop('checked', false);
         this.zScore.prop('disabled', true);
+        this.detrend.prop('checked', false);
+        this.detrend.prop('disabled', true);
         this.TR.val('');
         this.TR.prop('disabled', true);
         this.lowCut.val('');

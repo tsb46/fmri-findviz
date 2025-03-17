@@ -60,6 +60,11 @@ export const DOM_IDS = {
                 ANAT: 'nifti-anat',
                 MASK: 'nifti-mask',
             },
+            CIFTI: {
+                DTSERIES: 'cifti-dtseries',
+                LEFT_MESH: 'cifti-surf-left',
+                RIGHT_MESH: 'cifti-surf-right'
+            }
         },
         FORM: 'upload-form',
         MODAL: 'upload-modal',
@@ -114,8 +119,9 @@ export const DOM_IDS = {
             SLICE_3_CONTAINER: 'slice-3-container'
         },
         PREPROCESSING_OPTIONS: {
-            ENABLE_NORMALIZATION: 'enable-normalization',
+            ENABLE_DETRENDING: 'enable-detrending',
             ENABLE_FILTERING: 'enable-filtering',
+            ENABLE_NORMALIZATION: 'enable-normalization',
             ENABLE_SMOOTHING: 'enable-smoothing',
             FILTER_LOW_CUT: 'filter-low-cut',
             FILTER_HIGH_CUT: 'filter-high-cut',
@@ -226,8 +232,9 @@ export const DOM_IDS = {
             SUBMIT_PEAK_FINDER: 'submit-peak-finder'
         },
         PREPROCESSING_OPTIONS: {
-            ENABLE_NORMALIZATION: 'ts-enable-normalization',
+            ENABLE_DETRENDING: 'ts-enable-detrending',
             ENABLE_FILTERING: 'ts-enable-filtering',
+            ENABLE_NORMALIZATION: 'ts-enable-normalization',
             ERROR_MESSAGE_PREPROCESS: 'ts-error-message-preprocess',
             FILTER_LOW_CUT: 'ts-filter-low-cut',
             FILTER_HIGH_CUT: 'ts-filter-high-cut',

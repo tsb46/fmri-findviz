@@ -50,7 +50,7 @@ def preprocess_timecourse(
 
     # Detrend the data
     if inputs['detrend']:
-        timecourse_data = utils.detrend(timecourse_data)
+        timecourse_data = utils.linear_detrend(timecourse_data)
     
     # Butterworth filter the data
     if inputs['filter']:

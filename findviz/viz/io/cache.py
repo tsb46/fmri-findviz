@@ -11,14 +11,37 @@ from pathlib import Path
 import nibabel as nib
 import numpy as np
 
+from findviz.logger_config import setup_logger
+
+logger = setup_logger(__name__)
 class Cache:
     """Class for managing temporary cache of uploaded files and data"""
-    
-    def __init__(self):
-        """Initialize cache with temporary directory"""
-        self.temp_dir = Path(tempfile.gettempdir()) / 'findviz'
-        self.cache_file = self.temp_dir / 'cache.json'
-        self._ensure_temp_dir()
+    _instance = None
+
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super(Cache, cls).__new__(cls)
+            # Initialize instance attributes here
+            cls._instance._initialize()
+        return cls._instance
+
+    def _initialize(self):
+        """Initialize the cache instance"""
+        self.temp_dir = Path(tempfile.gettempdir()) / "findviz_cache"
+        self.temp_dir.mkdir(exist_ok=True)
+        self.cache_file = self.temp_dir / "viewer_cache.json"
+        
+        # Register cleanup on exit
+        atexit.register(self.cleanup)
+
+        # Register signal handlers
+        try:
+            # Handle Ctrl+C (SIGINT)
+            signal.signal(signal.SIGINT, cleanup_handler(self))
+            # Handle termination (SIGTERM)
+            signal.signal(signal.SIGTERM, cleanup_handler(self))
+        except (ValueError, AttributeError):
+            pass
 
     def _ensure_temp_dir(self):
         """Ensure temporary directory exists"""
@@ -38,10 +61,16 @@ class Cache:
             If saving fails
         """
         try:
+            # Create parent directory if it doesn't exist
+            self.cache_file.parent.mkdir(parents=True, exist_ok=True)
+            # serialize data
             serialized_data = self._serialize_data(data)
+            # save to cache file
             with open(self.cache_file, 'w') as f:
                 json.dump(serialized_data, f)
+            logger.info(f"Viewer metadata saved to cache at {self.cache_file}")
         except Exception as e:
+            logger.error(f"Failed to save cache: {str(e)}")
             raise IOError(f"Failed to save cache: {str(e)}") from e
 
     def load(self):
@@ -59,14 +88,18 @@ class Cache:
                     return json.load(f)
             return None
         except Exception as e:
-            raise IOError(f"Failed to load cache: {str(e)}")
+            logger.error(f"Failed to load cache: {str(e)}")
+            raise IOError(f"Failed to load cache: {str(e)}") from e
 
     def clear(self):
         """Clear all cached data"""
+        logger.info("Clearing cache...")
         try:
             if self.cache_file.exists():
                 self.cache_file.unlink()
+                logger.info("Cache cleared successfully")
         except Exception as e:
+            logger.error(f"Failed to clear cache: {str(e)}")
             raise IOError(f"Failed to clear cache: {str(e)}")
 
     def exists(self):
@@ -135,23 +168,7 @@ class Cache:
 def cleanup_handler(cache):
     """Handler for cleanup on exit"""
     def handler(signum, frame):
-        print("\nCleaning up cache...")
-        cache.cleanup()
+        cache.clear()
         # Exit gracefully
         exit(0)
     return handler
-
-# Create single cache instance
-cache = Cache()
-
-# Register cleanup for normal exit
-atexit.register(cache.cleanup)
-
-# Register signal handlers
-try:
-    # Handle Ctrl+C (SIGINT)
-    signal.signal(signal.SIGINT, cleanup_handler(cache))
-    # Handle termination (SIGTERM)
-    signal.signal(signal.SIGTERM, cleanup_handler(cache))
-except (ValueError, AttributeError):
-    pass

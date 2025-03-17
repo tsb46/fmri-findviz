@@ -10,7 +10,8 @@ class ExceptionFileTypes(Enum):
     GIFTI='gifti'
     TIMECOURSE='timecourse'
     TASK='task'
-    NIFTI_GIFTI='nifti/gifti'
+    NIFTI_GIFTI_CIFTI='nifti/gifti/cifti'
+    CIFTI='cifti'
 
 
 class DataRequestError(Exception):
@@ -47,6 +48,7 @@ class DataRequestError(Exception):
                    f"{self.input_field} for {self.fmri_file_type} "
                    f"via {self.route}")
 
+
 class FileInputError(Exception):
     """
     Error in file inputs provided by user
@@ -76,7 +78,8 @@ class FileInputError(Exception):
             ExceptionFileTypes.GIFTI, 
             ExceptionFileTypes.TIMECOURSE, 
             ExceptionFileTypes.TASK,
-            ExceptionFileTypes.NIFTI_GIFTI
+            ExceptionFileTypes.NIFTI_GIFTI_CIFTI,
+            ExceptionFileTypes.CIFTI
         ], 
         method: Literal['cli', 'browser'],
         field: Optional[List[str]] = None,
@@ -137,7 +140,8 @@ class FileUploadError(Exception):
             ExceptionFileTypes.GIFTI, 
             ExceptionFileTypes.TIMECOURSE, 
             ExceptionFileTypes.TASK,
-            ExceptionFileTypes.NIFTI_GIFTI
+            ExceptionFileTypes.NIFTI_GIFTI_CIFTI,
+            ExceptionFileTypes.CIFTI
         ], 
         method: Literal['cli', 'browser'],
         field: Optional[List[str]] = None,
@@ -198,7 +202,8 @@ class FileValidationError(Exception):
             ExceptionFileTypes.GIFTI, 
             ExceptionFileTypes.TIMECOURSE, 
             ExceptionFileTypes.TASK,
-            ExceptionFileTypes.NIFTI_GIFTI
+            ExceptionFileTypes.NIFTI_GIFTI_CIFTI,
+            ExceptionFileTypes.CIFTI
         ],
         field: Optional[List[str]] = None,
         index: Optional[List[int] | int] = None

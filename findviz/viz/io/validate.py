@@ -3,12 +3,75 @@ File upload validation checks
 """
 import os
 
-from typing import List, Iterable, Tuple
+from typing import List, Iterable, Tuple, Optional, Literal
 
 import nibabel as nib
 import numpy as np
 
+from nibabel.cifti2.cifti2_axes import BrainModelAxis
+
 from findviz.viz.io import utils
+
+
+def validate_cii_brainmodel_axis(cifti_img: nib.Cifti2Image) -> bool:
+    """
+    Validate that the cifti image has a brainmodel axis
+    """
+    axes = [cifti_img.header.get_axis(i) for i in range(cifti_img.ndim)]
+    return any(isinstance(axis, BrainModelAxis) for axis in axes)
+    
+
+def validate_cii_dtseries_ext(fp: str) -> bool:
+    """
+    validate uploaded cifti dtseries file extension (dtseries.nii)
+    """
+    base, ext = os.path.splitext(fp)
+    if ext == '.nii':
+        base, ext = os.path.splitext(base)
+        if ext == '.dtseries':
+            return True
+        else:
+            return False
+    else:
+        return False
+
+
+def validate_cii_file_inputs(
+    dtseries: Optional[str] = None,
+    left_mesh: Optional[str] = None,
+    right_mesh: Optional[str] = None
+) -> Tuple[str, bool]:
+    """
+    validate uploaded cifti file inputs
+    """
+    msg = ''
+    checks_pass = True
+    
+    # check if dtseries file is valid
+    if dtseries is None:
+        msg = 'A dtseries.nii file must be provided'
+        checks_pass = False
+    
+    # check if left mesh file is valid
+    if (left_mesh is None) and (right_mesh is None):
+        msg = 'A left or right hemisphere mesh file must be provided'
+        checks_pass = False
+    
+    return msg, checks_pass
+
+
+def validate_cii_hemisphere(
+    brain_model_axis: BrainModelAxis,
+    hemisphere: Literal['left', 'right'],
+    axis_key: str
+) -> bool:
+    """
+    Validate that the cifti image has a brainmodel axis for the left or right hemisphere
+    """
+    for axis in brain_model_axis.iter_structures():
+        if axis[0] == axis_key:
+            return True
+    return False
 
 
 def validate_gii_func_ext(fp: str) -> bool:
@@ -90,6 +153,15 @@ def validate_gii_func(gii: nib.GiftiImage) -> bool:
             return False
     return True
 
+def validate_gii_func_mesh_len(
+    gii_func: nib.GiftiImage, 
+    gii_mesh: nib.GiftiImage
+) -> bool:
+    """
+    Validate that gifti functional file (func.gii) has the same number of 
+    time courses as the number of vertices in the mesh file (surf.gii).
+    """
+    return len(gii_func.darrays[0].data) == len(gii_mesh.darrays[0].data)
 
 def validate_gii_mesh(gii: nib.GiftiImage) -> bool:
     """

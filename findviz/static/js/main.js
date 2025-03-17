@@ -16,7 +16,7 @@ async function main() {
             const visualizationContainer = document.getElementById(DOM_IDS.PARENT_CONTAINER);
             visualizationContainer.style.display = 'block';
             
-            let mainViewer = new MainViewer(data.cache_data, data.plot_type);
+            let mainViewer = new MainViewer(data.plot_type);
             mainViewer.init();
         } else {
             // Initialize file uploader for browser inputs

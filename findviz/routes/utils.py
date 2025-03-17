@@ -27,6 +27,7 @@ class Routes(Enum):
     CHECK_TS_PREPROCESSED='/check_ts_preprocessed'
     CHECK_FMRI_PREPROCESSED='/check_fmri_preprocessed'
     CLEAR_ANNOTATION_MARKERS='/clear_annotation_markers'
+    CLEAR_CACHE='/clear_cache'
     CONVERT_TIMEPOINTS='/convert_timepoints'
     CORRELATE='/correlate'
     DISTANCE='/distance'

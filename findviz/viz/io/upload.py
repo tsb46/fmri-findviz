@@ -7,6 +7,7 @@ from pathlib import Path
 
 from findviz.logger_config import setup_logger
 from findviz.viz import exception
+from findviz.viz.io import cifti
 from findviz.viz.io import gifti
 from findviz.viz.io import nifti
 from findviz.viz.io import timecourse
@@ -30,7 +31,7 @@ class FileUpload:
 
     Attributes
     ----------
-    fmri_file_type : Literal['nifti', 'gifti']
+    fmri_file_type : Literal['nifti', 'gifti', 'cifti']
         The fMRI file type
     ts_status : bool
         Whether time course files were provided
@@ -56,7 +57,7 @@ class FileUpload:
 
     def __init__(
         self,
-        fmri_file_type: Literal['nifti', 'gifti'],
+        fmri_file_type: Literal['nifti', 'gifti', 'cifti'],
         ts_status: bool,
         task_status: bool,
         method: Literal['cli', 'browser']
@@ -66,7 +67,7 @@ class FileUpload:
 
         Parameters
         ----------
-        fmri_file_type : Literal['nifti', 'gifti']
+        fmri_file_type : Literal['nifti', 'gifti', 'cifti']
             Type of fMRI files to process
         ts_status : bool
             Whether time series files will be uploaded
@@ -78,7 +79,7 @@ class FileUpload:
         Raises
         ------
         ValueError
-            If fmri_file_type is not 'nifti' or 'gifti'
+            If fmri_file_type is not 'nifti', 'gifti', or 'cifti'
         """
         self.fmri_file_type = fmri_file_type
         self.ts_status = ts_status
@@ -93,8 +94,11 @@ class FileUpload:
         elif fmri_file_type == 'nifti':
             self.fmri_uploader = nifti.NiftiUpload(method)
             self.fmri_file_labels = nifti.NiftiFiles
+        elif fmri_file_type == 'cifti':
+            self.fmri_uploader = cifti.CiftiUpload(method)
+            self.fmri_file_labels = cifti.CiftiFiles
         else:
-            raise ValueError('unrecognized fmri file type [nifti, gifti]')
+            raise ValueError('unrecognized fmri file type [nifti, gifti, cifti]')
 
         # get time course file uploaders and file labels
         if self.ts_status:
@@ -114,14 +118,14 @@ class FileUpload:
 
     def check_files(
         self, 
-        key: Literal['gifti', 'nifti', 'ts', 'task']
+        key: Literal['gifti', 'nifti', 'cifti', 'ts', 'task']
     ) -> bool:
         """
         Check whether file type was uploaded by user.
 
         Parameters
         ----------
-        key : Literal['gifti', 'nifti', 'ts', 'task']
+        key : Literal['gifti', 'nifti', 'cifti', 'ts', 'task']
             The file type to check
 
         Returns
@@ -192,6 +196,7 @@ class FileUpload:
         fmri_files : Dict[str, Union[str, Path]], optional
             Dictionary of FMRI file paths. For NIFTI: {'nii_func': path, 'nii_anat': path, 'nii_mask': path}
             For GIFTI: {'left_gii_func': path, 'right_gii_func': path, 'left_gii_mesh': path, 'right_gii_mesh': path}
+            For CIFTI: {'dtseries': path, 'left_gii_mesh': path, 'right_gii_mesh': path}
         ts_files : List[Union[str, Path]], optional
             List of paths to time series files
         ts_labels : List[str], optional
@@ -237,8 +242,11 @@ class FileUpload:
         
         # get files from CLI or browser
         try:
+            # upload fmri files
             fmri_files = self.fmri_uploader.upload(fmri_files)
-            if self.fmri_file_type == 'gifti':
+
+            # store fmri files
+            if self.fmri_file_type == 'gifti' or self.fmri_file_type == 'cifti':
                 file_out['gifti'] = fmri_files
                 self.upload_status['gifti'] = True
             elif self.fmri_file_type == 'nifti':
@@ -248,10 +256,12 @@ class FileUpload:
             # get # of volumes from functional MRI
             if self.fmri_file_type == 'nifti':
                 fmri_len = file_out['nifti'][nifti.NiftiFiles.FUNC.value].shape[-1]
-            elif self.fmri_file_type == 'gifti':
-                fmri_len = len(
-                    file_out['gifti'][gifti.GiftiFiles.LEFT_FUNC.value].darrays
-                )
+            elif self.fmri_file_type == 'gifti' or self.fmri_file_type == 'cifti':
+                if self.fmri_uploader.left_input:
+                    gifti_out = file_out['gifti'][gifti.GiftiFiles.LEFT_FUNC.value].darrays
+                else:
+                    gifti_out = file_out['gifti'][gifti.GiftiFiles.RIGHT_FUNC.value].darrays
+                fmri_len = len(gifti_out)
 
             # get time series files
             if self.ts_status:

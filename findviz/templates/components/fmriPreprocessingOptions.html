@@ -26,14 +26,25 @@
               </div>
             </div>
           </div>
-          <!-- Filtering -->
+          <!-- Filtering and Detrending-->
           <div class='row mt-1 mb-1'>
             <div class='col-12'>
+              <!-- Filter Switch -->
               <div class='row pl-1'>
-                <div class="custom-control custom-switch">
-                  <input type="checkbox" class="custom-control-input" id="enable-filtering" disabled>
-                  <label class="custom-control-label small" for="enable-filtering"><strong>Filter</strong></label>
-                  <span class="fa-solid fa-circle-info ml-1 toggle-immediate" data-toggle="tooltip" data-placement="top" title="Temporal filtering is performed separately on each voxel/vertex time course with a Butterworth 5th-order filter. Low-cut and high-cut are provided in Hertz (Hz). Providing only low-cut performs high-pass filtering. Providing only high-cut performs low-pass filtering. Providing both performs bandpass filtering." aria-hidden="true"></span>
+                <div class='col-6 pl-0'>
+                  <div class="custom-control custom-switch">
+                    <input type="checkbox" class="custom-control-input" id="enable-filtering" disabled>
+                    <label class="custom-control-label small" for="enable-filtering"><strong>Filter</strong></label>
+                    <span class="fa-solid fa-circle-info ml-1 toggle-immediate" data-toggle="tooltip" data-placement="top" title="Temporal filtering is performed with a Butterworth 5th-order filter. Low-cut and high-cut are provided in Hertz (Hz). Providing only low-cut performs high-pass filtering. Providing only high-cut performs low-pass filtering. Providing both performs bandpass filtering." aria-hidden="true"></span>
+                  </div>
+                </div>
+                <!-- Detrending Checkbox layout -->
+                <div class='col-6 pl-0 d-flex align-items-center'>
+                  <div class="form-check form-check-inline">
+                    <input class="form-check-input" type="checkbox" id="enable-detrending" disabled>
+                    <label class="form-check-label small" for="enable-detrending">Detrend</label>
+                    <span class="fa-solid fa-circle-info ml-1 toggle-immediate" data-toggle="tooltip" data-placement="top" title="Linear trend removal" aria-hidden="true"></span>
+                  </div>
                 </div>
               </div>
               <!-- Filter options layout -->
@@ -64,16 +75,17 @@
               </div>
             </div>
           </div>
-          <!-- Spatial Smoothing -->
+          <!-- Spatial Smoothing-->
           <div class='row mb-1'>
             <div class='col-12'>
               <div class='row pl-1'>
                 <div class="custom-control custom-switch">
                   <input type="checkbox" class="custom-control-input" id="enable-smoothing" disabled>
-                  <label class="custom-control-label small" for="enable-smoothing"><strong>Spatial Smoothing</strong></label>
+                  <label class="custom-control-label small" for="enable-smoothing"><strong>Smoothing</strong></label>
                   <span class="fa-solid fa-circle-info ml-1 toggle-immediate" data-toggle="tooltip" data-placement="top" title=" (Not supported for surface .gii input) Perform 3D gaussian isometric spatial smoothing of the fMRI volumes. The extent of smoothing is controlled by the size of the FWHM kernel in mm." aria-hidden="true"></span>
                 </div>
               </div>
+              <!-- Smoothing options layout -->
               <div class='row pl-2 justify-content-start'>
                 <div class='col-6 pl-0'>
                   <label for="smoothing-fwhm" class='mb-0'><small>FWHM:</small></label>
