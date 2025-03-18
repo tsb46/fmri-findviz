@@ -130,13 +130,7 @@ cython_debug/
 .DS_Store
 
 # Node.js dependencies
-node_modules/
-
-# Jest coverage output
-coverage/
-
-# jest cache
-.jest-cache/
+node_modules/ 
 
 # Cypress generated files
 cypress/screenshots/
