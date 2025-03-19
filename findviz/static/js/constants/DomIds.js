@@ -89,7 +89,8 @@ export const DOM_IDS = {
         SCENE: {
             BUTTON: 'upload-scene',
             FILE: 'file-scene'
-        }
+        },
+        SUBMIT_BUTTON: 'submit-file'
     },
     FMRI: {
         COORDINATE: {

@@ -1,0 +1,14 @@
+{
+  "devDependencies": {
+    "cypress": "^14.2.0",
+    "cypress-file-upload": "^5.0.8",
+    "start-server-and-test": "^2.0.11"
+  },
+  "scripts": {
+    "start:flask": "findviz --port=5001",
+    "cy:run": "cypress run",
+    "cy:open": "cypress open",
+    "test:e2e": "start-server-and-test start:flask http://localhost:5001 cy:run",
+    "cy:dev": "start-server-and-test start:flask http://localhost:5001 cy:open"
+  }
+}

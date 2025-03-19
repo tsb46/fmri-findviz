@@ -52,6 +52,7 @@ def parse_args():
     parser.add_argument('--tr', type=float, help='TR value')
     parser.add_argument('--slicetime-ref', type=float, 
                        help='Slice timing reference (0-1)', default=0.5)
+    parser.add_argument('--port', type=int, help='Port number', default=None)
     
     args = parser.parse_args()
 
@@ -192,9 +193,12 @@ def process_cli_inputs(args) -> None:
 
 def main():
     args = parse_args()
-    # If arguments were provided, process them
+    # If arguments were provided (besides port number), process them
     # This doesn't seem robust; might need refactoring
-    if len(sys.argv) > 1:
+    # If only port number provided, skip input processing
+    if len(sys.argv) == 2 and args.port:
+        pass
+    elif len(sys.argv) > 1:
         try:
             process_cli_inputs(args)
         except Exception as e:
@@ -204,7 +208,7 @@ def main():
     # create app
     app = create_app(clear_cache=False)
     # find free port
-    port = find_free_port()
+    port = args.port if args.port else find_free_port()
     # open browser (wait 1 second to ensure server is running)
     Timer(1, open_browser, args=(port,)).start()
     # run app
