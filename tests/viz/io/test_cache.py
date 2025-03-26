@@ -4,8 +4,9 @@ import pytest
 import signal
 import json
 from pathlib import Path
-from unittest.mock import patch, mock_open
+from unittest.mock import patch, mock_open, MagicMock, call
 from findviz.viz.io.cache import Cache, cleanup_handler
+import logging
 
 @pytest.fixture
 def mock_temp_dir(tmp_path):
@@ -14,16 +15,50 @@ def mock_temp_dir(tmp_path):
     test_dir.mkdir()
     return test_dir
 
+@pytest.fixture(autouse=True)
+def disable_logging():
+    """Disable all logging during tests"""
+    # Disable all loggers
+    logging.getLogger().handlers = []
+    logging.getLogger().addHandler(logging.NullHandler())
+    logging.getLogger().setLevel(logging.CRITICAL)
+    
+    # Specifically disable the cache logger
+    cache_logger = logging.getLogger('findviz.viz.io.cache')
+    cache_logger.handlers = []
+    cache_logger.addHandler(logging.NullHandler())
+    cache_logger.setLevel(logging.CRITICAL)
+    
+    # Also patch the logger setup to prevent new loggers from being created
+    with patch('findviz.logger_config.setup_logger') as mock_setup:
+        mock_logger = MagicMock()
+        mock_setup.return_value = mock_logger
+        yield mock_logger
+
+    # Clean up
+    logging.getLogger().handlers = []
+    cache_logger.handlers = []
+
+@pytest.fixture(autouse=True)
+def cleanup_singleton():
+    """Clean up singleton instance after each test"""
+    yield
+    Cache._instance = None
+
 @pytest.fixture
 def cache(mock_temp_dir):
     """Create a Cache instance with mocked temp directory"""
-    with patch('tempfile.gettempdir', return_value=str(mock_temp_dir.parent)):
-        return Cache()
+    with patch('tempfile.gettempdir', return_value=str(mock_temp_dir)):
+        cache = Cache()
+        # Mock the signal handlers to avoid issues in testing environment
+        with patch('signal.signal'):
+            cache._initialize()
+        return cache
 
 def test_cache_init(cache, mock_temp_dir):
     """Test Cache initialization"""
-    assert cache.temp_dir == mock_temp_dir
-    assert cache.cache_file == mock_temp_dir / 'cache.json'
+    assert cache.temp_dir == mock_temp_dir / 'findviz_cache'
+    assert cache.cache_file == mock_temp_dir / 'findviz_cache' / 'viewer_cache.json'
     assert mock_temp_dir.exists()
 
 def test_save_cache(cache):
@@ -102,14 +137,14 @@ def test_load_cache_error(cache):
                 cache.load()
             assert 'Failed to load cache' in str(exc_info.value)
 
-def test_clear_cache(cache):
+def test_clear_cache(cache, caplog):
     """Test clearing cache"""
     with patch.object(Path, 'exists', return_value=True), \
          patch.object(Path, 'unlink') as mock_unlink:
         cache.clear()
         mock_unlink.assert_called_once()
 
-def test_clear_cache_error(cache):
+def test_clear_cache_error(cache, caplog):
     """Test error handling when clearing cache"""
     with patch.object(Path, 'exists', return_value=True), \
          patch.object(Path, 'unlink', side_effect=Exception('Mock error')):
@@ -126,9 +161,9 @@ def test_exists(cache):
 
 def test_get_cache_path(cache, mock_temp_dir):
     """Test getting cache file path"""
-    assert cache.get_cache_path() == mock_temp_dir / 'cache.json'
+    assert cache.get_cache_path() == mock_temp_dir / 'findviz_cache' / 'viewer_cache.json'
 
-def test_cleanup(cache):
+def test_cleanup(cache, caplog):
     """Test cleanup functionality"""
     with patch.object(Cache, 'clear') as mock_clear, \
          patch.object(Path, 'exists', return_value=True), \
@@ -138,12 +173,54 @@ def test_cleanup(cache):
         mock_clear.assert_called_once()
         mock_rmdir.assert_called_once()
 
-def test_cleanup_handler():
+def test_cleanup_handler(caplog):
     """Test cleanup handler function"""
-    mock_cache = Cache()
-    with patch.object(Cache, 'cleanup') as mock_cleanup, \
-         patch('findviz.viz.io.cache.exit') as mock_exit:
-        handler = cleanup_handler(mock_cache)
-        handler(signal.SIGINT, None)
-        mock_cleanup.assert_called_once()
-        mock_exit.assert_called_once_with(0)
+    with patch('findviz.viz.io.cache.Cache') as MockCache:
+        mock_cache = MockCache()
+        with patch('findviz.viz.io.cache.exit') as mock_exit:
+            handler = cleanup_handler(mock_cache)
+            handler(signal.SIGINT, None)
+            mock_cache.clear.assert_called_once()
+            mock_exit.assert_called_once_with(0)
+
+def test_singleton_pattern():
+    """Test that Cache follows singleton pattern"""
+    with patch('signal.signal'):  # Mock signal handlers
+        cache1 = Cache()
+        cache2 = Cache()
+        assert cache1 is cache2
+        assert Cache._instance is cache1
+
+def test_ensure_temp_dir(cache):
+    """Test _ensure_temp_dir method"""
+    with patch.object(Path, 'mkdir') as mock_mkdir:
+        cache._ensure_temp_dir()
+        mock_mkdir.assert_called_once_with(parents=True, exist_ok=True)
+
+def test_cleanup_with_non_empty_dir(cache, caplog):
+    """Test cleanup when directory is not empty"""
+    with patch.object(Path, 'exists', return_value=True), \
+         patch.object(Path, 'iterdir', return_value=[MagicMock()]), \
+         patch.object(Path, 'rmdir') as mock_rmdir, \
+         patch.object(Cache, 'clear') as mock_clear:
+        cache.cleanup()
+        mock_clear.assert_called_once()
+        mock_rmdir.assert_not_called()
+
+def test_signal_handler_registration():
+    """Test signal handler registration"""
+    with patch('signal.signal') as mock_signal:
+        cache = Cache()
+        cache._initialize()
+        
+        # Get all the signal types that were registered
+        signal_types = [args[0] for args, _ in mock_signal.call_args_list]
+        
+        # Verify that SIGINT and SIGTERM were registered
+        assert signal.SIGINT in signal_types
+        assert signal.SIGTERM in signal_types
+        
+        # Verify that each handler is a cleanup handler
+        for args, _ in mock_signal.call_args_list:
+            handler = args[1]
+            assert callable(handler)

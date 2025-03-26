@@ -44,10 +44,12 @@ class VoxelCoordinate {
      * Attach event listeners to the coordinate display boxes
      */
     attachEventListeners() {
-        this.eventBus.subscribe(
+        this.eventBus.subscribeMultiple([
             EVENT_TYPES.VISUALIZATION.FMRI.NIFTIVIEWER_CLICK,
-            this.updateCoordinates.bind(this)
-        );
+            EVENT_TYPES.VISUALIZATION.FMRI.MONTAGE_SLICE_DIRECTION_CHANGE,
+            EVENT_TYPES.VISUALIZATION.FMRI.MONTAGE_SLICE_CHANGE,
+            EVENT_TYPES.VISUALIZATION.FMRI.VIEW_TOGGLE,
+        ], this.updateCoordinates.bind(this));
     }
 
     /**

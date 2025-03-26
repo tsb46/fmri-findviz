@@ -1,4 +1,5 @@
 // cypress/integration/upload/nifti_upload_spec.js
+import { TEST_DOM_IDS } from '../../support/testConstants.js';
 
 describe('NIFTI File Upload Tests', () => {
     beforeEach(() => {
@@ -7,50 +8,62 @@ describe('NIFTI File Upload Tests', () => {
       cy.get('body').should('be.visible')
     })
   
-    it('should upload NIFTI files and display viewer', () => {
-      // Open file upload modal/form
-      cy.get('#upload-file').click()
-
-      // wait for the modal to display
-      cy.get('[data-cy="modal"]').contains('button', 'Close').click()
-      // cy.get('#upload-modal').should('be.visible')
-      
+    it('should upload all Nifti files (functional, anatomical, mask) and display viewer', () => {
       // NIFTI tab should be selected by default
-      cy.get('#nifti-tab').should('have.class', 'active')
+      cy.get(TEST_DOM_IDS.UPLOAD.TAB_NIFTI).should('have.class', 'active')
       
-      // Upload functional NIFTI
-      cy.get('#nifti-func').attachFile({
-        filePath: 'samples/sample_func.nii.gz',
-        encoding: 'binary'
-      })
+      // Full upload flow
+      cy.niftiFullUpload()
       
-      // Upload anatomical NIFTI
-      cy.get('#nifti-anat').attachFile({
-        filePath: 'samples/sample_anat.nii.gz',
-        encoding: 'binary'
-      })
-      
-      // Upload mask NIFTI
-      cy.get('#nifti-mask').attachFile({
-        filePath: 'samples/sample_mask.nii.gz',
-        encoding: 'binary'
-      })
-      
-      // Submit the form
-      cy.get('#submit-file').click()
-      
-      // wait for viewer to load
-      cy.get('#fmri-visualization-container').should('be.visible')
-
-      // check that the modal is closed
-      cy.get('[data-cy="modal"]').should('not.exist')
+      // check the the fmri container is visible
+      cy.get(TEST_DOM_IDS.FMRI.CONTAINER).should('be.visible')
       
       // Verify all three slices are visible
-      cy.get('#sliceX').should('be.visible')
-      cy.get('#sliceY').should('be.visible')
-      cy.get('#sliceZ').should('be.visible')
+      cy.get(TEST_DOM_IDS.FMRI.NIFTI_CONTAINER.SLICE_1).should('be.visible')
+      cy.get(TEST_DOM_IDS.FMRI.NIFTI_CONTAINER.SLICE_2).should('be.visible')
+      cy.get(TEST_DOM_IDS.FMRI.NIFTI_CONTAINER.SLICE_3).should('be.visible')
       
-      // Take a screenshot for visual testing
-      cy.screenshot()
+    })
+
+    it('should upload functional and anatomical Nifti files and display viewer', () => {
+      // Functional and anatomical upload flow
+      cy.niftiFunctionalAndAnatomicalUpload()
+
+      // check the the fmri container is visible
+      cy.get(TEST_DOM_IDS.FMRI.CONTAINER).should('be.visible')
+      
+      // Verify all three slices are visible
+      cy.get(TEST_DOM_IDS.FMRI.NIFTI_CONTAINER.SLICE_1).should('be.visible')
+      cy.get(TEST_DOM_IDS.FMRI.NIFTI_CONTAINER.SLICE_2).should('be.visible')
+      cy.get(TEST_DOM_IDS.FMRI.NIFTI_CONTAINER.SLICE_3).should('be.visible')
+    })
+
+    it('should upload functional and mask Nifti files and display viewer', () => {
+      // Functional and mask upload flow
+      cy.niftiFunctionalAndMaskUpload()
+
+      // check the the fmri container is visible
+      cy.get(TEST_DOM_IDS.FMRI.CONTAINER).should('be.visible')
+      
+      // Verify all three slices are visible
+      cy.get(TEST_DOM_IDS.FMRI.NIFTI_CONTAINER.SLICE_1).should('be.visible')
+      cy.get(TEST_DOM_IDS.FMRI.NIFTI_CONTAINER.SLICE_2).should('be.visible')
+      cy.get(TEST_DOM_IDS.FMRI.NIFTI_CONTAINER.SLICE_3).should('be.visible')
+    })
+
+    it('should upload functional Nifti file and display viewer', () => {
+      // Functional upload flow
+      cy.niftiFunctionalUpload()
+
+      // check the the fmri container is visible
+      cy.get(TEST_DOM_IDS.FMRI.CONTAINER).should('be.visible')
+    })
+
+    it('should upload serialized .fvstate file and display viewer', () => {
+      // Serialized .fvstate upload flow
+      cy.fvstateUploadNifti()
+
+      // check the the fmri container is visible
+      cy.get(TEST_DOM_IDS.FMRI.CONTAINER).should('be.visible')
     })
   })

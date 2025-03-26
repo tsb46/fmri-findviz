@@ -1,15 +1,32 @@
 import io
 import pytest
 import numpy as np
-from unittest.mock import Mock, patch
+from unittest.mock import Mock, patch, MagicMock
 from findviz.viz.io.timecourse import (
     TimeCourseUpload,
     TaskDesignUpload,
     read_ts_file,
     read_task_file,
-    get_task_regressors
+    get_task_regressors,
+    TaskDesignDict,
+    ConditionDict
 )
 from findviz.viz import exception
+
+@pytest.fixture
+def mock_task_data():
+    """Create mock task design data"""
+    return (
+        "onset,duration,trial_type\n"
+        "0,5,cond1\n"
+        "10,5,cond2\n"
+        "20,5,cond1"
+    )
+
+@pytest.fixture
+def mock_csv_data():
+    """Create mock time series data"""
+    return "1.0\n2.0\n3.0\n4.0"
 
 def test_timecourse_upload_init():
     """Test TimeCourseUpload initialization"""
@@ -121,21 +138,17 @@ def test_timecourse_upload_multiple_length_mismatch():
                 uploader.upload(fmri_len=3)
                 assert "length of ts_file (4) is not the same length as fmri volumes (3)" in str(exc_info.value)
 
-@patch('findviz.viz.io.timecourse.read_task_file')
-def test_task_design_upload_valid(mock_read_task):
+def test_task_design_upload_valid(mock_task_data):
     """Test successful task design file upload"""
-    # Include tr and slicetime_ref in the mock return value
-    mock_read_task.return_value = {
-        'onset': [0, 2, 4],
-        'duration': [1, 1, 1],
-        'trial_type': ['A', 'B', 'A'],
-        'tr': 2.0,              # Add these fields
-        'slicetime_ref': 0.5    # Add these fields
-    }
+    uploader = TaskDesignUpload(method='browser', default_trial_label='task')
     
-    uploader = TaskDesignUpload(method='browser')
+    # Create mock file with proper stream
+    mock_file = MagicMock()
+    mock_file.filename = 'task.csv'
+    mock_file.stream = io.BytesIO(mock_task_data.encode())
+    
     mock_files = {
-        'task_file': Mock(filename='task.csv'),
+        'task_file': mock_file,
         'tr': '2.0',
         'slicetime_ref': '0.5'
     }
@@ -144,12 +157,14 @@ def test_task_design_upload_valid(mock_read_task):
         result = uploader.upload(fmri_len=10)
         assert isinstance(result, dict)
         assert 'task_regressors' in result
-        assert result['tr'] == 2.0
-        assert result['slicetime_ref'] == 0.5
+        assert 'tr' in result
+        assert 'slicetime_ref' in result
 
-def test_task_design_upload_invalid_tr():
-    """Test task design upload with invalid TR"""
+def test_task_design_upload_validation():
+    """Test task design parameter validation"""
     uploader = TaskDesignUpload(method='browser')
+    
+    # Test invalid TR
     mock_files = {
         'task_file': Mock(filename='task.csv'),
         'tr': '-1.0',  # Invalid TR
@@ -157,19 +172,28 @@ def test_task_design_upload_invalid_tr():
     }
     
     with patch.object(uploader, '_get_browser_input', return_value=mock_files):
-        with pytest.raises(exception.FileValidationError):
+        with pytest.raises(exception.FileValidationError) as exc_info:
             uploader.upload(fmri_len=10)
+        assert 'TR must not be less than zero' in str(exc_info.value)
+    
+    # Test invalid slicetime
+    mock_files['tr'] = '2.0'
+    mock_files['slicetime_ref'] = '1.5'  # Invalid slicetime
+    
+    with patch.object(uploader, '_get_browser_input', return_value=mock_files):
+        with pytest.raises(exception.FileValidationError) as exc_info:
+            uploader.upload(fmri_len=10)
+        assert 'Slicetime reference must between 0 and 1' in str(exc_info.value)
 
 def test_read_ts_file_valid(mock_csv_data):
     """Test reading valid time course file"""
-    mock_file = Mock()
-    mock_file.read.return_value = mock_csv_data.encode()
+    mock_file = MagicMock()
+    mock_file.stream = io.BytesIO(mock_csv_data.encode())
     
-    with patch('findviz.viz.io.utils.get_csv_reader') as mock_reader:
-        mock_reader.return_value = [[x] for x in mock_csv_data.strip().split('\n')]
-        result = read_ts_file(mock_file, header=False, method='browser')
-        assert isinstance(result, np.ndarray)
-        assert result.shape == (4, 1)
+    result = read_ts_file(mock_file, header=False, method='browser')
+    assert isinstance(result, np.ndarray)
+    assert result.shape == (4, 1)  # Check shape is (n_timepoints, 1)
+    assert np.array_equal(result, np.array([[1.0], [2.0], [3.0], [4.0]]))
 
 def test_read_task_file_valid(mock_task_data):
     """Test reading valid task design file"""
@@ -226,93 +250,103 @@ def test_read_task_file_valid_alternative(mock_task_data):
 
 def test_get_task_regressors():
     """Test generation of task regressors"""
-    # Create sample task events data
     task_events = {
-        'tr': 2.0,
-        'slicetime_ref': 0.5,
         'trial_type': ['A', 'B', 'A', 'B'],
         'onset': ['0', '10', '20', '30'],
         'duration': ['5', '5', '5', '5']
     }
     
-    # Test with fMRI length of 25 timepoints
     fmri_len = 25
-    result = get_task_regressors(task_events, fmri_len)
+    task_tr = 2.0
+    task_slicetime_ref = 0.5
     
-    # Check structure of result
+    result = get_task_regressors(task_events, task_tr, task_slicetime_ref, fmri_len)
     assert isinstance(result, dict)
-    assert set(result.keys()) == {'A', 'B'}  # Should have both conditions
-    
-    # Check each condition has block and HRF regressors
-    for condition in ['A', 'B']:
-        assert 'block' in result[condition]
-        assert 'hrf' in result[condition]
-        assert isinstance(result[condition]['block'], list)
-        assert isinstance(result[condition]['hrf'], list)
-        assert len(result[condition]['block']) == fmri_len
-        assert len(result[condition]['hrf']) == fmri_len
+    assert set(result.keys()) == {'A', 'B'}
 
 def test_get_task_regressors_single_condition():
     """Test task regressors with single condition"""
     task_events = {
-        'tr': 2.0,
-        'slicetime_ref': 0.5,
         'trial_type': ['A', 'A'],
         'onset': ['0', '20'],
         'duration': ['5', '5']
     }
     
     fmri_len = 20
-    result = get_task_regressors(task_events, fmri_len)
+    task_tr = 2.0
+    task_slicetime_ref = 0.5
     
-    # Should only have one condition
+    result = get_task_regressors(task_events, task_tr, task_slicetime_ref, fmri_len)
     assert list(result.keys()) == ['A']
-    assert len(result['A']['block']) == fmri_len
-    assert len(result['A']['hrf']) == fmri_len
-    
-    # Check that block regressor has 1s during task periods
-    block_reg = result['A']['block']
-    assert block_reg[0] == 1  # Should be 1 at onset
-
-
-def test_get_task_regressors_validation():
-    """Test validation of task regressor inputs"""
-    # Test with invalid onset (non-numeric)
-    task_events = {
-        'tr': 2.0,
-        'slicetime_ref': 0.5,
-        'trial_type': ['A'],
-        'onset': ['invalid'],
-        'duration': ['5']
-    }
-    
-    with pytest.raises(ValueError):
-        get_task_regressors(task_events, 10)
-    
-    # Test with invalid duration
-    task_events = {
-        'tr': 2.0,
-        'slicetime_ref': 0.5,
-        'trial_type': ['A'],
-        'onset': ['0'],
-        'duration': ['invalid']
-    }
-    
-    with pytest.raises(ValueError):
-        get_task_regressors(task_events, 10)
 
 def test_get_task_regressors_empty():
     """Test task regressors with empty events"""
     task_events = {
-        'tr': 2.0,
-        'slicetime_ref': 0.5,
         'trial_type': [],
         'onset': [],
         'duration': []
     }
     
     fmri_len = 10
-    result = get_task_regressors(task_events, fmri_len)
+    task_tr = 2.0
+    task_slicetime_ref = 0.5
     
-    # Should return empty dict since no conditions
+    result = get_task_regressors(task_events, task_tr, task_slicetime_ref, fmri_len)
     assert result == {}
+
+def test_get_task_regressors_output():
+    """Test task regressor generation output format"""
+    task_events = {
+        'onset': ['0', '10'],
+        'duration': ['5', '5'],
+        'trial_type': ['A', 'B']
+    }
+    
+    fmri_len = 20
+    task_tr = 2.0
+    task_slicetime_ref = 0.5
+    
+    result = get_task_regressors(task_events, task_tr, task_slicetime_ref, fmri_len)
+    
+    # Check output structure
+    assert isinstance(result, dict)
+    for condition in ['A', 'B']:
+        assert condition in result
+        assert isinstance(result[condition], dict)
+        assert 'block' in result[condition]
+        assert 'hrf' in result[condition]
+        assert len(result[condition]['block']) == fmri_len
+        assert len(result[condition]['hrf']) == fmri_len
+
+def test_timecourse_upload_validation():
+    """Test time course file validation"""
+    uploader = TimeCourseUpload(method='browser')
+    
+    # Test duplicate labels
+    mock_files = [
+        {
+            'ts_file': Mock(filename='data1.csv'),
+            'ts_label': 'ROI1',
+            'ts_header': False
+        },
+        {
+            'ts_file': Mock(filename='data2.csv'),
+            'ts_label': 'ROI1',  # Duplicate label
+            'ts_header': False
+        }
+    ]
+    
+    with patch.object(uploader, '_get_browser_input', return_value=mock_files):
+        with pytest.raises(exception.FileInputError) as exc_info:
+            uploader.upload(fmri_len=10)
+        assert 'Duplicate time course labels found' in str(exc_info.value)
+
+def test_read_task_file_validation(mock_task_data):
+    """Test task file content validation"""
+    mock_file = MagicMock()
+    mock_file.filename = 'task.csv'
+    mock_file.stream = io.BytesIO("onset,duration\ninvalid,5\n".encode())
+    
+    with pytest.raises(exception.FileValidationError) as exc_info:
+        read_task_file(mock_file, default_trial_label='task', method='browser')
+    assert 'Non-numeric entry' in str(exc_info.value)

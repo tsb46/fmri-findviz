@@ -3,7 +3,7 @@ Utilities for handling gifti file uploads
 """
 from enum import Enum
 from pathlib import Path
-from typing import Literal, Optional, Dict, Union
+from typing import Literal, Optional, Dict, Union, Tuple
 
 import nibabel as nib
 
@@ -109,194 +109,42 @@ class GiftiUpload:
 
         # Process left hemisphere inputs
         if self.left_input:
-            # load and validate left functional file
-            # check left functional file extension
-            if not validate.validate_gii_func_ext(
-                utils.get_filename(file_uploads[GiftiFiles.LEFT_FUNC.value])
-            ):
-                raise exception.FileInputError(
-                    'File extension is not recognized. Please upload '
-                    'a gifti file with a .func.gii extension for left '
-                    'hemisphere functional file',
-                    exception.ExceptionFileTypes.GIFTI.value, self.method,
-                    [browser_fields[GiftiFiles.LEFT_FUNC.value]]
-                )
-            try:
-                gii_left_func = read_gii(
-                    file_uploads[GiftiFiles.LEFT_FUNC.value], 
-                    self.method
-                )
-            except Exception as e:
-                raise exception.FileUploadError(
-                    'Error in reading left functional gifti file',
-                    exception.ExceptionFileTypes.GIFTI.value, self.method,
-                    [browser_fields[GiftiFiles.LEFT_FUNC.value]]
-                ) from e
-            
-            if not validate.validate_gii_func(gii_left_func):
-                raise exception.FileValidationError(
-                    "The left hemisphere func.gii file should have have 1d-array "
-                    "per data array (timepoint). Check format.",
-                    validate.validate_gii_func.__name__,
-                    exception.ExceptionFileTypes.GIFTI.value,
-                    [browser_fields[GiftiFiles.LEFT_FUNC.value]]
-                )
-            
+            gii_left_func, gii_left_mesh = self._process_hemisphere(
+                file_uploads[GiftiFiles.LEFT_FUNC.value],
+                file_uploads[GiftiFiles.LEFT_MESH.value],
+                'left'
+            )
             gifti_out[GiftiFiles.LEFT_FUNC.value] = gii_left_func
-
-            # load and validate left mesh
-            # check left mesh file extension
-            if not validate.validate_gii_mesh_ext(
-                utils.get_filename(file_uploads[GiftiFiles.LEFT_MESH.value])
-            ):
-                raise exception.FileInputError(
-                    'File extension is not recognized. Please upload '
-                    'a gifti file with a .surf.gii extension for left '
-                    'hemisphere mesh (geometry) file',
-                    exception.ExceptionFileTypes.GIFTI.value, self.method,
-                    [browser_fields[GiftiFiles.LEFT_MESH.value]]
-                )
-            try:
-                gii_left_mesh = read_gii(
-                    file_uploads[GiftiFiles.LEFT_MESH.value], 
-                    self.method
-                )
-            except Exception as e:
-                raise exception.FileUploadError(
-                    'Error in reading left hemisphere mesh (geometry) gifti file',
-                    exception.ExceptionFileTypes.GIFTI.value, self.method,
-                    [browser_fields[GiftiFiles.LEFT_MESH.value]]
-                ) from e
-            
-            if not validate.validate_gii_mesh(gii_left_mesh):
-                raise exception.FileValidationError(
-                    "The left hemisphere mesh (geometry) file should only contain "
-                    "two data arrays, corresponding to coordinate and face arrays."
-                     " Check format.",
-                    validate.validate_gii_mesh.__name__,
-                    exception.ExceptionFileTypes.GIFTI.value,
-                    [browser_fields[GiftiFiles.LEFT_MESH.value]]
-                )
-            
             gifti_out[GiftiFiles.LEFT_MESH.value] = gii_left_mesh
 
-            # check length of functional and mesh files
-            if not validate.validate_gii_func_mesh_len(gii_left_func, gii_left_mesh):
+        # Process right hemisphere inputs
+        if self.right_input:
+            gii_right_func, gii_right_mesh = self._process_hemisphere(
+                file_uploads[GiftiFiles.RIGHT_FUNC.value],
+                file_uploads[GiftiFiles.RIGHT_MESH.value],
+                'right'
+            )
+            gifti_out[GiftiFiles.RIGHT_FUNC.value] = gii_right_func
+            gifti_out[GiftiFiles.RIGHT_MESH.value] = gii_right_mesh
+            
+        # if left and right hemispheres passed, check length is consistent
+        if self.left_input & self.right_input:
+            if not validate.validate_gii_func_len(
+                gifti_out[GiftiFiles.LEFT_FUNC.value], 
+                gifti_out[GiftiFiles.RIGHT_FUNC.value]
+            ):
                 raise exception.FileValidationError(
-                    f"The left hemisphere func.gii file and mesh (geometry) file "
-                    f"are not the same length - {len(gii_left_func.darrays[0].data)} != "
-                    f"{len(gii_left_mesh.darrays[0].data)}. Check files are consistent "
-                    "in length.",
-                    validate.validate_gii_func_mesh_len.__name__,
+                    "The left and right hemisphere func.gii files are "
+                    "not the same length. Check files are consistent in length.",
+                    validate.validate_gii_func_len.__name__,
                     exception.ExceptionFileTypes.GIFTI.value,
                     [
                         browser_fields[GiftiFiles.LEFT_FUNC.value], 
-                        browser_fields[GiftiFiles.LEFT_MESH.value]
-                    ]
-                )
-
-            # Process right hemisphere inputs
-            if self.right_input:
-                # check left functional file extension
-                if not validate.validate_gii_func_ext(
-                    utils.get_filename(file_uploads[GiftiFiles.RIGHT_FUNC.value])
-                ):
-                    raise exception.FileInputError(
-                        'File extension is not recognized. Please upload '
-                        'a gifti file with a .func.gii extension for right '
-                        'hemisphere functional file',
-                        exception.ExceptionFileTypes.GIFTI.value, self.method,
-                        [browser_fields[GiftiFiles.RIGHT_FUNC.value]]
-                    )
-                # load and validate right functional file
-                try:
-                    gii_right_func = read_gii(
-                        file_uploads[GiftiFiles.RIGHT_FUNC.value], 
-                        self.method
-                    )
-                except Exception as e:
-                    raise exception.FileUploadError(
-                        'Error in reading right functional gifti file',
-                        exception.ExceptionFileTypes.GIFTI.value, self.method,
-                        [browser_fields[GiftiFiles.RIGHT_FUNC.value]]
-                    ) from e
-                
-                if not validate.validate_gii_func(gii_right_func):
-                    raise exception.FileValidationError(
-                        "The right hemisphere func.gii file should have have 1d-array "
-                        "per data array (timepoint). Check format.",
-                        validate.validate_gii_func.__name__,
-                        exception.ExceptionFileTypes.GIFTI.value,
-                        [browser_fields[GiftiFiles.RIGHT_FUNC.value]]
-                    )
-                
-                gifti_out[GiftiFiles.RIGHT_FUNC.value] = gii_right_func
-
-                # load and validate right mesh
-                # check right mesh file extension
-                if not validate.validate_gii_mesh_ext(
-                    utils.get_filename(file_uploads[GiftiFiles.RIGHT_MESH.value])
-                ):
-                    raise exception.FileInputError(
-                        'File extension is not recognized. Please upload '
-                        'a gifti file with a .surf.gii extension for right '
-                        'hemisphere mesh (geometry) file',
-                        exception.ExceptionFileTypes.GIFTI.value, self.method,
-                        [browser_fields[GiftiFiles.RIGHT_MESH.value]]
-                    )
-                try:
-                    gii_right_mesh = read_gii(
-                        file_uploads[GiftiFiles.RIGHT_MESH.value], 
-                        self.method
-                    )
-                except Exception as e:
-                    raise exception.FileUploadError(
-                        'Error in reading right hemisphere mesh (geometry) gifti file',
-                        exception.ExceptionFileTypes.GIFTI.value, self.method,
-                        [browser_fields[GiftiFiles.RIGHT_MESH.value]]
-                    ) from e
-                
-                if not validate.validate_gii_mesh(gii_right_mesh):
-                    raise exception.FileValidationError(
-                        "The right hemisphere mesh (geometry) file should only contain "
-                        "two data arrays, corresponding to coordinate and face arrays."
-                        " Check format.",
-                        validate.validate_gii_mesh.__name__,
-                        exception.ExceptionFileTypes.GIFTI,
-                        [browser_fields[GiftiFiles.RIGHT_MESH.value]]
-                    )
-            
-                gifti_out[GiftiFiles.RIGHT_MESH.value] = gii_left_mesh
-
-            # check length of functional and mesh files
-            if not validate.validate_gii_func_mesh_len(gii_left_func, gii_left_mesh):
-                raise exception.FileValidationError(
-                    f"The right hemisphere func.gii file and mesh (geometry) file "
-                    f"are not the same length - {len(gii_right_func.darrays[0].data)} != "
-                    f"{len(gii_right_mesh.darrays[0].data)}. Check files are consistent "
-                    "in length.",
-                    validate.validate_gii_func_mesh_len.__name__,
-                    exception.ExceptionFileTypes.GIFTI.value,
-                    [
-                        browser_fields[GiftiFiles.RIGHT_FUNC.value], 
-                        browser_fields[GiftiFiles.RIGHT_MESH.value]
+                        browser_fields[GiftiFiles.RIGHT_FUNC.value]
                     ]
                 )
             
-            # if left and right hemispheres passed, check length is consistent
-            if self.left_input & self.right_input:
-                if not validate.validate_gii_func_len(gii_left_func, gii_right_func):
-                    raise exception.FileValidationError(
-                        "The left and right hemisphere func.gii files are "
-                        "not the same length. Check files are consistent in length.",
-                        validate.validate_gii_func_len.__name__,
-                        exception.ExceptionFileTypes.GIFTI.value,
-                        [
-                            browser_fields[GiftiFiles.LEFT_FUNC.value], 
-                            browser_fields[GiftiFiles.RIGHT_FUNC.value]
-                        ]
-                    )
-            return gifti_out
+        return gifti_out
 
     def _check_file_inputs(self, file_inputs: FileUploadDict) -> None:
         """
@@ -318,23 +166,134 @@ class GiftiUpload:
         left_mesh = file_inputs[GiftiFiles.LEFT_MESH.value]
         right_mesh = file_inputs[GiftiFiles.RIGHT_MESH.value]
 
-        msg, passed = validate.validate_gii_file_inputs(
+        msg, missing, passed = validate.validate_gii_file_inputs(
             left_mesh, 
             right_mesh, 
             left_func, 
             right_func
         )
+        # missing files to browser fields
+        missing_dict = {
+            'left_func': browser_fields[GiftiFiles.LEFT_FUNC.value],
+            'right_func': browser_fields[GiftiFiles.RIGHT_FUNC.value],
+            'left_mesh': browser_fields[GiftiFiles.LEFT_MESH.value],
+            'right_mesh': browser_fields[GiftiFiles.RIGHT_MESH.value],
+        }
         # raise file validation error if file inputs incorrect
         if not passed:
+            missing_fields = [missing_dict[file] for file in missing]
             raise exception.FileValidationError(
                 msg, exception.ExceptionFileTypes.GIFTI.value, self.method,
+                missing_fields
+            )
+
+    def _process_hemisphere(
+        self, 
+        func_gii_file: FilePath,
+        mesh_gii_file: FilePath, 
+        hemisphere: Literal['left', 'right']
+    ) -> Tuple[nib.GiftiImage, nib.GiftiImage]:
+        """
+        Process left or right hemisphere file uploads.
+
+        Parameters
+        ----------
+        func_gii : nib.GiftiImage
+            Functional gifti file
+        mesh_gii : nib.GiftiImage
+            Mesh gifti file
+        hemisphere : Literal['left', 'right']
+            Hemisphere to process
+        
+        Returns
+        -------
+        Tuple[nib.GiftiImage, nib.GiftiImage]
+            Functional and mesh gifti files
+        """
+        # load and validate left functional file
+        # get browser field for hemisphere
+        if hemisphere == 'left':
+            browser_field_func = browser_fields[GiftiFiles.LEFT_FUNC.value]
+            browser_field_mesh = browser_fields[GiftiFiles.LEFT_MESH.value]
+        else:
+            browser_field_func = browser_fields[GiftiFiles.RIGHT_FUNC.value]
+            browser_field_mesh = browser_fields[GiftiFiles.RIGHT_MESH.value]
+
+        # check left functional file extension
+        if not validate.validate_gii_func_ext(
+            utils.get_filename(func_gii_file)
+        ):
+            raise exception.FileInputError(
+                'File extension is not recognized. Please upload '
+                f'a gifti file with a .func.gii extension for {hemisphere} '
+                'hemisphere functional file',
+                exception.ExceptionFileTypes.GIFTI.value, self.method,
+                [browser_field_func]
+            )
+        try:
+            gii_func = read_gii(func_gii_file, self.method)
+        except Exception as e:
+            raise exception.FileUploadError(
+                f'Error in reading {hemisphere} functional gifti file',
+                exception.ExceptionFileTypes.GIFTI.value, self.method,
+                [browser_field_func]
+            ) from e
+        
+        if not validate.validate_gii_func(gii_func):
+            raise exception.FileValidationError(
+                f"The {hemisphere} hemisphere func.gii file should have have 1d-array "
+                "per data array (timepoint). Check format.",
+                validate.validate_gii_func.__name__,
+                exception.ExceptionFileTypes.GIFTI.value,
+                [browser_field_func]
+            )
+
+        # load and validate left mesh
+        # check left mesh file extension
+        if not validate.validate_gii_mesh_ext(
+            utils.get_filename(mesh_gii_file)
+        ):
+            raise exception.FileInputError(
+                'File extension is not recognized. Please upload '
+                f'a gifti file with a .surf.gii extension for {hemisphere} '
+                'hemisphere mesh (geometry) file',
+                exception.ExceptionFileTypes.GIFTI.value, self.method,
+                [browser_field_mesh]
+            )
+        try:
+            gii_mesh = read_gii(mesh_gii_file, self.method)
+        except Exception as e:
+            raise exception.FileUploadError(
+                f'Error in reading {hemisphere} hemisphere mesh (geometry) gifti file',
+                exception.ExceptionFileTypes.GIFTI.value, self.method,
+                [browser_field_mesh]
+            ) from e
+        
+        if not validate.validate_gii_mesh(gii_mesh):
+            raise exception.FileValidationError(
+                f"The {hemisphere} hemisphere mesh (geometry) file should only contain "
+                "two data arrays, corresponding to coordinate and face arrays."
+                    " Check format.",
+                validate.validate_gii_mesh.__name__,
+                exception.ExceptionFileTypes.GIFTI.value,
+                [browser_field_mesh]
+            )
+        
+        # check length of functional and mesh files
+        if not validate.validate_gii_func_mesh_len(gii_func, gii_mesh):
+            raise exception.FileValidationError(
+                f"The {hemisphere} hemisphere func.gii file and mesh (geometry) file "
+                f"are not the same length - {len(gii_func.darrays[0].data)} != "
+                f"{len(gii_mesh.darrays[0].data)}. Check files are consistent "
+                "in length.",
+                validate.validate_gii_func_mesh_len.__name__,
+                exception.ExceptionFileTypes.GIFTI.value,
                 [
-                    browser_fields[GiftiFiles.LEFT_FUNC.value], 
-                    browser_fields[GiftiFiles.RIGHT_FUNC.value],
-                    browser_fields[GiftiFiles.LEFT_MESH.value],
-                    browser_fields[GiftiFiles.RIGHT_MESH.value],
+                    browser_field_func, 
+                    browser_field_mesh
                 ]
             )
+        return gii_func, gii_mesh
 
     @staticmethod
     def _get_browser_input() -> FileUploadDict:

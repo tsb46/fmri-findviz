@@ -105,42 +105,51 @@ def validate_gii_mesh_ext(fp: str) -> bool:
 
 def validate_gii_file_inputs(
     left_mesh, 
-    right_mesh, 
+    right_mesh,
     left_func, 
     right_func
-) -> Tuple[str, bool]:
-    """_summary_
+) -> Tuple[str, List[str], bool]:
+    """
     Take left and right hemisphere mesh (surf.gii) and functional (func.gii)
     files and ensure the appropriate file inputs
+    return a tuple of (error message, missing files, checks pass)
+
     """
     # initialize error message and pass state
     msg = ''
+    missing = []
     checks_pass = True
     if (left_func is None) and (right_func is None):
         msg =  'A left or right hemisphere functional file must be provided'
+        missing = ['left_func', 'right_func']
         checks_pass = False
 
     if (left_mesh is None) and (right_mesh is None):
         msg = 'A left or right hemisphere mesh file must be provided'
+        missing = ['left_mesh', 'right_mesh']
         checks_pass = False
 
     if (right_func is None) and (right_mesh is not None):
         msg = 'A right hemisphere func file must be provided with mesh input'
+        missing = ['right_func']
         checks_pass = False
         
     if (right_func is not None) and (right_mesh is None):
         msg = 'A right hemisphere mesh file must be provided with func input'
+        missing = ['right_mesh']
         checks_pass = False
 
     if (left_func is None) and (left_mesh is not None):
         msg = 'A left hemisphere func file must be provided with mesh input'
+        missing = ['left_func']
         checks_pass = False
 
     if (left_func is not None) and (left_mesh is None):
         msg = 'A left hemisphere mesh file must be provided with func input'
+        missing = ['left_mesh']
         checks_pass = False
     
-    return msg, checks_pass
+    return msg, missing, checks_pass
 
 
 def validate_gii_func(gii: nib.GiftiImage) -> bool:

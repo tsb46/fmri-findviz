@@ -73,8 +73,8 @@ class FileUploader {
 		this.timeSeriesFileManager = new TimeSeriesFileManager(
 			DOM_IDS.FILE_UPLOAD.TS.CONTAINER,
 			DOM_IDS.FILE_UPLOAD.TS.FILE,
-			DOM_IDS.FILE_UPLOAD.TS.LABEL,
 			DOM_IDS.FILE_UPLOAD.TS.HEADER,
+			DOM_IDS.FILE_UPLOAD.TS.LABEL,
 			DOM_IDS.FILE_UPLOAD.TS.REMOVE_BUTTON,
 			DOM_IDS.FILE_UPLOAD.TS.FILE_PAIR,
 			DOM_IDS.FILE_UPLOAD.TS.ADD_TS,
@@ -318,7 +318,7 @@ class FileUploader {
 		this.uploadModal.on('shown.bs.modal', (evt) => {
 			evt.target.setAttribute('data-cy', 'modal')
 		})
-		
+
 		// Remove the `data-cy` attribute when the modal is finished transitioning closed
 		this.uploadModal.on('hidden.bs.modal', (evt) => {
 			evt.target.removeAttribute('data-cy')

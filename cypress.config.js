@@ -5,7 +5,7 @@ module.exports = defineConfig({
     baseUrl: 'http://localhost:5001',
     fixturesFolder: 'cypress/fixtures',
     specPattern: 'cypress/integration/**/*.js',
-    supportFile: 'cypress/support/index.js',
+    supportFile: 'cypress/support/commands.js',
     setupNodeEvents(on, config) {
       return config;
     },

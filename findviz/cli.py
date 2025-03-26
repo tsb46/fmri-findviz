@@ -150,7 +150,6 @@ def process_cli_inputs(args) -> None:
         slicetime_ref=args.slicetime_ref
     )
     logger.info("File uploads processed successfully")
-
     # pass fmri data to data manager and get viewer data
     if fmri_type == 'nifti':
         data_manager.ctx.create_nifti_state(

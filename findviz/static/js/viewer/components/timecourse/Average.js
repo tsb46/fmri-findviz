@@ -46,18 +46,34 @@ class Average {
 
         // enable modal button by default
         this.modalButton.prop('disabled', false);
-        
-        // initialize average form
-        this.averageForm.on('submit', this.handleAverageSubmit.bind(this));
-
-        // on modal show, check if any annotation markers are selected
-        this.averageModal.on('show.bs.modal', this.checkAnnotationMarkers.bind(this));
 
         // initialize spinner
         this.spinner = new Spinner(
             DOM_IDS.AVERAGE.SPINNER_OVERLAY,
             DOM_IDS.AVERAGE.SPINNER_WHEEL
         );
+
+        // initialize event listeners
+        this.attachEventListeners();
+    }
+
+    // initialize event listeners
+    attachEventListeners() {
+        // initialize average form
+        this.averageForm.on('submit', this.handleAverageSubmit.bind(this));
+
+        // on modal show, check if any annotation markers are selected
+        this.averageModal.on('show.bs.modal', this.checkAnnotationMarkers.bind(this));
+
+        // add a data attribute so Cypress will automatically wait for that attribute to be present
+		this.averageModal.on('shown.bs.modal', (evt) => {
+			evt.target.setAttribute('data-cy', 'modal')
+		})
+
+		// Remove the `data-cy` attribute when the modal is finished transitioning closed
+		this.averageModal.on('hidden.bs.modal', (evt) => {
+			evt.target.removeAttribute('data-cy')
+		})
     }
 
     /**

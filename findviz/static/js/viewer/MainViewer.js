@@ -522,7 +522,7 @@ class MainViewer{
      * @returns {void}
      */
     afterUpload(){
-        const uploadButton = document.getElementById(DOM_IDS.UPLOAD_BUTTON)
+        const uploadButton = document.getElementById(DOM_IDS.FILE_UPLOAD.MODAL_BUTTON)
         // Change button color
         uploadButton.classList.add('btn-secondary');
         uploadButton.classList.remove('btn-primary');
