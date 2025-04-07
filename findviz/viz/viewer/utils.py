@@ -333,7 +333,11 @@ def get_precision(
     max_precision: int = 6
 ) -> int:
     """Calculate precision for slider step size"""
-    data_range_dec = decimal.Decimal(data_range)
+    # Handle NaN values
+    if np.isnan(data_range):
+        return 0
+        
+    data_range_dec = decimal.Decimal(str(data_range))
     precision = abs(data_range_dec.as_tuple().exponent)
     if precision > max_precision:
         return max_precision

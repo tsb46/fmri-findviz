@@ -34,7 +34,7 @@ logger = setup_logger(__name__)
     route=Routes.CORRELATE,
     fmri_file_type=lambda: data_manager.ctx.fmri_file_type,
     route_parameters=['label', 'time_course_type', 'negative_lag', 'positive_lag'],
-    custom_exceptions=[ParameterInputError]
+    custom_exceptions=[ParameterInputError, NiftiMaskError]
 )
 def correlate():
     logger.info('Correlating time course with fMRI data')
@@ -63,11 +63,9 @@ def correlate():
     if fmri_file_type == 'nifti':
         # if mask is not provided, log error and return 400 error
         if viewer_data['mask_img'] is None:
-            e = NiftiMaskError(
+            raise NiftiMaskError(
                 message="A brain mask is required for nifti preprocessing",
             )
-            logger.error(e)
-            return make_response(e.message, 400)
         # convert nifti data to array
         fmri_data = transforms.nifti_to_array_masked(
             viewer_data['func_img'],

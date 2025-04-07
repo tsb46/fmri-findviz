@@ -1,4 +1,6 @@
 import logging
+import os
+from pathlib import Path
 
 def setup_logger(name=__name__, disable_file_logging=False):
     """
@@ -30,7 +32,15 @@ def setup_logger(name=__name__, disable_file_logging=False):
 
         # Create a file handler if not disabled
         if not disable_file_logging:
-            file_handler = logging.FileHandler('app.log')
+            # Get the current working directory and ensure logs directory exists
+            current_dir = os.getcwd()
+            log_dir = os.path.join(current_dir, 'logs')
+            os.makedirs(log_dir, exist_ok=True)
+            
+            # Create log file path
+            log_file_path = os.path.join(log_dir, 'app.log')
+            
+            file_handler = logging.FileHandler(log_file_path)
             file_handler.setFormatter(formatter)
             file_handler.setLevel(logging.INFO)
             logger.addHandler(file_handler)

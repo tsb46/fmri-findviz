@@ -46,7 +46,7 @@ export const DOM_IDS = {
     },
     FILE_UPLOAD: {
         ERROR_MESSAGE: 'error-message-upload',
-        ERROR_MODAL_SERVER: 'error-server-modal',
+        ERROR_MODAL_SERVER: 'error-upload-modal',
         ERROR_MODAL_SCENE: 'error-scene-modal',
         FMRI: {
             GIFTI: {

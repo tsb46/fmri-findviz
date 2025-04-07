@@ -72,10 +72,8 @@ class ColorOptions(TypedDict):
     """Color options for fmri plot"""
     color_min: float
     color_max: float
-    color_range: Tuple[float, float]
     threshold_min: float
     threshold_max: float
-    threshold_range: Tuple[float, float]
     opacity: float
 
 class SliceCoordsDict(TypedDict):
@@ -148,6 +146,7 @@ class TimeCourseGlobalPlotOptionsDict(TypedDict):
     hover_text_on: Optional[bool]
     time_marker_on: Optional[bool]
     global_convolution: Optional[bool]
+    
 # define output dicts from get_timecourse_plot_options() method
 class TimeCoursePlotOptionsDict(TypedDict):
     """Output dict from get_timecourse_plot_options() method"""
@@ -216,7 +215,6 @@ class ViewerDataNiftiDict(TypedDict):
     anat_data: Optional[np.ndarray]
     mask_data: Optional[np.ndarray]
     ts: Optional[Dict[str, List[float]]]
-    ts_labels: Optional[List[str]]
     task: Optional[Dict[str, List[float]]]
     is_fmri_preprocessed: Optional[bool]
     is_ts_preprocessed: Optional[bool]
@@ -228,7 +226,6 @@ class ViewerDataGiftiDict(TypedDict):
     right_input: Optional[bool]
     func_data: Optional[np.ndarray]
     ts: Optional[Dict[str, List[float]]]
-    ts_labels: Optional[List[str]]
     task: Optional[Dict[str, List[float]]]
     is_fmri_preprocessed: Optional[bool]
     is_ts_preprocessed: Optional[bool]

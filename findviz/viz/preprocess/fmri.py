@@ -39,7 +39,8 @@ def preprocess_fmri(
     right_func_img: Optional[nib.GiftiImage] = None,
 ) -> nib.Nifti1Image | Tuple[nib.GiftiImage, nib.GiftiImage]:
     """
-    Preprocess functional MRI data
+    Preprocess functional MRI data. Validation of preprocessing parameters
+    is performed in the validate module.
 
     Arguments:
     ----------

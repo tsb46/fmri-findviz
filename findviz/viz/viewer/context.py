@@ -484,9 +484,10 @@ class VisualizationContext:
     def clear_distance_plot_state(self) -> None:
         """Clear distance plot state"""
         logger.info("Clearing distance plot state")
-        if not self._state.distance_data:
+        if not self._state.distance_data_enabled:
             logger.error("No distance data exists")
             return
+        self._state.distance_data_enabled = False
         self._state.distance_data = None
         self._state.distance_plot_options = None
 
@@ -554,6 +555,7 @@ class VisualizationContext:
             distance_data: The time point distance data to plot
         """
         logger.info("Creating distance plot state")
+        self._state.distance_data_enabled = True
         self._state.distance_data = distance_data
         metadata = package_distance_metadata(
             distance_data,
@@ -1441,6 +1443,7 @@ class VisualizationContext:
         Arguments:
             timepoints: List of time points.
         """
+        # check if timepoints are the same length as the time courses
         if len(timepoints) != self.n_timepoints:
             raise ValueError(
                 "Timepoints must be equal length to the number of time points of the time courses"

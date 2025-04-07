@@ -35,7 +35,7 @@ def save_scene() -> dict:
         mem_file,
         mimetype='application/octet-stream',
         as_attachment=True,
-        download_name='scene.pkl'
+        download_name='scene'
     )
     
     # Set headers to prevent caching

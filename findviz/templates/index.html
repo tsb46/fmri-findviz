@@ -37,6 +37,8 @@
 <body>
   <!-- Upload Modal -->
   {% include 'components/modals/uploadModal.html' %}
+  <!-- Upload Error Modal -->
+  {% include 'components/modals/uploadErrorModal.html' %}
 
   <!-- Parent Visualization Container -->
   <div id="parent-container" class="container-fluid mt-5" style="display: none;">
@@ -92,6 +94,7 @@
     </div>
     <!-- Viewer Error Modal -->
     {% include 'components/modals/viewerErrorModal.html' %}
+    
   </div>
 
   <!-- Include the main JavaScript module -->

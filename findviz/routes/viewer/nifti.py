@@ -84,7 +84,9 @@ def get_nifti_data(
     # threshold data if threshold_min or threshold_max have been changed
     if (threshold_min != threshold_min_orig) or (threshold_max != threshold_max_orig):
         func_data = threshold_nifti_data(
-            func_data, threshold_min, threshold_max
+            nifti_data=func_data, 
+            threshold_min=threshold_min, 
+            threshold_max=threshold_max
         )
 
     # get anatomical data if present

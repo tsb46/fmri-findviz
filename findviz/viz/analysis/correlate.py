@@ -5,8 +5,6 @@ from typing import List
 
 import numpy as np
 
-from scipy.stats import zscore
-
 from findviz.viz.analysis.utils import get_lag_mat
 from findviz.viz.analysis.validate import (
     validate_less_than_or_equal_to_zero,
@@ -61,20 +59,50 @@ class Correlate:
             correlation map (n_lags, n_voxels)
 
         """
-        # convert time course to numpy array with one colume
-        time_course = np.array(time_course)[:, np.newaxis]
-        # get lag matrix
-        lag_mat = get_lag_mat(time_course, self.lags)
-
-        # standardize data
-        fmri_data = zscore(fmri_data, axis=0)
-        time_course = zscore(time_course)
-
-        # compute correlation map
-        correlation_map = (
-            np.dot(fmri_data.T, lag_mat) / len(time_course)
-        )
-        return correlation_map.T
+        # Convert time course to numpy array
+        time_course = np.array(time_course)
+        
+        # Get lag matrix - shape (n_timepoints, n_lags)
+        lag_mat = get_lag_mat(time_course[:, np.newaxis], self.lags)
+        
+        # Initialize correlation map
+        n_lags = len(self.lags)
+        n_voxels = fmri_data.shape[1]
+        
+        # Handle the case where fmri_data has 0 voxels
+        if n_voxels == 0:
+            return np.zeros((n_lags, 0))
+        
+        correlation_map = np.zeros((n_lags, n_voxels))
+        
+        # Compute correlations for each lag
+        for i in range(n_lags):
+            # Get the current lagged time course
+            lagged_tc = lag_mat[:, i]
+            
+            # Find valid data points (not NaN)
+            mask = ~np.isnan(lagged_tc)
+            
+            # Skip if not enough valid data points
+            if np.sum(mask) <= 1:
+                correlation_map[i, :] = np.nan
+                continue
+                
+            # Use masked arrays to handle NaN values
+            valid_lagged_tc = lagged_tc[mask]
+            valid_fmri = fmri_data[mask, :]
+                
+            # Calculate correlation between lagged time course and all voxels at once
+            # np.corrcoef returns a correlation matrix where:
+            # - First row/column corresponds to the lagged time course
+            # - Other rows/columns correspond to the voxels
+            if valid_fmri.shape[1] > 0:  # Only if we have voxels
+                corr_matrix = np.corrcoef(valid_lagged_tc, valid_fmri.T)
+                # Extract correlations between lagged time course and each voxel
+                # The first row (after the first element) contains these correlations
+                correlation_map[i, :] = corr_matrix[0, 1:]
+        
+        return correlation_map
 
     def _validate(self):
         """

@@ -76,6 +76,8 @@ export const resetFMRIPreprocess = async (errorInlineId, context_id) => {
             body: createFormData({ context_id })
         },
         {
+            errorId: errorInlineId,
+            isInline: true,
             errorPrefix: 'Error resetting FMRI preprocessing'
         }
     );

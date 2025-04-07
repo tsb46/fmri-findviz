@@ -1,16 +1,12 @@
 """Tests for the DataManager singleton class."""
 
 import pytest
-import numpy as np
-import nibabel as nib
+from unittest.mock import Mock, patch
 
 from findviz.viz.viewer.data_manager import DataManager
-from tests.viz.conftest import (
-    mock_nifti_4d,
-    mock_nifti_3d,
-    mock_gifti_func,
-    mock_task_data
-)
+from findviz.viz.viewer.context import VisualizationContext
+from findviz.viz.viewer.state.state_file import StateFile
+from findviz.viz import exception
 
 @pytest.fixture(autouse=True)
 def reset_singleton():
@@ -28,213 +24,121 @@ def test_singleton_pattern():
 def test_initial_state():
     """Test initial state of DataManager."""
     dm = DataManager()
-    assert dm.state is None
-    assert dm.file_type is None
+    # Should have a main context by default
+    assert "main" in dm._contexts
+    assert dm._active_context_id == "main"
+    assert isinstance(dm.ctx, VisualizationContext)
 
-def test_create_nifti_state(mock_nifti_4d, mock_nifti_3d, mock_nifti_mask):
-    """Test creation of NIFTI visualization state."""
+def test_ctx_property():
+    """Test the ctx property returns the active context."""
     dm = DataManager()
-    dm.create_nifti_state(
-        func_img=mock_nifti_4d,
-        anat_img=mock_nifti_3d,
-        mask_img=mock_nifti_mask
+    assert dm.ctx is dm._contexts["main"]
+    
+    # Create a new context and switch to it
+    dm._contexts["test"] = VisualizationContext("test")
+    dm._active_context_id = "test"
+    assert dm.ctx is dm._contexts["test"]
+
+def test_create_analysis_context():
+    """Test creating a new analysis context."""
+    dm = DataManager()
+    context_id = dm.create_analysis_context("test_analysis")
+    
+    assert context_id == "test_analysis"
+    assert context_id in dm._contexts
+    assert isinstance(dm._contexts[context_id], VisualizationContext)
+    assert dm._contexts[context_id].context_id == context_id
+
+def test_get_context():
+    """Test getting a context by ID."""
+    dm = DataManager()
+    
+    # Get the main context
+    context = dm.get_context("main")
+    assert context is dm._contexts["main"]
+    
+    # Try to get a non-existent context
+    with pytest.raises(ValueError, match="Context nonexistent does not exist"):
+        dm.get_context("nonexistent")
+
+def test_get_context_ids():
+    """Test getting all context IDs."""
+    dm = DataManager()
+    
+    # Should have main context by default
+    assert dm.get_context_ids() == ["main"]
+    
+    # Add a new context
+    dm._contexts["test"] = VisualizationContext("test")
+    assert set(dm.get_context_ids()) == {"main", "test"}
+
+def test_get_active_context_id():
+    """Test getting the active context ID."""
+    dm = DataManager()
+    assert dm.get_active_context_id() == "main"
+    
+    # Change the active context
+    dm._active_context_id = "test"
+    assert dm.get_active_context_id() == "test"
+
+def test_switch_context():
+    """Test switching between contexts."""
+    dm = DataManager()
+    
+    # Create a new context
+    dm._contexts["test"] = VisualizationContext("test")
+    
+    # Switch to the new context
+    dm.switch_context("test")
+    assert dm._active_context_id == "test"
+    
+    # Switch back to main
+    dm.switch_context("main")
+    assert dm._active_context_id == "main"
+    
+    # Try to switch to a non-existent context
+    with pytest.raises(ValueError, match="Context nonexistent does not exist"):
+        dm.switch_context("nonexistent")
+
+@patch.object(StateFile, 'deserialize_from_bytes')
+def test_load(mock_deserialize):
+    """Test loading a state file."""
+    dm = DataManager()
+    
+    # Create a mock context
+    mock_context = Mock(spec=VisualizationContext)
+    mock_context.context_id = "loaded_context"
+    mock_deserialize.return_value = mock_context
+    
+    # Load the mock context
+    dm.load(b"mock_data")
+    
+    # Verify the context was loaded
+    mock_deserialize.assert_called_once_with(b"mock_data")
+    assert dm._contexts["main"] is mock_context
+    
+    # Test error handling
+    mock_deserialize.side_effect = ValueError("Test error")
+    with pytest.raises(ValueError, match="Test error"):
+        dm.load(b"mock_data")
+    
+    # Test version incompatibility error
+    mock_deserialize.side_effect = exception.FVStateVersionIncompatibleError(
+        "Test version error", "1.0", "2.0"
     )
-    
-    assert dm.state is not None
-    assert dm.state.file_type == 'nifti'
-    assert dm.state.anat_input is True
-    assert dm.state.mask_input is True
-    assert 'func_img' in dm.state.nifti_data
-    assert 'anat_img' in dm.state.nifti_data
-    assert 'mask_img' in dm.state.nifti_data
+    with pytest.raises(exception.FVStateVersionIncompatibleError):
+        dm.load(b"mock_data")
 
-def test_create_gifti_state(mock_gifti_func, mock_gifti_mesh):
-    """Test creation of GIFTI visualization state."""
+@patch.object(StateFile, 'serialize_to_bytes')
+def test_save(mock_serialize):
+    """Test saving a state file."""
     dm = DataManager()
-    dm.create_gifti_state(
-        left_func_img=mock_gifti_func,
-        right_func_img=mock_gifti_func,
-        left_mesh=mock_gifti_mesh,
-        right_mesh=mock_gifti_mesh
-    )
+    mock_serialize.return_value = b"serialized_data"
     
-    assert dm.state is not None
-    assert dm.state.file_type == 'gifti'
-    assert dm.state.left_input is True
-    assert dm.state.right_input is True
-    assert dm.state.gifti_data['left_func_img'] is not None
-    assert dm.state.gifti_data['right_func_img'] is not None
-    assert dm.state.vertices_left is not None
-    assert dm.state.vertices_right is not None
-    assert dm.state.faces_left is not None
-    assert dm.state.faces_right is not None
-
-def test_add_timeseries(mock_nifti_4d):
-    """Test adding timeseries data."""
-    dm = DataManager()
-    dm.create_nifti_state(func_img=mock_nifti_4d)
+    # Save the current context
+    result = dm.save("test.fvstate")
     
-    ts_data = {
-        'ROI1': [1.0, 2.0, 3.0],
-        'ROI2': [4.0, 5.0, 6.0]
-    }
-    
-    dm.add_timeseries(ts_data)
-    assert dm.state.ts_enabled is True
-    assert dm.state.ts_data == ts_data
-    assert len(dm.state.ts_labels) == 2
-    assert 'ROI1' in dm.state.ts_labels
-
-def test_add_task_design(mock_nifti_4d):
-    """Test adding task design data."""
-    dm = DataManager()
-    dm.create_nifti_state(func_img=mock_nifti_4d)
-
-    task_data = {
-        'tr': 2.0,
-        'slicetime_ref': 0.5,
-        'task_regressors': {
-            'A': {
-                'block': [1, 1, 0, 0],
-                'hrf': [0.1, 0.2, 0.1, 0]
-            },
-            'B': {
-                'block': [0, 0, 1, 1],
-                'hrf': [0, 0.1, 0.2, 0.1]
-            }
-        }
-    }
-
-    dm.add_task_design(task_data)
-    
-    assert dm.state.task_enabled
-    assert set(dm.state.conditions) == {'A', 'B'}
-    assert dm.state.task_data == task_data
-
-def test_get_viewer_metadata_nifti(mock_nifti_4d, mock_nifti_3d):
-    """Test getting viewer metadata for NIFTI state."""
-    dm = DataManager()
-    dm.create_nifti_state(mock_nifti_4d, mock_nifti_3d)
-    
-    metadata = dm.get_viewer_metadata()
-    assert metadata['file_type'] == 'nifti'
-    assert 'timepoints' in metadata
-    assert 'global_min' in metadata
-    assert 'global_max' in metadata
-    assert 'slice_len' in metadata
-    assert metadata['anat_input'] is True
-
-def test_get_viewer_metadata_gifti(mock_gifti_func, mock_gifti_mesh):
-    """Test getting viewer metadata for GIFTI state."""
-    dm = DataManager()
-    dm.create_gifti_state(mock_gifti_func, None, mock_gifti_mesh)
-    
-    metadata = dm.get_viewer_metadata()
-    assert metadata['file_type'] == 'gifti'
-    assert 'timepoints' in metadata
-    assert 'global_min' in metadata
-    assert 'global_max' in metadata
-    assert metadata['left_input'] is True
-    assert metadata['right_input'] is False
-    assert metadata['vertices_left'] is not None
-    assert metadata['faces_left'] is not None
-
-def test_get_viewer_nifti_data_preprocessed(mock_nifti_4d):
-    """Test getting viewer data with preprocessed data."""
-    dm = DataManager()
-    dm.create_nifti_state(func_img=mock_nifti_4d)
-    dm.store_fmri_preprocessed({'func_img': mock_nifti_4d})
-    viewer_data = dm.get_viewer_data()
-    assert viewer_data['is_fmri_preprocessed'] is True
-    assert viewer_data['func_img'] == mock_nifti_4d
-
-def test_get_viewer_gifti_data_preprocessed(mock_gifti_func, mock_gifti_mesh):
-    """Test getting viewer data with preprocessed data."""
-    dm = DataManager()
-    dm.create_gifti_state(mock_gifti_func, None, mock_gifti_mesh)
-    dm.store_fmri_preprocessed(
-        {'left_func_img': mock_gifti_func, 'right_func_img': None}
-        )
-    viewer_data = dm.get_viewer_data()
-    assert viewer_data['is_fmri_preprocessed'] is True
-    assert viewer_data['left_func_img'] == mock_gifti_func
-    assert viewer_data['right_func_img'] is None
-
-def test_get_viewer_data_empty():
-    """Test getting viewer data with no state."""
-    dm = DataManager()
-    viewer_data = dm.get_viewer_data()
-    assert viewer_data == {}
-
-def test_store_and_clear_preprocessed(mock_nifti_4d):
-    """Test storing and clearing preprocessed data."""
-    dm = DataManager()
-    dm.create_nifti_state(func_img=mock_nifti_4d)
-    
-    # Store preprocessed data
-    preprocessed_data = {'func': mock_nifti_4d}
-    dm.store_fmri_preprocessed(preprocessed_data)
-    assert dm.state.fmri_preprocessed is True
-    
-    # Clear preprocessed data
-    dm.clear_fmri_preprocessed()
-    assert dm.state.fmri_preprocessed is False
-
-def test_store_and_clear_ts_preprocessed(mock_nifti_4d):
-    """Test storing and clearing preprocessed timecourse data."""
-    dm = DataManager()
-    dm.create_nifti_state(func_img=mock_nifti_4d)
-    dm.add_timeseries({'ROI1': [1.0, 2.0, 3.0]})
-    
-    # Store preprocessed data
-    preprocessed_data = {'ROI1': [1.0, 2.0, 3.0]}
-    dm.store_timecourse_preprocessed(preprocessed_data)
-    assert dm.state.ts_preprocessed is True
-    assert dm.state.ts_data_preprocessed == preprocessed_data
-
-    # Clear preprocessed data
-    dm.clear_timecourse_preprocessed()
-    assert dm.state.ts_preprocessed is False
-    assert dm.state.ts_data_preprocessed is None
-
-def test_update_timecourse(mock_nifti_4d):
-    """Test updating timecourse data."""
-    dm = DataManager()
-    dm.create_nifti_state(func_img=mock_nifti_4d)
-    
-    # initialize timecourse data
-    dm.add_timeseries({
-        'ROI1': [1.0, 2.0, 3.0],
-        'ROI2': [4.0, 5.0, 6.0]
-    })
-    
-    timecourse = [1.0, 2.0, 3.0]
-    label = "New ROI"
-    dm.update_timecourse(timecourse, label)
-    
-    assert label in dm.state.ts_labels
-    assert dm.state.ts_data[label] == timecourse
-
-def test_pop_timecourse(mock_nifti_4d):
-    """Test popping timecourse data."""
-    dm = DataManager()
-    dm.create_nifti_state(func_img=mock_nifti_4d)
-    
-    # initialize timecourse data
-    dm.add_timeseries({
-        'ROI1': [1.0, 2.0, 3.0],
-        'ROI2': [4.0, 5.0, 6.0]
-    })
-
-    # Add two timecourses
-    dm.update_timecourse([1.0, 2.0, 3.0], "ROI3")
-    dm.update_timecourse([4.0, 5.0, 6.0], "ROI4")
-    
-    # Pop the last one
-    dm.pop_timecourse()
-    
-    assert "ROI4" not in dm.state.ts_labels
-    assert len(dm.state.ts_labels) == 3
-    assert "ROI1" in dm.state.ts_labels
-    assert "ROI2" in dm.state.ts_labels
-    assert "ROI3" in dm.state.ts_labels
+    # Verify the context was serialized
+    mock_serialize.assert_called_once()
+    assert mock_serialize.call_args[0][0] is dm._contexts["main"]
+    assert result == b"serialized_data"

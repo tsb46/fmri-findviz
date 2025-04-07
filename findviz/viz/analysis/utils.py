@@ -71,8 +71,14 @@ def get_lag_mat(x: np.ndarray, lags: list) -> np.ndarray:
         # target columns of X_lag
         j = i * n_cols
         k = j + n_cols  # (i+1) * ncols
+        
+        # Skip if lag is out of bounds (lag >= array length)
+        if abs(l) >= n_rows:
+            continue
+            
         # number rows of X
         nl = n_rows - abs(l)
+        
         # Copy
         if l >= 0:
             x_lag[l:, j:k] = x[:nl, :]

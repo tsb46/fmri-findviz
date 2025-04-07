@@ -210,3 +210,47 @@
     padding-right: 15px;
 }
 
+/* Log display styles */
+.log-content {
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+    line-height: 1.4;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.log-entry {
+    padding: 2px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.log-timestamp {
+    margin-right: 8px;
+    font-size: 0.85rem;
+}
+
+.log-level {
+    margin-right: 8px;
+    font-weight: bold;
+}
+
+.log-source {
+    margin-right: 8px;
+    font-style: italic;
+}
+
+.log-message {
+    display: block;
+    padding-left: 15px;
+    margin-top: 2px;
+}
+
+/* Make copy button more visible */
+.copy-log-btn {
+    background-color: #17a2b8;
+    border-color: #17a2b8;
+}
+
+.copy-log-btn:hover {
+    background-color: #138496;
+    border-color: #117a8b;
+} 

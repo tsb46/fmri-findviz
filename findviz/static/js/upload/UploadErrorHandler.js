@@ -2,6 +2,8 @@
  * Class for handling file upload errors and displaying error messages
  */
 
+import { LogDisplay } from '../log.js';
+
 class UploadErrorHandler {
     /**
      * Create error handler instance
@@ -17,8 +19,18 @@ class UploadErrorHandler {
         this.errorMessageDiv = document.getElementById(errorMessageDivId);
         this.serverErrorModal = $(`#${serverErrorModalId}`);
         this.sceneErrorModal = $(`#${sceneErrorModalId}`);
-        // set clear error message listener on form input change
-        this.clearErrorMessageOnFormChange();
+
+        // set up log display
+        this.logDisplay = new LogDisplay(
+            'toggle-error-upload-log-btn',
+            'error-upload-log-container',
+            'error-upload-log-content',
+            'error-upload-log-status',
+            'copy-error-upload-log-btn'
+        );
+
+        // initialize modal event listeners
+        this.initializeModalEvents();
     }
 
     /** 
@@ -131,10 +143,29 @@ class UploadErrorHandler {
     }
 
     /**
+     * Initialize modal event listeners
+     */
+    initializeModalEvents() {
+        this.logDisplay.logToggleButton.addEventListener('click', () => {
+            this.logDisplay.toggleLogDisplay();
+        });
+
+        this.logDisplay.copyLogButton.addEventListener('click', () => {
+            this.logDisplay.copyLogToClipboard();
+        });
+
+        // set clear error message listener on form input change
+        this.clearErrorMessageOnFormChange();
+    }
+
+    /**
      * Show generic server error modal
      */
     showServerErrorModal() {
         this.serverErrorModal.modal('show');
+        // show log container
+        this.logDisplay.showLogContainer();
+        this.logDisplay.fetchLogs();
     }
 
     /**

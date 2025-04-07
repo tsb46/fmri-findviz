@@ -63,6 +63,7 @@ class VisualizationState:
         annotation_selection: Selected annotation marker. Default is None
         annotation_marker_plot_options: Marker plot options. Default is MarkerPlotOptions()
         time_marker_plot_options: Time marker plot options. Default is TimeMarkerPlotOptions()
+        distance_data_enabled: Whether distance data is enabled and plotted. Default is False
         distance_data: Distance data. Default is None
         distance_plot_options: Distance plot options. Default is None.
     """
@@ -119,6 +120,7 @@ class VisualizationState:
         default_factory=TimeMarkerPlotOptions
     )
     # outputs from distance analysis
+    distance_data_enabled: bool = False
     distance_data: Optional[np.ndarray] = None
     distance_plot_options: Optional[DistancePlotOptions] = None
 
@@ -166,16 +168,16 @@ class NiftiVisualizationState(VisualizationState):
         func_header: Header of functional data. Default is None
         func_affine: Affine matrix of functional data. Default is None
         view_state: View state ('ortho' or 'montage'). Default is 'ortho'
-        ortho_slice_idx: Indices of ortho slices for NIFTI data. Default is 0.
+        ortho_slice_idx: Indices of ortho slices for NIFTI data. Default is empty dict {}.
         montage_slice_idx: Indices of montage slices for NIFTI data for each slice direction. 
-            Default is None.
+            Default is empty dict {}.
         ortho_slice_coords: Coordinates of ortho slices for NIFTI data. 
-            Default is None.
+            Default is empty dict {}.
         montage_slice_dir: Direction of montage slice for NIFTI data. 
-            Default is 'z'
+            Default is 'z'.
         montage_slice_coords: Coordinates of montage slices for NIFTI data. 
-            Default is None.
-        selected_slice: Selected slice for NIFTI data. Default is None.
+            Default is empty dict {}.
+        selected_slice: Selected slice for NIFTI data. Default is 'slice_1'.
     """
     # metadata
     file_type: Literal['nifti'] = 'nifti'

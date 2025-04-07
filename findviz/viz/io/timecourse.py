@@ -621,7 +621,7 @@ def read_ts_file(
     method: Literal['cli', 'browser'],
     index: Optional[int] = None,
     validate_numeric: bool = True
-) -> npt.NDArray:
+) -> List[float]:
     """
     Read time course file based on method of upload.
 
@@ -640,8 +640,8 @@ def read_ts_file(
 
     Returns
     -------
-    npt.NDArray
-        Time course as numpy array with shape (n_timepoints, 1)
+    List[float]
+        Time course as list of floats
     """
     filename = utils.get_filename(file)
 
@@ -706,8 +706,8 @@ def read_ts_file(
         # if checks passed, append float of first index of row
         ts_array.append(float(row[0]))
     
-    # Convert list to numpy array before returning
-    return np.array(ts_array).reshape(-1, 1)
+    # return list of floats
+    return ts_array
 
 def get_task_regressors(
     task_events: Dict[str, Any], 
