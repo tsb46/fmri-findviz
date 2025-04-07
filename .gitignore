@@ -146,4 +146,10 @@ testdata/
 findviz_run.py
 
 # cursor specific files/directories
-findviz-cursor-rule.mdc
+.cursor/
+
+# logs directory
+logs/
+
+# pytest results directory
+pytest-results/
