@@ -144,3 +144,6 @@ yarn-error.log*
 # findviz specific files/directories
 testdata/
 findviz_run.py
+
+# cursor specific files/directories
+.findviz-cursor-rule.mdc
