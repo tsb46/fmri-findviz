@@ -59,15 +59,19 @@ export class NiftiClickHandler {
     }
 
     /**
-     * Handle click events for the slice containers
+     * Handle click events for the slice containers (used during drag operations)
      * @param {object} eventData - The event data
      * @param {string} sliceName - The name of the slice
      */
     async clickHandler(eventData, sliceName) {
-        console.log('click event on nifti viewer');
+        // This is triggered during drag operations by Plotly
+        // We only update location, not time course
+        console.log('plotly_click event on nifti viewer');
         const x = Math.round(eventData.points[0].x);
         const y = Math.round(eventData.points[0].y);
+        // Update location
         await this.contextManager.data.updateLocation({ x, y }, sliceName);
+        // Publish the location update event
         this.eventBus.publish(EVENT_TYPES.VISUALIZATION.FMRI.NIFTIVIEWER_CLICK, { x, y, sliceName });
     }
 
@@ -76,7 +80,7 @@ export class NiftiClickHandler {
      * @param {MouseEvent} event - The mouse event
      * @param {string} sliceName - The name of the slice
      */
-    mouseDownHandler(event, sliceName) {
+    async mouseDownHandler(event, sliceName) {
         // Start dragging
         this.isDragging = true;
         this.activeSlice = sliceName;
@@ -86,7 +90,13 @@ export class NiftiClickHandler {
         event.preventDefault();
         
         // Get initial position from the plot
-        this.getPlotCoordinates(event);
+        const coords = await this.getPlotCoordinates(event);
+        if (!coords) return;
+        
+        const { x, y } = coords;
+
+        // Publish the time course update event on initial click
+        this.eventBus.publish(EVENT_TYPES.VISUALIZATION.FMRI.NIFTIVIEWER_TIMECOURSE_UPDATE, { x, y, sliceName });
     }
 
     /**
@@ -203,6 +213,7 @@ export class NiftiClickHandler {
         try {
             await this.contextManager.data.updateLocation({ x, y }, this.activeSlice);
             this.eventBus.publish(EVENT_TYPES.VISUALIZATION.FMRI.NIFTIVIEWER_CLICK, { x, y, sliceName: this.activeSlice });
+            return { x, y };
         } catch (error) {
             console.error('Error updating location:', error);
             // End the drag if there's an error

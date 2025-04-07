@@ -115,7 +115,7 @@ class TimeCourse {
         // if fmri time course enabled, add functional timecourse and plot
         this.eventBus.subscribeMultiple(
             [
-                EVENT_TYPES.VISUALIZATION.FMRI.NIFTIVIEWER_CLICK, 
+                EVENT_TYPES.VISUALIZATION.FMRI.NIFTIVIEWER_TIMECOURSE_UPDATE, 
                 EVENT_TYPES.VISUALIZATION.FMRI.GIFTIVIEWER_CLICK
             ], async () => {  
                 // if fmri time course enabled, update functional timecourse
