@@ -1,6 +1,7 @@
 import logging
 import os
 from pathlib import Path
+import time
 
 def setup_logger(name=__name__, disable_file_logging=False):
     """
@@ -37,10 +38,16 @@ def setup_logger(name=__name__, disable_file_logging=False):
             log_dir = os.path.join(current_dir, 'logs')
             os.makedirs(log_dir, exist_ok=True)
             
-            # Create log file path
-            log_file_path = os.path.join(log_dir, 'app.log')
+            # Create a run-specific log file with timestamp
+            run_timestamp = time.strftime("%Y%m%d-%H%M%S")
+            log_file_path = os.path.join(log_dir, f'app-run-{run_timestamp}.log')
             
-            file_handler = logging.FileHandler(log_file_path)
+            # Set up a file handler for this run
+            file_handler = logging.FileHandler(
+                filename=log_file_path,
+                encoding='utf-8'
+            )
+            
             file_handler.setFormatter(formatter)
             file_handler.setLevel(logging.INFO)
             logger.addHandler(file_handler)

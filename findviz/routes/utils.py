@@ -45,6 +45,7 @@ class Routes(Enum):
     GET_HEADER='/get_header'
     GET_LAST_TIMECOURSE='/get_last_timecourse'
     GET_LOG_ENTRIES='/get_log_entries'
+    GET_LOG_FILES='/get_log_files'
     GET_MONTAGE_DATA='/get_montage_data'
     GET_NIFTI_VIEW_STATE='/get_nifti_view_state'
     GET_SELECTED_TIME_POINT='/get_selected_time_point'
