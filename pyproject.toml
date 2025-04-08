@@ -5,6 +5,15 @@ description = "FIND Viewer: FMRI Interactive Navigation and Discovery Viewer"
 readme = "README.md"
 license = "MIT"
 authors = ["Taylor Bolt <taylor.s.bolt@gmail.com>"]
+repository = "https://github.com/tsb46/fmri-findviz"
+homepage = "https://github.com/tsb46/fmri-findviz"
+keywords = ["fmri", "neuroimaging", "visualization", "neuroscience"]
+classifiers = [
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Topic :: Scientific/Engineering :: Medical Science Apps."
+]
 
 # Dependencies
 [tool.poetry.dependencies]
