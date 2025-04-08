@@ -74,6 +74,9 @@ jobs:
       - name: Install Python dependencies
         run: |
           poetry install
+          # Make the findviz command available in the PATH
+          poetry build
+          pip install dist/*.whl
           
       - name: Install Node.js
         uses: actions/setup-node@v4
