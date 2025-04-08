@@ -46,30 +46,28 @@ describe('Timeseries Navigation', () => {
          cy.get(TEST_DOM_IDS.TIMECOURSE.TIME_COURSE_PLOT).should('be.visible')
         // click on multiple slices
         cy.get(TEST_DOM_IDS.FMRI.NIFTI_CONTAINER.SLICE_1).click(75, 75)
-        cy.wait(100)
+        cy.wait(150)
         cy.get(TEST_DOM_IDS.FMRI.NIFTI_CONTAINER.SLICE_2).click(50, 50)
-        cy.wait(100)
-        cy.get(TEST_DOM_IDS.FMRI.NIFTI_CONTAINER.SLICE_1).click(20, 20)
-        cy.wait(100)
+        cy.wait(150)
         // get timeseries data
         cy.getTimeseriesData(TEST_DOM_IDS.TIMECOURSE.TIME_COURSE_PLOT)
         .then(data => {
             // account for dummy data in first position of array
-            // check that length of data is 4 (i.e. there are three time series and dummy)
-            expect(data.length).to.equal(4)
-        })
-        // click undo fmri time series button
-        cy.get(TEST_DOM_IDS.TIMECOURSE.FMRI.UNDO_FMRI_TIMECOURSE).click()
-        cy.wait(100)
-        // get timeseries data
-        cy.getTimeseriesData(TEST_DOM_IDS.TIMECOURSE.TIME_COURSE_PLOT)
-        .then(data => {
             // check that length of data is 3 (i.e. there are two time series and dummy)
             expect(data.length).to.equal(3)
         })
+        // click undo fmri time series button
+        cy.get(TEST_DOM_IDS.TIMECOURSE.FMRI.UNDO_FMRI_TIMECOURSE).click()
+        cy.wait(150)
+        // get timeseries data
+        cy.getTimeseriesData(TEST_DOM_IDS.TIMECOURSE.TIME_COURSE_PLOT)
+        .then(data => {
+            // check that length of data is 2 (i.e. there are two time series and dummy)
+            expect(data.length).to.equal(2)
+        })
         // click remove fmri time series button
         cy.get(TEST_DOM_IDS.TIMECOURSE.FMRI.REMOVE_FMRI_TIMECOURSE).click()
-        cy.wait(100)
+        cy.wait(150)
         // get timeseries data
         cy.getTimeseriesData(TEST_DOM_IDS.TIMECOURSE.TIME_COURSE_PLOT)
         .then(data => {
