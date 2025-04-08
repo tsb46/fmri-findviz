@@ -98,6 +98,7 @@ jobs:
       - name: Cypress run
         uses: cypress-io/github-action@v5
         with:
+          browser: chrome
           start: npm run test:e2e
           
       - name: Upload Cypress results
