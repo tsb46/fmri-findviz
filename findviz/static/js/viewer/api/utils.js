@@ -43,13 +43,35 @@ export const makeRequest = async (url, options, errorConfig) => {
         });
 
         if (!response.ok) {
-            const errorText = await response.text();
-            console.error(`${errorConfig.errorPrefix}: ${errorText}`);
+            // Try to parse the error as JSON first
+            let errorData;
+            let errorText;
+            
+            try {
+                errorData = await response.json();
+                // Check if the response is a structured error
+                if (typeof errorData === 'object' && errorData !== null) {
+                    errorText = errorData.error || JSON.stringify(errorData);
+                } else {
+                    errorText = errorData;
+                }
+            } catch (e) {
+                // If not JSON, get as text
+                errorText = await response.text();
+            }
+            
+            console.error(`${errorConfig.errorPrefix}:`, errorData || errorText);
 
             if (errorConfig.isInline && errorConfig.errorId) {
                 displayInlineError(errorText, errorConfig.errorId);
             } else {
-                modalErrorHandler.displayError(errorText);
+                // Pass structured error data to the error handler if available
+                if (errorData && typeof errorData === 'object') {
+                    const errorMessage = errorData.error || errorText;
+                    modalErrorHandler.displayError(errorMessage);
+                } else {
+                    modalErrorHandler.displayError(errorText);
+                }
             }
             throw new Error(errorText);
         }

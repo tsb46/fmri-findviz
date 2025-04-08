@@ -15,7 +15,7 @@ from findviz import viz
 logger = setup_logger(__name__)
 
 
-def create_app(clear_cache=False):
+def create_app(clear_cache=False, testing=False):
     """Application factory function."""
     app = Flask(__name__)
 
@@ -25,6 +25,12 @@ def create_app(clear_cache=False):
         if cache.exists():
             cache.clear()
             logger.info("Cache cleared on startup")
+    
+    if testing:
+        app.config.update({
+            "TESTING": True,
+            "WTF_CSRF_ENABLED": False,
+        })
         
     # Import the blueprints
     from findviz.routes.file import file_bp
@@ -35,6 +41,7 @@ def create_app(clear_cache=False):
     from findviz.routes.viewer.io import io_bp
     from findviz.routes.viewer.plot import plot_bp
     from findviz.routes.viewer.preprocess import preprocess_bp
+    from findviz.routes.viewer.logs import logs_bp
 
 
     # Register the blueprints
@@ -46,6 +53,7 @@ def create_app(clear_cache=False):
     app.register_blueprint(io_bp)
     app.register_blueprint(plot_bp)
     app.register_blueprint(preprocess_bp)
+    app.register_blueprint(logs_bp)
 
     return app
 

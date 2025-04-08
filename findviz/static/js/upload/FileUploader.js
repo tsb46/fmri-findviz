@@ -31,6 +31,8 @@ class FileUploader {
 
 		// upload modal
 		this.uploadModal = $(`#${DOM_IDS.FILE_UPLOAD.MODAL}`);
+		// submit button
+		this.submitButton = $(`#${DOM_IDS.FILE_UPLOAD.SUBMIT_BUTTON}`);
 
 		// initialize upload error handler
 		this.errorHandler = new UploadErrorHandler(
@@ -71,8 +73,8 @@ class FileUploader {
 		this.timeSeriesFileManager = new TimeSeriesFileManager(
 			DOM_IDS.FILE_UPLOAD.TS.CONTAINER,
 			DOM_IDS.FILE_UPLOAD.TS.FILE,
-			DOM_IDS.FILE_UPLOAD.TS.LABEL,
 			DOM_IDS.FILE_UPLOAD.TS.HEADER,
+			DOM_IDS.FILE_UPLOAD.TS.LABEL,
 			DOM_IDS.FILE_UPLOAD.TS.REMOVE_BUTTON,
 			DOM_IDS.FILE_UPLOAD.TS.FILE_PAIR,
 			DOM_IDS.FILE_UPLOAD.TS.ADD_TS,
@@ -259,7 +261,7 @@ class FileUploader {
 		const self = this;
 
 		// Set up main form submission listener
-		document.getElementById(DOM_IDS.FILE_UPLOAD.FORM).onsubmit = async (event) => {
+		this.submitButton.on('click', async (event) => {
 			// prevent page reload
 			event.preventDefault();
 			// get active tabe in form submission
@@ -276,7 +278,7 @@ class FileUploader {
 				fmriFileType = 'cifti';
 			}
 			this.uploadFiles(event, fmriFileType);
-		};
+		});
 		
 		// Clear inputs and error messages on tab switch
 		document.querySelectorAll('.nav-pills .nav-link').forEach(tab => {
@@ -311,6 +313,16 @@ class FileUploader {
 		this.uploadModal.on('hidden.bs.modal', function () {
 			document.getElementById(DOM_IDS.FILE_UPLOAD.ERROR_MESSAGE).style.display = 'none';
 		});
+
+		// add a data attribute so Cypress will automatically wait for that attribute to be present
+		this.uploadModal.on('shown.bs.modal', (evt) => {
+			evt.target.setAttribute('data-cy', 'modal')
+		})
+
+		// Remove the `data-cy` attribute when the modal is finished transitioning closed
+		this.uploadModal.on('hidden.bs.modal', (evt) => {
+			evt.target.removeAttribute('data-cy')
+		})
 	}
 
 }

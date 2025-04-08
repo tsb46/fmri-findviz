@@ -78,9 +78,9 @@ def test_process_cli_inputs_nifti(mock_file_upload, mock_cache, mock_file_exists
         
         # Mock the enum values and attributes
         mock_file_upload.Nifti = MagicMock()
-        mock_file_upload.Nifti.FUNC.value = 'func'
-        mock_file_upload.Nifti.ANAT.value = 'anat'
-        mock_file_upload.Nifti.MASK.value = 'mask'
+        mock_file_upload.Nifti.FUNC.value = 'nii_func'
+        mock_file_upload.Nifti.ANAT.value = 'nii_anat'
+        mock_file_upload.Nifti.MASK.value = 'nii_mask'
         mock_file_upload.ts_status = False
         mock_file_upload.task_status = False
 
@@ -107,13 +107,14 @@ def test_process_cli_inputs_nifti(mock_file_upload, mock_cache, mock_file_exists
         mock_nifti = MagicMock(spec=nib.Nifti1Image)
         mock_file_upload.upload.return_value = {
             'nifti': {
-                'func': mock_nifti,
-                'anat': mock_nifti,
-                'mask': mock_nifti
+                'nii_func': mock_nifti,
+                'nii_anat': mock_nifti,
+                'nii_mask': mock_nifti
             }
         }
         
         args = argparse.Namespace(
+            file_type='nifti',
             nifti_func=str(NIFTI_FUNC),
             nifti_anat=str(NIFTI_ANAT),
             nifti_mask=str(NIFTI_MASK),
@@ -121,14 +122,15 @@ def test_process_cli_inputs_nifti(mock_file_upload, mock_cache, mock_file_exists
             gifti_right_func=None,
             gifti_left_mesh=None,
             gifti_right_mesh=None,
+            cifti_dtseries=None,
+            cifti_left_mesh=None,
+            cifti_right_mesh=None,
             timeseries=None,
             ts_labels=None,
             ts_headers=None,
             task_design=None,
             tr=2.0,
-            slicetime_ref=0.5,
-            use_nifti=True,
-            use_gifti=False
+            slicetime_ref=0.5
         )
         
         process_cli_inputs(args)
@@ -148,10 +150,10 @@ def test_process_cli_inputs_gifti(mock_file_upload, mock_cache, mock_file_exists
 
         # Mock the enum values and attributes
         mock_file_upload.Gifti = MagicMock()
-        mock_file_upload.Gifti.LEFT_FUNC.value = 'left_func'
-        mock_file_upload.Gifti.RIGHT_FUNC.value = 'right_func'
-        mock_file_upload.Gifti.LEFT_MESH.value = 'left_mesh'
-        mock_file_upload.Gifti.RIGHT_MESH.value = 'right_mesh'
+        mock_file_upload.Gifti.LEFT_FUNC.value = 'left_gii_func'
+        mock_file_upload.Gifti.RIGHT_FUNC.value = 'right_gii_func'
+        mock_file_upload.Gifti.LEFT_MESH.value = 'left_gii_mesh'
+        mock_file_upload.Gifti.RIGHT_MESH.value = 'right_gii_mesh'
         mock_file_upload.ts_status = False
         mock_file_upload.task_status = False
 
@@ -162,8 +164,8 @@ def test_process_cli_inputs_gifti(mock_file_upload, mock_cache, mock_file_exists
             'global_max': 1.0
         }
 
-        # Mock the viewer metadata
-        mock_data_manager.get_viewer_metadata.return_value = {
+        # Create the expected viewer metadata
+        expected_metadata = {
             'file_type': 'gifti',
             'timepoints': [0, 1, 2],
             'global_min': 0.0,
@@ -176,6 +178,9 @@ def test_process_cli_inputs_gifti(mock_file_upload, mock_cache, mock_file_exists
             'faces_right': [0, 1, 2]
         }
 
+        # Mock the viewer metadata to return our expected metadata
+        mock_data_manager.ctx.get_viewer_metadata.return_value = expected_metadata
+
         # Create mock GiftiImage with darrays
         mock_darray1 = MagicMock()
         mock_darray1.data = np.zeros((100, 3))  # vertices
@@ -187,14 +192,15 @@ def test_process_cli_inputs_gifti(mock_file_upload, mock_cache, mock_file_exists
 
         mock_file_upload.upload.return_value = {
             'gifti': {
-                'left_func': mock_gifti,
-                'right_func': mock_gifti,
-                'left_mesh': mock_gifti,
-                'right_mesh': mock_gifti
+                'left_gii_func': mock_gifti,
+                'right_gii_func': mock_gifti,
+                'left_gii_mesh': mock_gifti,
+                'right_gii_mesh': mock_gifti
             }
         }
         
         args = argparse.Namespace(
+            file_type='gifti',
             nifti_func=None,
             nifti_anat=None,
             nifti_mask=None,
@@ -202,14 +208,15 @@ def test_process_cli_inputs_gifti(mock_file_upload, mock_cache, mock_file_exists
             gifti_right_func=str(GIFTI_RIGHT_FUNC),
             gifti_left_mesh=str(GIFTI_LEFT_MESH),
             gifti_right_mesh=str(GIFTI_RIGHT_MESH),
+            cifti_dtseries=None,
+            cifti_left_mesh=None,
+            cifti_right_mesh=None,
             timeseries=None,
             ts_labels=None,
             ts_headers=None,
             task_design=None,
             tr=None,
-            slicetime_ref=0.5,
-            use_nifti=False,
-            use_gifti=True
+            slicetime_ref=0.5
         )
         
         process_cli_inputs(args)
@@ -221,15 +228,15 @@ def test_process_cli_inputs_gifti(mock_file_upload, mock_cache, mock_file_exists
         assert call_args['fmri_files']['right_gii_func'] == str(GIFTI_RIGHT_FUNC)
 
         # Verify data_manager interactions
-        mock_data_manager.create_gifti_state.assert_called_once_with(
-            left_func=mock_gifti,
-            right_func=mock_gifti,
+        mock_data_manager.ctx.create_gifti_state.assert_called_once_with(
+            left_func_img=mock_gifti,
+            right_func_img=mock_gifti,
             left_mesh=mock_gifti,
             right_mesh=mock_gifti
         )
         
         # Verify cache was created with metadata
-        mock_cache.save.assert_called_once_with(mock_data_manager.get_viewer_metadata.return_value)
+        mock_cache.save.assert_called_once_with(expected_metadata)
 
 def test_mutually_exclusive_inputs():
     """Test that NIFTI and GIFTI inputs are mutually exclusive"""
@@ -251,6 +258,7 @@ def test_process_cli_inputs_validation_error(mock_file_upload, mock_cache, mock_
         )
         
         args = argparse.Namespace(
+            file_type='nifti',
             nifti_func=str(NIFTI_FUNC),
             nifti_anat=None,
             nifti_mask=None,
@@ -321,6 +329,52 @@ def test_parse_args_timeseries():
     assert args.ts_labels == ['ts1', 'ts2']
     assert args.ts_headers == ['true', 'false']
 
+def test_parse_args_cifti():
+    """Test parsing CIFTI command line arguments"""
+    test_args = [
+        '--cifti-dtseries', 'test.dtseries.nii',
+        '--cifti-left-mesh', str(GIFTI_LEFT_MESH),
+        '--cifti-right-mesh', str(GIFTI_RIGHT_MESH)
+    ]
+    
+    with patch('sys.argv', ['findviz'] + test_args):
+        args = parse_args()
+        
+    assert args.cifti_dtseries == 'test.dtseries.nii'
+    assert args.cifti_left_mesh == str(GIFTI_LEFT_MESH)
+    assert args.cifti_right_mesh == str(GIFTI_RIGHT_MESH)
+    assert args.file_type == 'cifti'
+
+def test_parse_args_file_type():
+    """Test that file_type is correctly set based on inputs"""
+    # Test NIFTI
+    with patch('sys.argv', ['findviz', '--nifti-func', str(NIFTI_FUNC)]):
+        args = parse_args()
+        assert args.file_type == 'nifti'
+    
+    # Test GIFTI
+    with patch('sys.argv', ['findviz', '--gifti-left-func', str(GIFTI_LEFT_FUNC)]):
+        args = parse_args()
+        assert args.file_type == 'gifti'
+    
+    # Test CIFTI
+    with patch('sys.argv', ['findviz', '--cifti-dtseries', 'test.dtseries.nii']):
+        args = parse_args()
+        assert args.file_type == 'cifti'
+
+def test_multiple_file_types():
+    """Test that using multiple file types raises an error"""
+    test_cases = [
+        ['--nifti-func', str(NIFTI_FUNC), '--gifti-left-func', str(GIFTI_LEFT_FUNC)],
+        ['--nifti-func', str(NIFTI_FUNC), '--cifti-dtseries', 'test.dtseries.nii'],
+        ['--gifti-left-func', str(GIFTI_LEFT_FUNC), '--cifti-dtseries', 'test.dtseries.nii']
+    ]
+    
+    for test_args in test_cases:
+        with patch('sys.argv', ['findviz'] + test_args):
+            with pytest.raises(exception.FileInputError) as exc_info:
+                parse_args()
+            assert "Only one file type" in str(exc_info.value)
 
 def test_validate_files():
     """Test validation of file existence"""

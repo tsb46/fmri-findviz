@@ -469,9 +469,27 @@ class StateFile:
                 left_func_img = nib.GiftiImage.from_bytes(left_func_data)
                 logger.info("Loaded left_func_img from state file")
         
-        # Similar logic for right_func_img, left_mesh, and right_mesh
-        # (Code omitted for brevity but follows the same pattern)
+        # Try to load right func image
+        if 'data/right_func_img.gii' in zipf.namelist():
+            with zipf.open('data/right_func_img.gii') as f:
+                right_func_data = f.read()
+                right_func_img = nib.GiftiImage.from_bytes(right_func_data)
+                logger.info("Loaded right_func_img from state file")
         
+        # Try to load left mesh
+        if 'data/left_mesh.gii' in zipf.namelist():
+            with zipf.open('data/left_mesh.gii') as f:
+                left_mesh_data = f.read()
+                left_mesh = nib.GiftiImage.from_bytes(left_mesh_data)
+                logger.info("Loaded left_mesh from state file")
+        
+        # Try to load right mesh
+        if 'data/right_mesh.gii' in zipf.namelist():
+            with zipf.open('data/right_mesh.gii') as f:
+                right_mesh_data = f.read()
+                right_mesh = nib.GiftiImage.from_bytes(right_mesh_data)
+                logger.info("Loaded right_mesh from state file")
+                
         # Create the state with the loaded images
         if left_func_img or right_func_img:
             context.create_gifti_state(left_func_img, right_func_img, left_mesh, right_mesh)

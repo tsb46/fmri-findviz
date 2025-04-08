@@ -244,7 +244,6 @@ class FileUpload:
         try:
             # upload fmri files
             fmri_files = self.fmri_uploader.upload(fmri_files)
-
             # store fmri files
             if self.fmri_file_type == 'gifti' or self.fmri_file_type == 'cifti':
                 file_out['gifti'] = fmri_files

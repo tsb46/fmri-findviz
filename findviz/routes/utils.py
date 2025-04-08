@@ -44,6 +44,8 @@ class Routes(Enum):
     GET_FMRI_PLOT_OPTIONS='/get_fmri_plot_options'
     GET_HEADER='/get_header'
     GET_LAST_TIMECOURSE='/get_last_timecourse'
+    GET_LOG_ENTRIES='/get_log_entries'
+    GET_LOG_FILES='/get_log_files'
     GET_MONTAGE_DATA='/get_montage_data'
     GET_NIFTI_VIEW_STATE='/get_nifti_view_state'
     GET_SELECTED_TIME_POINT='/get_selected_time_point'
@@ -76,6 +78,7 @@ class Routes(Enum):
     RESET_TIMECOURSE_PREPROCESS='/reset_timecourse_preprocess'
     RESET_TIMECOURSE_SHIFT='/reset_timecourse_shift'
     SAVE_SCENE='/save_scene'
+    TEST_ERROR='/test_error'
     UNDO_ANNOTATION_MARKER='/undo_annotation_marker'
     UPDATE_ANNOTATION_MARKER_PLOT_OPTIONS='/update_annotation_marker_plot_options'
     UPDATE_DISTANCE_PLOT_OPTIONS='/update_distance_plot_options'
@@ -145,7 +148,7 @@ def handle_context() -> Callable[[Callable[P, R]], Callable[P, R]]:
         def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
             # Get context_id from query parameters or form data
             context_id = request.args.get(
-                'context_id', 
+                'context_id',
                 request.form.get('context_id')
             )
             
@@ -164,22 +167,33 @@ def handle_route_errors(
     error_msg: str,
     log_msg: str = None,
     fmri_file_type: Union[str, Callable[[], str]] = None,  # callable
-    route: str = None,
+    route: Enum = None,
     route_parameters: List[str] = None,
     custom_exceptions: List[Type[Exception]] = None,
 ) -> Callable[[Callable[P, R]], Callable[P, tuple[Union[R, str], int]]]:
     """
     Decorator to handle common route error patterns
     
-    Args:
-        error_msg (str): Base error message for the route
-        log_msg (str, optional): Message to log on success. Defaults to None.
-        fmri_file_type (Union[str, Callable[[], str]], optional): FMRI file type for DataRequestError.
-          Defaults to None. Pass a callable to get the fmri file type dynamically.
-        route (str, optional): Route name for DataRequestError. Defaults to None.
-        custom_exceptions (List[Type[Exception]], optional): List of custom exceptions to handle. Defaults to None.
-    Returns:
-        Callable: Decorated route function that handles errors consistently
+    Parameters
+    ----------
+    error_msg : str
+        Base error message for the route
+    log_msg : str, optional
+        Message to log on success
+    fmri_file_type : Union[str, Callable[[], str]], optional
+        FMRI file type for DataRequestError. Pass a callable to get the fmri file type dynamically
+    route : Enum, optional
+        Route name as an Enum for DataRequestError
+    route_parameters : List[str], optional
+        List of required route parameters to check
+    custom_exceptions : List[Type[Exception]], optional
+        List of custom exceptions to handle
+
+    Returns
+    -------
+    Callable
+        Decorated route function that handles errors consistently
+
     """
     def decorator(func: Callable[P, R]) -> Callable[P, tuple[Union[R, str], int]]:
         @wraps(func)
@@ -189,14 +203,14 @@ def handle_route_errors(
 
             # check if route parameters are provided
             if route_parameters:
-                # check if all route parameters are provided
+                # check if all expected route parameters are provided
                 for param in route_parameters:
                     if (param not in request.form) and (param not in request.args):
                         # Handle missing required fields
                         data_error = DataRequestError(
                             message=f'{error_msg}.',
                             fmri_file_type=current_file_type,
-                            route=route,
+                            route=route.value,
                             input_field=param
                         )
                         logger.error(data_error)
@@ -222,14 +236,36 @@ def handle_route_errors(
                     for custom_exception in custom_exceptions:
                         if isinstance(e, custom_exception):
                             logger.error(e)
-                            return make_response(e.message, 400)
+                            # Create a more structured error response
+                            error_response = {
+                                'error': e.message if hasattr(e, 'message') else str(e),
+                                'type': e.__class__.__name__,
+                                'route': route.value,
+                                'context': {
+                                    'file_type': current_file_type,
+                                    'route': route.value,
+                                }
+                            }
+                            return make_response(error_response, 400)
                         
                 # log as critical and return 500 to handle in frontend
                 logger.critical(
                     f"{error_msg}: {str(e)}", 
                     exc_info=True
                 )
-                return make_response(error_msg, 500)
+                
+                # Create a more structured error response for critical errors
+                error_response = {
+                    'error': error_msg,
+                    'details': str(e),
+                    'type': e.__class__.__name__,
+                    'route': route.value,
+                    'context': {
+                        'file_type': current_file_type,
+                        'route': route.value,
+                    }
+                }
+                return make_response(error_response, 500)
             
         return wrapper
 
@@ -240,9 +276,8 @@ def is_numeric(value):
     try:
         float(value)  # Try to convert to a number
         return True
-    except ValueError:
+    except (ValueError, TypeError):
         return False
-
 
 def sanitize_array_for_json(arr: np.ndarray) -> List[List[float]]:
     """Convert numpy array to JSON-serializable format, replacing NaN with None.

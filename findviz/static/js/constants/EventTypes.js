@@ -46,6 +46,7 @@ export const EVENT_TYPES = {
             MONTAGE_SLICE_DIRECTION_CHANGE: 'montageSliceDirectionChange',
             MONTAGE_SLICE_CHANGE: 'montageSliceChange',
             NIFTIVIEWER_CLICK: 'niftiViewerClick',
+            NIFTIVIEWER_TIMECOURSE_UPDATE: 'niftiViewerTimecourseUpdate',
             OPACITY_SLIDER_CHANGE: 'opacitySliderChange',
             PLAY_MOVIE_SPEED_CHANGE: 'playMovieSpeedChange',
             RESET_COLOR_SLIDERS: 'resetColorSliders',

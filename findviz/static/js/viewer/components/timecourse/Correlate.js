@@ -55,11 +55,22 @@ class Correlate {
         // enable modal button by default
         this.modalButton.prop('disabled', false);
 
-        // initialize correlation form
-        this.correlateForm.on('submit', this.handleCorrelateSubmit.bind(this));
-
         // fill correlation time course select
         this.fillCorrelateTimeCourseSelect();
+
+        // initialize spinner
+        this.spinner = new Spinner(
+            DOM_IDS.CORRELATE.SPINNER_OVERLAY,
+            DOM_IDS.CORRELATE.SPINNER_WHEEL
+        );
+
+        // attach event listeners
+        this.attachEventListeners();
+    }
+
+    attachEventListeners() {
+        // initialize correlation form
+        this.correlateForm.on('submit', this.handleCorrelateSubmit.bind(this));
 
         // refill time course select on addition/removal of fmri time course,
         // preprocessed time course, or reset time course preprocess
@@ -72,12 +83,6 @@ class Correlate {
                 EVENT_TYPES.PREPROCESSING.PREPROCESS_TIMECOURSE_RESET
             ], 
             this.fillCorrelateTimeCourseSelect.bind(this)
-        );
-
-        // initialize spinner
-        this.spinner = new Spinner(
-            DOM_IDS.CORRELATE.SPINNER_OVERLAY,
-            DOM_IDS.CORRELATE.SPINNER_WHEEL
         );
 
         // handle time course select change

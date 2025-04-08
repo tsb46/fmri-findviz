@@ -129,6 +129,27 @@ cython_debug/
 # DStore
 .DS_Store
 
+# Node.js dependencies
+node_modules/ 
+
+# Cypress generated files
+cypress/screenshots/
+cypress/videos/
+
+# npm debug files
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
 # findviz specific files/directories
 testdata/
 findviz_run.py
+
+# cursor specific files/directories
+.cursor/
+
+# logs directory
+logs/
+
+# pytest results directory
+pytest-results/

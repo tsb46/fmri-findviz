@@ -208,12 +208,9 @@ class TaskDesignUpload:
                 self.default_trial_label,
                 self.method
             )
+        # raise exception to be handled higher in stack
         except Exception as e:
-            raise exception.FileUploadError(
-                'Error in reading task design file',
-                exception.ExceptionFileTypes.TASK.value, self.method,
-                [browser_fields[TaskDesignFiles.FILE.value]]
-            ) from e
+            raise e
 
         # get task regressors
         task_reg = get_task_regressors(
@@ -644,14 +641,7 @@ def read_ts_file(
     Returns
     -------
     List[float]
-        Time course as list
-
-    Raises
-    ------
-    FileUploadError
-        If there are issues reading the file
-    FileValidationError
-        If file contents fail validation
+        Time course as list of floats
     """
     filename = utils.get_filename(file)
 
@@ -716,6 +706,7 @@ def read_ts_file(
         # if checks passed, append float of first index of row
         ts_array.append(float(row[0]))
     
+    # return list of floats
     return ts_array
 
 def get_task_regressors(

@@ -61,6 +61,7 @@ data_bp = Blueprint('data', __name__)
 @handle_route_errors(
     error_msg='Unknown error in timepoints conversion request',
     log_msg='Timepoints conversion request successful',
+    fmri_file_type=lambda: data_manager.ctx.fmri_file_type,
     route=Routes.CONVERT_TIMEPOINTS
 )
 def convert_timepoints() -> dict:
@@ -349,7 +350,6 @@ def get_vertex_coords() -> dict:
         'vertex_number': data_manager.ctx.selected_vertex,
         'selected_hemisphere': data_manager.ctx.selected_hemi
     }
-
 
 @data_bp.route(Routes.GET_VIEWER_METADATA.value, methods=['GET'])
 @handle_context()

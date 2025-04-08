@@ -91,16 +91,22 @@ class Cache:
             logger.error(f"Failed to load cache: {str(e)}")
             raise IOError(f"Failed to load cache: {str(e)}") from e
 
-    def clear(self):
+    def clear(self, during_shutdown=False):
         """Clear all cached data"""
-        logger.info("Clearing cache...")
+        if not during_shutdown:
+            logger.info("Clearing cache...")
         try:
             if self.cache_file.exists():
                 self.cache_file.unlink()
-                logger.info("Cache cleared successfully")
+                if not during_shutdown:
+                    logger.info("Cache cleared successfully")
         except Exception as e:
-            logger.error(f"Failed to clear cache: {str(e)}")
-            raise IOError(f"Failed to clear cache: {str(e)}")
+            if not during_shutdown:
+                logger.error(f"Failed to clear cache: {str(e)}")
+            else:
+                print(f"Warning: Failed to clear cache: {str(e)}")
+            if not during_shutdown:
+                raise IOError(f"Failed to clear cache: {str(e)}")
 
     def exists(self):
         """
@@ -128,7 +134,7 @@ class Cache:
     def cleanup(self):
         """Clean up temporary files on exit"""
         try:
-            self.clear()
+            self.clear(during_shutdown=True)  # Pass flag to avoid logging
             if self.temp_dir.exists():
                 # Only remove if empty
                 if not any(self.temp_dir.iterdir()):
@@ -168,7 +174,7 @@ class Cache:
 def cleanup_handler(cache):
     """Handler for cleanup on exit"""
     def handler(signum, frame):
-        cache.clear()
+        cache.clear(during_shutdown=True)  # Pass the flag here too
         # Exit gracefully
         exit(0)
     return handler

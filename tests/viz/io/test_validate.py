@@ -22,8 +22,14 @@ from findviz.viz.io.validate import (
     validate_ts_ext,
     validate_ts_single_col,
     validate_ts_numeric,
-    validate_ts_fmri_length
+    validate_ts_fmri_length,
+    validate_cii_brainmodel_axis,
+    validate_cii_dtseries_ext,
+    validate_cii_file_inputs,
+    validate_cii_hemisphere,
+    validate_gii_func_mesh_len
 )
+from unittest.mock import Mock, patch
 
 # GIFTI validation tests
 def test_validate_gii_func_ext():
@@ -51,20 +57,24 @@ def test_validate_gii_file_inputs():
     right_func = object()
     
     # Test valid combinations
-    msg, valid = validate_gii_file_inputs(left_mesh, None, left_func, None)
+    msg, missing, valid = validate_gii_file_inputs(left_mesh, None, left_func, None)
     assert valid is True
+    assert missing == []
     
-    msg, valid = validate_gii_file_inputs(left_mesh, right_mesh, left_func, right_func)
+    msg, missing, valid = validate_gii_file_inputs(left_mesh, right_mesh, left_func, right_func)
     assert valid is True
+    assert missing == []
     
     # Test invalid combinations
-    msg, valid = validate_gii_file_inputs(None, None, left_func, None)
+    msg, missing, valid = validate_gii_file_inputs(None, None, left_func, None)
     assert valid is False
     assert "mesh file must be provided" in msg
+    assert 'left_mesh' in missing or 'right_mesh' in missing
     
-    msg, valid = validate_gii_file_inputs(left_mesh, None, None, right_func)
+    msg, missing, valid = validate_gii_file_inputs(left_mesh, None, None, right_func)
     assert valid is False
     assert "func file must be provided" in msg
+    assert 'left_func' in missing or 'right_func' in missing
 
 def test_validate_gii_func(mock_gifti_func):
     """Test validation of GIFTI functional data structure"""
@@ -241,3 +251,126 @@ def test_validate_ts_fmri_length():
     ts = np.array([0,1,2])
     assert validate_ts_fmri_length(3, ts) is True
     assert validate_ts_fmri_length(4, ts) is False
+
+# CIFTI validation tests
+@pytest.fixture
+def mock_cifti_image():
+    """Create a mock CIFTI image with a BrainModelAxis"""
+    # This is a simplified mock - in real tests you'd need a more complex fixture
+    mock_cifti = Mock(spec=nib.Cifti2Image)
+    mock_cifti.ndim = 2
+    
+    # Mock BrainModelAxis
+    mock_axis = Mock(spec=nib.cifti2.BrainModelAxis)
+    
+    # Setup header to return the mock axis
+    mock_header = Mock()
+    mock_header.get_axis.return_value = mock_axis
+    mock_cifti.header = mock_header
+    
+    return mock_cifti
+
+def test_validate_cii_brainmodel_axis(mock_cifti_image):
+    """Test validation of CIFTI brain model axis"""
+    assert validate_cii_brainmodel_axis(mock_cifti_image) is True
+    
+    # Test with non-BrainModelAxis
+    mock_cifti_image.header.get_axis.return_value = Mock()  # Not a BrainModelAxis
+    assert validate_cii_brainmodel_axis(mock_cifti_image) is False
+
+def test_validate_cii_dtseries_ext():
+    """Test validation of CIFTI dtseries file extension"""
+    assert validate_cii_dtseries_ext('data.dtseries.nii') is True
+    assert validate_cii_dtseries_ext('data.nii') is False
+    assert validate_cii_dtseries_ext('data.dscalar.nii') is False
+    assert validate_cii_dtseries_ext('data.txt') is False
+
+def test_validate_cii_file_inputs():
+    """Test validation of CIFTI file input combinations"""
+    # Test valid combinations
+    msg, valid = validate_cii_file_inputs(
+        dtseries='data.dtseries.nii',
+        left_mesh='left.surf.gii',
+        right_mesh=None
+    )
+    assert valid is True
+    
+    msg, valid = validate_cii_file_inputs(
+        dtseries='data.dtseries.nii',
+        left_mesh=None,
+        right_mesh='right.surf.gii'
+    )
+    assert valid is True
+    
+    # Test invalid combinations
+    msg, valid = validate_cii_file_inputs(
+        dtseries=None,
+        left_mesh='left.surf.gii',
+        right_mesh=None
+    )
+    assert valid is False
+    assert "dtseries.nii file must be provided" in msg
+    
+    msg, valid = validate_cii_file_inputs(
+        dtseries='data.dtseries.nii',
+        left_mesh=None,
+        right_mesh=None
+    )
+    assert valid is False
+    assert "hemisphere mesh file must be provided" in msg
+
+def test_validate_cii_hemisphere():
+    """Test validation of CIFTI hemisphere"""
+    # Create a mock BrainModelAxis that will return the expected structure
+    mock_axis = Mock(spec=nib.cifti2.BrainModelAxis)
+    
+    # Setup the iter_structures method to return appropriate values
+    mock_axis.iter_structures.return_value = [
+        ('CIFTI_STRUCTURE_CORTEX_LEFT', None),
+        ('CIFTI_STRUCTURE_CORTEX_RIGHT', None)
+    ]
+    
+    # Test left hemisphere
+    assert validate_cii_hemisphere(
+        mock_axis, 'left', 'CIFTI_STRUCTURE_CORTEX_LEFT'
+    ) is True
+    
+    # Test right hemisphere
+    assert validate_cii_hemisphere(
+        mock_axis, 'right', 'CIFTI_STRUCTURE_CORTEX_RIGHT'
+    ) is True
+    
+    # Test missing hemisphere
+    assert validate_cii_hemisphere(
+        mock_axis, 'left', 'CIFTI_STRUCTURE_CEREBELLUM'
+    ) is False
+
+# Additional GIFTI validation tests
+def test_validate_gii_func_mesh_len(mock_gifti_func, mock_gifti_mesh):
+    """Test validation of GIFTI functional and mesh length compatibility"""
+    # Create mock GIFTI images with matching vertex counts
+    vertices = np.random.rand(100, 3).astype(np.float32)  # Explicitly cast to float32
+    faces = np.random.randint(0, 100, (50, 3)).astype(np.int32)  # Explicitly cast to int32
+    
+    # Create mesh with 100 vertices
+    mesh_arrays = [
+        nib.gifti.GiftiDataArray(vertices),
+        nib.gifti.GiftiDataArray(faces)
+    ]
+    mesh_gii = nib.gifti.GiftiImage(darrays=mesh_arrays)
+    
+    # Create func with data for 100 vertices
+    func_data = np.random.rand(100).astype(np.float32)  # Explicitly cast to float32
+    func_arrays = [nib.gifti.GiftiDataArray(func_data)]
+    func_gii = nib.gifti.GiftiImage(darrays=func_arrays)
+    
+    # Test matching lengths
+    assert validate_gii_func_mesh_len(func_gii, mesh_gii) is True
+    
+    # Create func with mismatched length
+    func_data_mismatched = np.random.rand(80).astype(np.float32)  # Explicitly cast to float32
+    func_arrays_mismatched = [nib.gifti.GiftiDataArray(func_data_mismatched)]
+    func_gii_mismatched = nib.gifti.GiftiImage(darrays=func_arrays_mismatched)
+    
+    # Test mismatched lengths
+    assert validate_gii_func_mesh_len(func_gii_mismatched, mesh_gii) is False

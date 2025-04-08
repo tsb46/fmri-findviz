@@ -46,7 +46,7 @@ export const DOM_IDS = {
     },
     FILE_UPLOAD: {
         ERROR_MESSAGE: 'error-message-upload',
-        ERROR_MODAL_SERVER: 'error-server-modal',
+        ERROR_MODAL_SERVER: 'error-upload-modal',
         ERROR_MODAL_SCENE: 'error-scene-modal',
         FMRI: {
             GIFTI: {
@@ -68,6 +68,7 @@ export const DOM_IDS = {
         },
         FORM: 'upload-form',
         MODAL: 'upload-modal',
+        MODAL_BUTTON: 'upload-file',
         SPINNERS: {
             OVERLAY: 'file-load-spinner-overlay',
             WHEEL: 'file-load-spinner-wheel'
@@ -89,7 +90,8 @@ export const DOM_IDS = {
         SCENE: {
             BUTTON: 'upload-scene',
             FILE: 'file-scene'
-        }
+        },
+        SUBMIT_BUTTON: 'submit-file'
     },
     FMRI: {
         COORDINATE: {
@@ -183,7 +185,7 @@ export const DOM_IDS = {
         TIME_SLIDER_TITLE: 'time-slider-title',
         TIME_POINT_DISPLAY: 'time-point-display'
     },
-    TIMECOURSE : {
+    TIMECOURSE: {
         ANNOTATE: {
             ENABLE_ANNOTATE: 'enable-annotate',
             LEFT_MOVE_ANNOTATE: 'left-move-annotate',
@@ -258,7 +260,6 @@ export const DOM_IDS = {
     SPINNERS: {
         OVERLAY: 'spinner-overlay',
         WHEEL: 'spinner-wheel',
-    },
-    UPLOAD_BUTTON: 'upload-file'
+    }
     
 };

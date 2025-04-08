@@ -84,6 +84,16 @@ class DistanceModal {
 
         // listen for remove distance plot button click
         this.distanceRemoveButton.on('click', this.handleDistanceRemoveButtonClick.bind(this));
+
+        // add a data attribute so Cypress will automatically wait for that attribute to be present
+		this.distanceModal.on('shown.bs.modal', (evt) => {
+			evt.target.setAttribute('data-cy', 'modal')
+		})
+
+		// Remove the `data-cy` attribute when the modal is finished transitioning closed
+		this.distanceModal.on('hidden.bs.modal', (evt) => {
+			evt.target.removeAttribute('data-cy')
+		})
     }
 
     // handle distance form submission
