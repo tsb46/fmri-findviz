@@ -353,13 +353,17 @@ class TimeCourseUpload:
             ts_label = file_package[SingleTimeCourseFiles.LABEL.value]
             ts_header = file_package[SingleTimeCourseFiles.HEADER.value]
             # check file extension
+            if self.method == 'cli':
+                filename = ts_file
+            else:
+                filename = ts_file.filename
             if not validate.validate_ts_ext(
-                utils.get_filename(ts_file.filename)
+                utils.get_filename(filename)
             ):
                 raise exception.FileInputError(
                     'Unrecognized file extension for '
-                    f'{utils.get_filename(ts_file)}.'
-                     ' Only .csv or .txt are allowed.',
+                    f'{filename}.'
+                    ' Only .csv or .txt are allowed.',
                     exception.ExceptionFileTypes.TIMECOURSE.value, self.method,
                     [browser_fields[TimeCourseFiles.FILES.value]],
                     index=[i]
@@ -539,6 +543,7 @@ def read_task_file(
         TaskDesignFields.ONSET.value,
         TaskDesignFields.DURATION.value
     ]
+
     # validate required columns ('onset' and 'duration')
     if not validate.validate_task_header_required_cols(header, required_cols):
         raise exception.FileValidationError(
@@ -644,7 +649,6 @@ def read_ts_file(
         Time course as list of floats
     """
     filename = utils.get_filename(file)
-
     # get file reader for file input
     delimiter = ','
     try:

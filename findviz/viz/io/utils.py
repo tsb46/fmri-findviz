@@ -65,6 +65,7 @@ def get_csv_reader(
     """
     if method == 'cli':
         try:
+            file = open(file, 'r', encoding="utf-8-sig")
             reader = csv.reader(file, delimiter = delimiter)
         # propagate error to parent function
         except Exception as e:

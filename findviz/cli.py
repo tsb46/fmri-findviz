@@ -130,6 +130,39 @@ def process_cli_inputs(args) -> None:
     validate_files(additional_files)
     logger.info("Additional files validated successfully")
 
+    # Auto-generate time series labels if not provided
+    ts_labels = args.ts_labels
+    if args.timeseries and (not ts_labels or len(ts_labels) < len(args.timeseries)):
+        # If no labels provided or not enough labels, generate from filenames
+        if not ts_labels:
+            ts_labels = []
+        
+        # Add missing labels based on filenames
+        for i in range(len(ts_labels), len(args.timeseries)):
+            # Extract filename without path and extension
+            filename = os.path.basename(args.timeseries[i])
+            # Remove extension(s)
+            base_name = os.path.splitext(filename)[0]
+            # Handle double extensions like .nii.gz
+            if '.nii' in base_name:
+                base_name = os.path.splitext(base_name)[0]
+            ts_labels.append(base_name)
+        
+        logger.info(f"Auto-generated time series labels: {ts_labels}")
+
+    # Auto-generate time series headers if not provided
+    ts_headers = args.ts_headers
+    if args.timeseries and (not ts_headers or len(ts_headers) < len(args.timeseries)):
+        # If no headers provided or not enough headers, default to False
+        if not ts_headers:
+            ts_headers = []
+        
+        # Add missing header flags (default to False)
+        for i in range(len(ts_headers), len(args.timeseries)):
+            ts_headers.append(False)
+        
+        logger.info(f"Auto-generated time series headers flags: {ts_headers}")
+
     # Create FileUpload instance
     file_upload = FileUpload(
         fmri_type,
@@ -143,8 +176,8 @@ def process_cli_inputs(args) -> None:
     uploads = file_upload.upload(
         fmri_files=fmri_files,
         ts_files=args.timeseries,
-        ts_labels=args.ts_labels,
-        ts_headers=args.ts_headers,
+        ts_labels=ts_labels,
+        ts_headers=ts_headers,
         task_file=args.task_design,
         tr=args.tr,
         slicetime_ref=args.slicetime_ref
@@ -175,7 +208,11 @@ def process_cli_inputs(args) -> None:
 
     # if task data, add to viewer data
     if file_upload.task_status:
-        data_manager.ctx.add_task_design(uploads['task'])
+        data_manager.ctx.add_task_design(
+            task_data=uploads['task']['task_regressors'], 
+            tr=uploads['task']['tr'], 
+            slicetime_ref=uploads['task']['slicetime_ref']
+        )
         logger.info("Task design data added to viewer data")
 
     # get viewer metadata
