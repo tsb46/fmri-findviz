@@ -1,6 +1,6 @@
 import pytest
 from io import StringIO, BytesIO
-from unittest.mock import Mock
+from unittest.mock import patch, mock_open, Mock
 from findviz.viz.io.utils import (
     get_filename,
     get_file_ext,
@@ -41,14 +41,19 @@ def test_parse_nifti_file_ext():
 
 def test_get_csv_reader_cli():
     """Test CSV reader creation for CLI method"""
+    # For CLI method, we need to mock the open function
     test_data = "a,b,c\n1,2,3\n4,5,6"
-    mock_file = StringIO(test_data)
     
-    reader = get_csv_reader(mock_file, method='cli')
-    rows = list(reader)
-    assert len(rows) == 3
-    assert rows[0] == ['a', 'b', 'c']
-    assert rows[1] == ['1', '2', '3']
+    # Use patch to mock the open function
+    with patch('builtins.open', mock_open(read_data=test_data)) as mock_file:
+        reader = get_csv_reader('dummy_path.csv', method='cli')
+        rows = list(reader)
+        assert len(rows) == 3
+        assert rows[0] == ['a', 'b', 'c']
+        assert rows[1] == ['1', '2', '3']
+        
+        # Verify open was called with the right parameters
+        mock_file.assert_called_once_with('dummy_path.csv', 'r', encoding='utf-8-sig')
 
 def test_get_csv_reader_browser():
     """Test CSV reader creation for browser method"""
@@ -67,13 +72,17 @@ def test_get_csv_reader_browser():
 def test_get_csv_reader_with_custom_delimiter():
     """Test CSV reader with custom delimiter"""
     test_data = "a;b;c\n1;2;3"
-    mock_file = StringIO(test_data)
     
-    reader = get_csv_reader(mock_file, delimiter=';', method='cli')
-    rows = list(reader)
-    assert len(rows) == 2
-    assert rows[0] == ['a', 'b', 'c']
-    assert rows[1] == ['1', '2', '3']
+    # Use patch to mock the open function
+    with patch('builtins.open', mock_open(read_data=test_data)) as mock_file:
+        reader = get_csv_reader('dummy_path.csv', delimiter=';', method='cli')
+        rows = list(reader)
+        assert len(rows) == 2
+        assert rows[0] == ['a', 'b', 'c']
+        assert rows[1] == ['1', '2', '3']
+        
+        # Verify open was called with the right parameters
+        mock_file.assert_called_once_with('dummy_path.csv', 'r', encoding='utf-8-sig')
 
 def test_get_csv_reader_error_handling():
     """Test error handling in CSV reader creation"""
