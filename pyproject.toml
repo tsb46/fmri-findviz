@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "findviz"
-version = "0.1.2"
+version = "0.1.3"
 description = "FIND Viewer: FMRI Interactive Navigation and Discovery Viewer"
 readme = "README.md"
 license = "MIT"
