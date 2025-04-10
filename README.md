@@ -12,7 +12,7 @@ Traditional neuroimaging visualization platforms, while powerful, are often desi
 By enabling researchers to interactively navigate through their data, FINDVIZ supports:
 - Discovery of unexpected patterns that might be missed by hypothesis-driven analyses
 - Intuitive understanding of signal characteristics across brain regions
-- Exploration of relationships between fMRI data and simultaneous recorded physiological data, head motion, and/or experimental design.
+- Exploration of relationships between fMRI data and simultaneously recorded physiological data, head motion estimates, and/or experimental design time series.
 
 This visualization-driven approach complements traditional analysis pipelines and can lead to more informed hypotheses and interpretations of fMRI results.
 
