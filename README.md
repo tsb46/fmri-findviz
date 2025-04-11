@@ -7,6 +7,7 @@
 
 FINDVIZ is a browser-based visualization tool for visual exploration of fMRI data with a focus on pattern discovery. It supports the visualization of NIFTI, GIFTI, and CIFTI file formats, and time series data. Visualizations are produced using PlotlyJS. 
 
+
 ## Installation
 
 ### Using pip
