@@ -3,18 +3,9 @@
 <h1>FINDVIZ: FMRI Interactive Navigation and Discovery Viewer</h1>
 </div>
 
-## Introduction
+## Background
 
-FINDVIZ was created as a user-friendly tool for incorporating visual exploration into fMRI research methodology. While the field has developed sophisticated analysis techniques, researchers often don't spend enough time directly visualizing and exploring their data before applying statistical models.
-
-Traditional neuroimaging visualization platforms, while powerful, are often designed as general-purpose medical imaging tools that lack intuitive interfaces for pattern discovery in fMRI data specifically. FINDVIZ provides a framework that makes visual exploration of complex spatiotemporal patterns accessible and efficient.
-
-By enabling researchers to interactively navigate through their data, FINDVIZ supports:
-- Discovery of unexpected patterns that might be missed by hypothesis-driven analyses
-- Intuitive understanding of signal characteristics across brain regions
-- Exploration of relationships between fMRI data and simultaneous recorded physiological data, head motion, and/or experimental design.
-
-This visualization-driven approach complements traditional analysis pipelines and can lead to more informed hypotheses and interpretations of fMRI results.
+FINDVIZ is a browser-based visualization tool for visual exploration of fMRI data with a focus on pattern discovery. It supports the visualization of NIFTI, GIFTI, and CIFTI file formats, and time series data. Visualizations are produced using PlotlyJS. 
 
 ## Installation
 
@@ -26,7 +17,7 @@ pip install findviz
 
 ## Quick Start
 
-To launch the application, run the following command in your terminal:
+To launch the application and upload an fMRI dataset through the web interface, run the following command in your terminal:
 
 ```bash
 findviz
@@ -35,6 +26,7 @@ findviz
 This will launch the application in your default browser. FINDVIZ was tested on Google Chrome (v134). We recommend using Chrome for the best experience. 
 
 ### Command Line Interface
+FINDVIZ also supports uploading fMRI data from the command line:
 
 ```bash
 # Launch with NIFTI files
@@ -72,7 +64,15 @@ FINDVIZ supports the following neuroimaging data formats:
 
 ## Documentation
 
-For detailed documentation, visit...
+Coming soon!
+
+## Limitations
+
+- FINDVIZ displays fMRI data in voxel coordinates, and does not support the overlay of images with different spatial resolutions, even in the same coordinate space (e.g. MNI152). Thus, anatomical and/or functional images should be resampled to the same resolution before uploading.
+
+- FINDVIZ is not a preprocessing tool. Preprocessing options are limited to options that faciliate visualization, including normalization, detrending, smoothing, and temporal filtering. For end-to-end preprocessing, we recommend using more comprehensive tools such as FMRIPREP.
+
+
 
 ## Requirements
 
