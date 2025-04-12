@@ -174,6 +174,7 @@ export const DOM_IDS = {
     PARENT_CONTAINER: 'parent-container',
     SAVE_SCENE: {
         MODAL: 'save-scene-modal',
+        MODAL_BUTTON: 'save-scene-modal-button',
         SUBMIT_BUTTON: 'save-scene-button',
         FILE_NAME: 'scene-name',
         ERROR_MESSAGE: 'error-message-save-scene',

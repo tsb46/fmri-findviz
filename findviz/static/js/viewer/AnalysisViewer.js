@@ -106,15 +106,6 @@ class AnalysisViewer {
 
         // initialize time course components
         this.initializeTimecourseComponents();
-
-        // initialize save scene component
-        this.saveScene = new SaveScene(
-            DOM_IDS.SAVE_SCENE.MODAL,
-            DOM_IDS.SAVE_SCENE.SUBMIT_BUTTON,
-            DOM_IDS.SAVE_SCENE.FILE_NAME,
-            DOM_IDS.SAVE_SCENE.ERROR_MESSAGE,
-            this.eventBus,
-        );
     }
 
     /**

@@ -8,6 +8,7 @@ import Spinner from './components/Spinner.js';
 class SaveScene {
     /**
      * @param {string} saveSceneModalId - The ID of the save scene modal
+     * @param {string} saveSceneModalButtonId - The ID of the save scene modal button
      * @param {string} saveSceneSubmitButtonId - The ID of the save scene submit button
      * @param {string} saveSceneFileNameId - The ID of the save scene file name input
      * @param {string} saveSceneErrorMessageId - The ID of the save scene error message
@@ -15,16 +16,21 @@ class SaveScene {
      */
     constructor(
         saveSceneModalId,
+        saveSceneModalButtonId,
         saveSceneSubmitButtonId,
         saveSceneFileNameId,
         saveSceneErrorMessageId,
         eventBus,
     ) {
         this.saveSceneModalId = saveSceneModalId;
+        this.saveSceneModalButtonId = saveSceneModalButtonId;
         this.saveSceneSubmitButtonId = saveSceneSubmitButtonId;
         this.saveSceneFileNameId = saveSceneFileNameId;
         this.saveSceneErrorMessageId = saveSceneErrorMessageId;
         this.eventBus = eventBus;
+
+        // enable save scene modal button
+        $(`#${this.saveSceneModalButtonId}`).prop('disabled', false);
 
         this.attachEventListeners();
 
