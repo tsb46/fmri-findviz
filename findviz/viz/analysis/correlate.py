@@ -91,16 +91,22 @@ class Correlate:
             # Use masked arrays to handle NaN values
             valid_lagged_tc = lagged_tc[mask]
             valid_fmri = fmri_data[mask, :]
+
+            # normalize the fmri data
+            fmri_norm = (valid_fmri - np.mean(valid_fmri, axis=0)) / np.std(valid_fmri, axis=0)
                 
             # Calculate correlation between lagged time course and all voxels at once
             # np.corrcoef returns a correlation matrix where:
             # - First row/column corresponds to the lagged time course
             # - Other rows/columns correspond to the voxels
             if valid_fmri.shape[1] > 0:  # Only if we have voxels
-                corr_matrix = np.corrcoef(valid_lagged_tc, valid_fmri.T)
-                # Extract correlations between lagged time course and each voxel
-                # The first row (after the first element) contains these correlations
-                correlation_map[i, :] = corr_matrix[0, 1:]
+                # Calculate correlation between lagged time course and all voxels more efficiently
+                # Normalize the time course and fMRI data
+                tc_norm = (valid_lagged_tc - np.mean(valid_lagged_tc)) / np.std(valid_lagged_tc)
+                
+                # Calculate correlation coefficients
+                correlation_map[i, :] = np.mean(tc_norm[:, np.newaxis] * fmri_norm, axis=0)
+                
         
         return correlation_map
 
