@@ -59,13 +59,24 @@ FINDVIZ supports the following neuroimaging data formats:
 
 - **NIFTI** (.nii, .nii.gz): 3D and 4D functional and anatomical brain images
 - **GIFTI** (.gii): Surface-based brain data for left and right hemispheres
-- **CIFTI** (.dtseries.nii): Combined surface and volume data
+- **CIFTI** (.dtseries.nii): Combined surface and volume data. Note, only the left and right hemisphere data is displayed.
 - **Time Series** (.csv, .txt): Custom time course data for visualization alongside fMRI data
 - **Task Design** (.csv, .tsv): Experimental design matrices for visualization alongside fMRI data
 
 ## Documentation
 
-Coming soon!
+FINDVIZ user documentation is available on GitHub Pages:
+
+[https://tsb46.github.io/fmri-findviz/](https://tsb46.github.io/fmri-findviz/)
+
+The documentation includes:
+- General overview and features
+- File upload guide
+- Navigation guide
+- Preprocessing guide
+- Analysis tools guide
+
+You can access the documentation source in the `docs/` directory.
 
 ## Limitations
 
