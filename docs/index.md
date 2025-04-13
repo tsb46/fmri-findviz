@@ -13,7 +13,7 @@ FINDVIZ is a browser-based visualization tool for visual exploration of fMRI dat
 - **Multi-format Support**: Visualize NIFTI, GIFTI, and CIFTI neuroimaging data
 - **Interactive Visualization**: Explore nifti data with orthogonal and montage views, and GIFTI and CIFTI data with 3D surface views
 - **Time Series Visualization**: Visualize synchronized physiological, experimental design, and other time series data
-- **Preprocessing Tools**: Apply normalization, filtering, detrending, and smoothing
+- **Preprocessing Tools**: Apply time course normalization, filtering, detrending, and spatial smoothing.
 - **Analysis Tools**: Analysis functions for facilitating fMRI exploration and discovery
 - **Customizable Display**: Adjust colormaps, thresholds, and visualization parameters
 - **State Management**: Save and load visualization states
@@ -30,13 +30,22 @@ pip install findviz
 
 - [Upload Files](file-upload.html) - Learn how to upload and use different file formats
 - [Navigate the Interface](navigation.html) - Discover how to navigate and control the FINDVIZ interface
-- [Preprocess Data](preprocessing.html) - Learn about preprocessing options for your fMRI data
+- [Preprocess Data](preprocessing.html) - Learn about preprocessing options to facilitate visualization of fMRI data.
 - [Analyze Data](analysis.html) - Explore the analysis tools available in FINDVIZ
+
+## Data Preparation
+
+FINDVIZ does not implement end-to-end volume- or surface-based preprocessing pipelines. We recommend that minimal preprocessing be perfomed on your fMRI data before visualizing with FINDVIZ. This may include motion correction, slice-time-correction, susceptibility distortion correction, and/or normalization to a standard space (e.g. MNI152). For surface visualization, volume-to-surface preprocessing should have been previously perfomed. These preprocessing steps are avaiable in popular fMRI preprocessing platforms:
+
+- [FMRIPREP](https://fmriprep.org/) - An easily-accessible, robust, minimal fMRI preprocessing pipeline 
+- [FSL](https://fsl.fmrib.ox.ac.uk/fsl/fslwiki/) - A comprehensive library of analysis tools for FMRI, MRI and DTI brain imaging data
+- [FreeSurfer](https://surfer.nmr.mgh.harvard.edu/) - A software suite for processing and analyzing human brain MRI images, including cortical surface reconstruction.
+- [Connectome Workbench](https://www.humanconnectome.org/software/connectome-workbench) - A visualization and discovery tool for human brain data
+
 
 ## General Advice
 
 - **Browser Compatibility**: FINDVIZ is tested and optimized for Google Chrome (v134 or newer).
-- **Data Preparation**: For best results, ensure that all data files (functional, anatomical, and mask) have the same spatial resolution.
 - **Session Management**: Use the "Save Scene" feature to save your visualization state and continue your work later.
 - **Memory Usage**: FINDVIZ stores all fMRI data in-memory (RAM). For large datasets, ensure your computer has sufficient RAM to handle the data load. Typical 4D fMRI datasets can range from hundreds of MB to several GB in size.
 
