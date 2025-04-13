@@ -2,7 +2,7 @@
 layout: default
 title: FINDVIZ - FMRI Interactive Navigation and Discovery Viewer
 ---
-<img src="../findviz/static/images/FIND.png" width="200" height="200" alt="findviz-logo">
+<img src="https://raw.githubusercontent.com/tsb46/fmri-findviz/main/findviz/static/images/FIND.png" width="200" height="200" alt="findviz-logo">
 
 # FINDVIZ: FMRI Interactive Navigation and Discovery Viewer
 

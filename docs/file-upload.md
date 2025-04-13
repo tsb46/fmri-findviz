@@ -7,7 +7,7 @@ title: File Upload - FINDVIZ
 
 FINDVIZ supports multiple fMRI file formats. This guide explains how to upload files and what formats are supported.
 
-<img src='https://github.com/tsb46/fmri-findviz-misc/blob/main/gifs/upload.gif' width=500 height=300>
+<img src='https://raw.githubusercontent.com/tsb46/fmri-findviz-misc/main/gifs/upload.gif' width=600 height=300>
 
 ## Supported File Formats
 
@@ -18,7 +18,7 @@ FINDVIZ supports uploading of three fMRI file formats:
 - **Anatomical files**: 3D structural brain images
 - **Brain mask files**: Binary masks for brain extraction
 
-<img src='https://github.com/tsb46/fmri-findviz-misc/blob/main/pics/' width=500 height=300>
+<img src='https://raw.githubusercontent.com/tsb46/fmri-findviz-misc/main/pics/upload_modal_nifti.png' width=400 height=300>
 
 
 ### GIFTI (.gii)
