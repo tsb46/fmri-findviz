@@ -7,6 +7,19 @@
 
 FINDVIZ is a browser-based visualization tool for visual exploration of fMRI data with a focus on pattern discovery. It supports the visualization of NIFTI, GIFTI, and CIFTI file formats, and time series data. Visualizations are produced using PlotlyJS. 
 
+FINDVIZ supports volume and surface visualizations:
+
+<div style="display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+  <div style="flex: 1; min-width: 300px;">
+    <p><strong>Volume Navigation</strong>: Explore volumetric data with orthogonal and montage views</p>
+    <img src='https://raw.githubusercontent.com/tsb46/fmri-findviz-misc/main/gifs/nifti_navigate.gif' width="100%" alt="NIFTI navigation demo">
+  </div>
+  <div style="flex: 1; min-width: 300px;">
+    <p><strong>Surface Navigation</strong>: Interact with GIFTI and CIFTI data in 3D surface views</p>
+    <img src='https://raw.githubusercontent.com/tsb46/fmri-findviz-misc/main/gifs/gifti_navigate.gif' width="100%" alt="GIFTI navigation demo">
+  </div>
+</div>
+
 
 ## Installation
 
@@ -48,7 +61,7 @@ findviz --nifti-func func.nii.gz --timeseries timeseries1.csv timeseries2.csv
 - **Multi-format Support**: Visualize NIFTI, GIFTI, and CIFTI neuroimaging data
 - **Interactive Visualization**: Explore nifti data with orthogonal and montage views, and GIFTI and CIFTI data with 3D surface views
 - **Time Series Visualization**: Visualize synchronized physiological, experimental design, and other time series data.
-- **Preprocessing Tools**: Apply normalization, filtering, detrending, and smoothing
+- **Preprocessing Tools**: Apply time course normalization, filtering, detrending, and spatial smoothing.
 - **Analysis Tools**: Analysis functions for facilitating fMRI exploration and discovery
 - **Customizable Display**: Adjust colormaps, thresholds, and visualization parameters
 - **State Management**: Save and load visualization states
