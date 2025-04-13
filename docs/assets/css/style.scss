@@ -46,4 +46,138 @@
   .main-content {
     padding: 2rem 1rem;
   }
+}
+
+/* Card styles for documentation */
+.card {
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+  margin-bottom: 2rem;
+  padding: 1.5rem;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+}
+
+.card-header {
+  border-bottom: 1px solid #eaecef;
+  margin-bottom: 1rem;
+  padding-bottom: 0.8rem;
+}
+
+.card-header h3 {
+  color: #159957;
+  margin-top: 0;
+}
+
+.card-content {
+  color: #606c71;
+}
+
+.card-footer {
+  border-top: 1px solid #eaecef;
+  margin-top: 1rem;
+  padding-top: 0.8rem;
+}
+
+/* Format section styles */
+.format-section {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.format-card {
+  background-color: #f6f8fa;
+  border-radius: 8px;
+  border-left: 5px solid #159957;
+  padding: 1.2rem;
+}
+
+.format-card h3 {
+  color: #155799;
+  margin-top: 0;
+}
+
+.format-card img {
+  margin-top: 1rem;
+  border-radius: 4px;
+  border: 1px solid #dce6f0;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  width: 100%;
+  height: auto;
+}
+
+/* Step-by-step guide styles */
+.steps-container {
+  counter-reset: step-counter;
+  margin: 2rem 0;
+}
+
+.step {
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  padding: 1rem 1.5rem 1rem 3.5rem;
+  position: relative;
+}
+
+.step:before {
+  background-color: #159957;
+  border-radius: 50%;
+  color: white;
+  content: counter(step-counter);
+  counter-increment: step-counter;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  height: 32px;
+  width: 32px;
+  left: 1rem;
+  position: absolute;
+  top: 1rem;
+}
+
+/* Code block styling */
+.code-block {
+  background-color: #1e1e1e;
+  border-radius: 8px;
+  color: #e6e6e6;
+  margin: 1.5rem 0;
+  padding: 1.5rem;
+  overflow-x: auto;
+}
+
+.code-block code {
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  font-size: 0.9rem;
+}
+
+/* Alert boxes */
+.alert {
+  border-radius: 4px;
+  padding: 1rem;
+  margin: 1.5rem 0;
+  border-left: 4px solid;
+}
+
+.alert-info {
+  background-color: #f1f8ff;
+  border-left-color: #0366d6;
+}
+
+.alert-warning {
+  background-color: #fff5b1;
+  border-left-color: #ffdf5d;
+}
+
+.alert-danger {
+  background-color: #ffeef0;
+  border-left-color: #f97583;
 } 
