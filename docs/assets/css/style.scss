@@ -147,19 +147,21 @@
   top: 1rem;
 }
 
-/* Code block styling */
+/* Code block styling - updated to markdown style */
 .code-block {
-  background-color: #1e1e1e;
+  background-color: #f6f8fa;
   border-radius: 8px;
-  color: #e6e6e6;
+  color: #24292e;
   margin: 1.5rem 0;
   padding: 1.5rem;
   overflow-x: auto;
+  border: 1px solid #e1e4e8;
 }
 
 .code-block code {
   font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
   font-size: 0.9rem;
+  color: #24292e;
 }
 
 /* Alert boxes */
