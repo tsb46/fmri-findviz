@@ -17,89 +17,95 @@ title: File Upload - FINDVIZ
 
 ## FMRI File Formats
 
-<div class="format-card">
-    <h3>NIFTI (.nii, .nii.gz)</h3>
-    <ul>
-        <li class="file-item">
-        <span class="file-badge required-badge">Required</span>
-        <span class="file-item-content"><strong>Functional file</strong>: 4D functional brain images (.nii or .nii.gz)</span>
-        </li>
-        <li class="file-item">
-        <span class="file-badge optional-badge">Optional</span>
-        <span class="file-item-content"><strong>Anatomical file</strong>: 3D structural brain images (.nii or .nii.gz)</span>
-        </li>
-        <li class="file-item">
-        <span class="file-badge optional-badge">Optional</span>
-        <span class="file-item-content"><strong>Brain mask file</strong>: Binary masks for brain extraction (required for some analysis functions)</span>
-        </li>
-    </ul>
-    <div class="alert alert-info">
-        <h4>Important Notes</h4>
+<div class="card">
+    <div class='content-card'>
+        <h3>NIFTI (.nii, .nii.gz)</h3>
         <ul>
-        <li>All NIFTI images must have the same voxel dimensions, even if in the same coordinate space (e.g. MNI152).</li>
-        <li>Brain masks should be binary (1 for brain tissue, 0 for non-brain tissue).</li>
-        <li>A functional file is required, but you can visualize it without an anatomical file or mask.</li>
+            <li class="file-item">
+            <span class="file-badge required-badge">Required</span>
+            <span class="file-item-content"><strong>Functional file</strong>: 4D functional brain images (.nii or .nii.gz)</span>
+            </li>
+            <li class="file-item">
+            <span class="file-badge optional-badge">Optional</span>
+            <span class="file-item-content"><strong>Anatomical file</strong>: 3D structural brain images (.nii or .nii.gz)</span>
+            </li>
+            <li class="file-item">
+            <span class="file-badge optional-badge">Optional</span>
+            <span class="file-item-content"><strong>Brain mask file</strong>: Binary masks for brain extraction (required for some analysis functions)</span>
+            </li>
         </ul>
+        <div class="alert alert-info">
+            <h4>Important Notes</h4>
+            <ul>
+            <li>All NIFTI images must have the same voxel dimensions, even if in the same coordinate space (e.g. MNI152).</li>
+            <li>Brain masks should be binary (1 for brain tissue, 0 for non-brain tissue).</li>
+            <li>A functional file is required, but you can visualize it without an anatomical file or mask.</li>
+            </ul>
+        </div>
+        <img src='https://raw.githubusercontent.com/tsb46/fmri-findviz-misc/main/pics/upload_modal_nifti.png' alt="NIFTI upload modal">
     </div>
-    <img src='https://raw.githubusercontent.com/tsb46/fmri-findviz-misc/main/pics/upload_modal_nifti.png' alt="NIFTI upload modal">
 </div>
 
-<div class="format-card">
-    <h3>GIFTI (.gii)</h3>
-    <ul>
-        <li class="file-item">
-        <span class="file-badge required-badge">Required*</span>
-        <span class="file-item-content"><strong>Left hemisphere functional file</strong>: Surface-based functional data (func.gii)</span>
-        </li>
-        <li class="file-item">
-        <span class="file-badge required-badge">Required*</span>
-        <span class="file-item-content"><strong>Left hemisphere geometry file</strong>: 3D representation of the brain's outer surface (surf.gii)</span>
-        </li>
-        <li class="file-item">
-        <span class="file-badge required-badge">Required*</span>
-        <span class="file-item-content"><strong>Right hemisphere functional file</strong>: Surface-based functional data (func.gii)</span>
-        </li>
-        <li class="file-item">
-        <span class="file-badge required-badge">Required*</span>
-        <span class="file-item-content"><strong>Right hemisphere geometry file</strong>: 3D representation of the brain's outer surface (surf.gii)</span>
-        </li>
-    </ul>
-    <div class="alert alert-info">
-        <h4>Important Notes</h4>
+<div class="card">
+    <div class='content-card'>
+        <h3>GIFTI (.gii)</h3>
         <ul>
-        <li>*You need either both left hemisphere files OR both right hemisphere files (functional and geometry). You can also upload all four files for complete visualization.</li>
-        <li>Each hemisphere requires both its functional file and geometry file to work properly.</li>
-        <li>Surface geometry files provide the 3D mesh on which functional data will be displayed.</li>
+            <li class="file-item">
+            <span class="file-badge required-badge">Required*</span>
+            <span class="file-item-content"><strong>Left hemisphere functional file</strong>: Surface-based functional data (func.gii)</span>
+            </li>
+            <li class="file-item">
+            <span class="file-badge required-badge">Required*</span>
+            <span class="file-item-content"><strong>Left hemisphere geometry file</strong>: 3D representation of the brain's outer surface (surf.gii)</span>
+            </li>
+            <li class="file-item">
+            <span class="file-badge required-badge">Required*</span>
+            <span class="file-item-content"><strong>Right hemisphere functional file</strong>: Surface-based functional data (func.gii)</span>
+            </li>
+            <li class="file-item">
+            <span class="file-badge required-badge">Required*</span>
+            <span class="file-item-content"><strong>Right hemisphere geometry file</strong>: 3D representation of the brain's outer surface (surf.gii)</span>
+            </li>
         </ul>
+        <div class="alert alert-info">
+            <h4>Important Notes</h4>
+            <ul>
+            <li>*You need either both left hemisphere files OR both right hemisphere files (functional and geometry). You can also upload all four files for complete visualization.</li>
+            <li>Each hemisphere requires both its functional file and geometry file to work properly.</li>
+            <li>Surface geometry files provide the 3D mesh on which functional data will be displayed.</li>
+            </ul>
+        </div>
+        <img src='https://raw.githubusercontent.com/tsb46/fmri-findviz-misc/main/pics/upload_modal_gifti.png' alt="GIFTI upload modal">
     </div>
-    <img src='https://raw.githubusercontent.com/tsb46/fmri-findviz-misc/main/pics/upload_modal_gifti.png' alt="GIFTI upload modal">
 </div>
 
-<div class="format-card">
-    <h3>CIFTI (.dtseries.nii)</h3>
-    <ul>
-        <li class="file-item">
-        <span class="file-badge required-badge">Required</span>
-        <span class="file-item-content"><strong>Dense time series file</strong>: Combined surface and volume data (.dtseries.nii)</span>
-        </li>
-        <li class="file-item">
-        <span class="file-badge required-badge">Required*</span>
-        <span class="file-item-content"><strong>Left hemisphere geometry file</strong>: 3D representation of the brain's outer surface (surf.gii)</span>
-        </li>
-        <li class="file-item">
-        <span class="file-badge required-badge">Required*</span>
-        <span class="file-item-content"><strong>Right hemisphere geometry file</strong>: 3D representation of the brain's outer surface (surf.gii)</span>
-        </li>
-    </ul>
-    <div class="alert alert-info">
-        <h4>Important Notes</h4>
+<div class="card">
+    <div class='content-card'>
+        <h3>CIFTI (.dtseries.nii)</h3>
         <ul>
-        <li>The dense time series file is always required.</li>
-        <li>*You need at least one hemisphere geometry file (either left or right). You can upload both for complete visualization.</li>
-        <li>CIFTI files combine both surface and volume data into a single file.</li>
+            <li class="file-item">
+            <span class="file-badge required-badge">Required</span>
+            <span class="file-item-content"><strong>Dense time series file</strong>: Combined surface and volume data (.dtseries.nii)</span>
+            </li>
+            <li class="file-item">
+            <span class="file-badge required-badge">Required*</span>
+            <span class="file-item-content"><strong>Left hemisphere geometry file</strong>: 3D representation of the brain's outer surface (surf.gii)</span>
+            </li>
+            <li class="file-item">
+            <span class="file-badge required-badge">Required*</span>
+            <span class="file-item-content"><strong>Right hemisphere geometry file</strong>: 3D representation of the brain's outer surface (surf.gii)</span>
+            </li>
         </ul>
+        <div class="alert alert-info">
+            <h4>Important Notes</h4>
+            <ul>
+            <li>The dense time series file is always required.</li>
+            <li>*You need at least one hemisphere geometry file (either left or right). You can upload both for complete visualization.</li>
+            <li>CIFTI files combine both surface and volume data into a single file.</li>
+            </ul>
+        </div>
+        <img src='https://raw.githubusercontent.com/tsb46/fmri-findviz-misc/main/pics/upload_modal_cifti.png' alt="CIFTI upload modal">
     </div>
-    <img src='https://raw.githubusercontent.com/tsb46/fmri-findviz-misc/main/pics/upload_modal_cifti.png' alt="CIFTI upload modal">
 </div>
 
 ## Time Course Files
@@ -117,79 +123,6 @@ title: File Upload - FINDVIZ
         <span class="file-item-content"><strong>Task design files</strong> (.csv, .tsv): Experimental design matrices for visualization</span>
       </li>
     </ul>
-  </div>
-</div>
-
-## How to Upload Files
-
-<div class="steps-container">
-  <div class="step">
-    Launch FINDVIZ using the command <code>findviz</code> in your terminal.
-  </div>
-  <div class="step">
-    Click the <strong>Upload Files</strong> button on the welcome screen.
-  </div>
-  <div class="step">
-    In the upload modal:
-    <ul>
-      <li>Select the appropriate tab for your file format (NIFTI, GIFTI, or CIFTI).</li>
-      <li>Upload the required files for your chosen format.</li>
-      <li>Optionally add time series files or task design files.</li>
-    </ul>
-  </div>
-</div>
-
-<div class="card">
-  <div class="card-header">
-    <h3>NIFTI Upload</h3>
-  </div>
-  <div class="card-content">
-    <div class="steps-container">
-      <div class="step">Select the <strong>NIFTI</strong> tab in the upload modal.</div>
-      <div class="step">Upload a <strong>Functional File</strong> (.nii or .nii.gz) - this is required.</div>
-      <div class="step">Optionally upload an <strong>Anatomical File</strong> for structural reference.</div>
-      <div class="step">Optionally upload a <strong>Brain Mask File</strong> to mask non-brain tissue (required for some preprocessing and analysis features).</div>
-    </div>
-  </div>
-</div>
-
-<div class="card">
-  <div class="card-header">
-    <h3>GIFTI Upload</h3>
-  </div>
-  <div class="card-content">
-    <div class="steps-container">
-      <div class="step">Select the <strong>GIFTI</strong> tab in the upload modal.</div>
-      <div class="step">
-        Upload one of the following combinations:
-        <ul>
-          <li><strong>Left Hemisphere</strong> only: Upload both left hemisphere functional file (func.gii) and left surface geometry file (surf.gii)</li>
-          <li><strong>Right Hemisphere</strong> only: Upload both right hemisphere functional file (func.gii) and right surface geometry file (surf.gii)</li>
-          <li><strong>Both Hemispheres</strong>: Upload all four files for complete brain visualization</li>
-        </ul>
-      </div>
-      <div class="step">Remember that each hemisphere requires both its functional and geometry files.</div>
-    </div>
-  </div>
-</div>
-
-<div class="card">
-  <div class="card-header">
-    <h3>CIFTI Upload</h3>
-  </div>
-  <div class="card-content">
-    <div class="steps-container">
-      <div class="step">Select the <strong>CIFTI</strong> tab in the upload modal.</div>
-      <div class="step">Upload a <strong>Dense Time Series File</strong> (.dtseries.nii) - this is always required.</div>
-      <div class="step">
-        Upload at least one of the following:
-        <ul>
-          <li><strong>Left Hemisphere Surface Geometry File</strong> (surf.gii)</li>
-          <li><strong>Right Hemisphere Surface Geometry File</strong> (surf.gii)</li>
-          <li>Or upload both for complete visualization</li>
-        </ul>
-      </div>
-    </div>
   </div>
 </div>
 
@@ -232,18 +165,6 @@ title: File Upload - FINDVIZ
       <div class="step">Specify the Slicetime Reference value (default is 0.5).</div>
     </div>
   </div>
-</div>
-
-## Important Considerations
-
-<div class="alert alert-warning">
-  <h4>File Compatibility</h4>
-  <ul>
-    <li>Ensure all files have compatible dimensions and resolutions.</li>
-    <li>For NIFTI files, the anatomical and functional images should have the same resolution and field of view.</li>
-    <li>Brain masks should be binary (1 for brain tissue, 0 for non-brain tissue).</li>
-    <li>Time series files must match the number of time points in your fMRI data.</li>
-  </ul>
 </div>
 
 ## Command Line Upload (Alternative)
