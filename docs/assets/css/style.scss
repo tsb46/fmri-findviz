@@ -210,6 +210,15 @@
   border: 1px solid #b4d9ff;
 }
 
+/* Conditional requirement indicator */
+.conditional-indicator {
+  color: #d73a49;
+  font-weight: bold;
+  font-size: 1.1rem;
+  margin-left: 2px;
+  vertical-align: middle;
+}
+
 /* File item list */
 .file-item {
   display: flex;

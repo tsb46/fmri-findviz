@@ -51,26 +51,26 @@ title: File Upload - FINDVIZ
         <h3>GIFTI (.gii)</h3>
         <ul>
             <li class="file-item">
-            <span class="file-badge required-badge">Required*</span>
+            <span class="file-badge required-badge">Required<span class="conditional-indicator">*</span></span>
             <span class="file-item-content"><strong>Left hemisphere functional file</strong>: Surface-based functional data (func.gii)</span>
             </li>
             <li class="file-item">
-            <span class="file-badge required-badge">Required*</span>
+            <span class="file-badge required-badge">Required<span class="conditional-indicator">*</span></span>
             <span class="file-item-content"><strong>Left hemisphere geometry file</strong>: 3D representation of the brain's outer surface (surf.gii)</span>
             </li>
             <li class="file-item">
-            <span class="file-badge required-badge">Required*</span>
+            <span class="file-badge required-badge">Required<span class="conditional-indicator">*</span></span>
             <span class="file-item-content"><strong>Right hemisphere functional file</strong>: Surface-based functional data (func.gii)</span>
             </li>
             <li class="file-item">
-            <span class="file-badge required-badge">Required*</span>
+            <span class="file-badge required-badge">Required<span class="conditional-indicator">*</span></span>
             <span class="file-item-content"><strong>Right hemisphere geometry file</strong>: 3D representation of the brain's outer surface (surf.gii)</span>
             </li>
         </ul>
         <div class="alert alert-info">
             <h4>Important Notes</h4>
             <ul>
-            <li>*You need either both left hemisphere files OR both right hemisphere files (functional and geometry). You can also upload all four files for complete visualization.</li>
+            <li><span class="conditional-indicator">*</span>You need either both left hemisphere files OR both right hemisphere files (functional and geometry). You can also upload all four files for complete visualization.</li>
             <li>Each hemisphere requires both its functional file and geometry file to work properly.</li>
             <li>Surface geometry files provide the 3D mesh on which functional data will be displayed.</li>
             </ul>
@@ -88,11 +88,11 @@ title: File Upload - FINDVIZ
             <span class="file-item-content"><strong>Dense time series file</strong>: Combined surface and volume data (.dtseries.nii)</span>
             </li>
             <li class="file-item">
-            <span class="file-badge required-badge">Required*</span>
+            <span class="file-badge required-badge">Required<span class="conditional-indicator">*</span></span>
             <span class="file-item-content"><strong>Left hemisphere geometry file</strong>: 3D representation of the brain's outer surface (surf.gii)</span>
             </li>
             <li class="file-item">
-            <span class="file-badge required-badge">Required*</span>
+            <span class="file-badge required-badge">Required<span class="conditional-indicator">*</span></span>
             <span class="file-item-content"><strong>Right hemisphere geometry file</strong>: 3D representation of the brain's outer surface (surf.gii)</span>
             </li>
         </ul>
@@ -100,7 +100,7 @@ title: File Upload - FINDVIZ
             <h4>Important Notes</h4>
             <ul>
             <li>The dense time series file is always required.</li>
-            <li>*You need at least one hemisphere geometry file (either left or right). You can upload both for complete visualization.</li>
+            <li><span class="conditional-indicator">*</span>You need at least one hemisphere geometry file (either left or right). You can upload both for complete visualization.</li>
             <li>CIFTI files combine both surface and volume data into a single file.</li>
             </ul>
         </div>
