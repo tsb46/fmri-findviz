@@ -18,8 +18,10 @@ title: File Upload - FINDVIZ
 ## FMRI File Formats
 
 <div class="card">
-    <div class='content-card'>
+    <div class="card-header">
         <h3>NIFTI (.nii, .nii.gz)</h3>
+    </div>
+    <div class='content-card'>
         <ul>
             <li class="file-item">
             <span class="file-badge required-badge">Required</span>
@@ -34,21 +36,25 @@ title: File Upload - FINDVIZ
             <span class="file-item-content"><strong>Brain mask file</strong>: Binary masks for brain extraction (required for some analysis functions)</span>
             </li>
         </ul>
+        <div class='alert alert-warning'>
+            <span>All preprocessing and analysis functions for nifti files require a brain mask.</span>
+        </div>
         <div class="alert alert-info">
             <h4>Important Notes</h4>
             <ul>
             <li>All NIFTI images must have the same voxel dimensions, even if in the same coordinate space (e.g. MNI152).</li>
-            <li>Brain masks should be binary (1 for brain tissue, 0 for non-brain tissue).</li>
             <li>A functional file is required, but you can visualize it without an anatomical file or mask.</li>
             </ul>
         </div>
-        <img src='https://raw.githubusercontent.com/tsb46/fmri-findviz-misc/main/pics/upload_modal_nifti.png' alt="NIFTI upload modal">
+        <img src='https://raw.githubusercontent.com/tsb46/fmri-findviz-misc/main/pics/upload_modal_nifti.png' alt="NIFTI upload modal" style="border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
     </div>
 </div>
 
 <div class="card">
-    <div class='content-card'>
+    <div class="card-header">
         <h3>GIFTI (.gii)</h3>
+    </div>
+    <div class='content-card'>
         <ul>
             <li class="file-item">
             <span class="file-badge required-badge">Required<span class="conditional-indicator">*</span></span>
@@ -71,17 +77,19 @@ title: File Upload - FINDVIZ
             <h4>Important Notes</h4>
             <ul>
             <li><span class="conditional-indicator">*</span>You need either both left hemisphere files OR both right hemisphere files (functional and geometry). You can also upload all four files for complete visualization.</li>
-            <li>Each hemisphere requires both its functional file and geometry file to work properly.</li>
-            <li>Surface geometry files provide the 3D mesh on which functional data will be displayed.</li>
+            <li>Each hemisphere requires both its functional file and geometry file.</li>
+            <li>Surface geometry files (surf.gii) provide the 3D mesh on which functional data will be displayed.</li>
             </ul>
         </div>
-        <img src='https://raw.githubusercontent.com/tsb46/fmri-findviz-misc/main/pics/upload_modal_gifti.png' alt="GIFTI upload modal">
+        <img src='https://raw.githubusercontent.com/tsb46/fmri-findviz-misc/main/pics/upload_modal_gifti.png' alt="GIFTI upload modal" style="border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
     </div>
 </div>
 
 <div class="card">
-    <div class='content-card'>
+    <div class="card-header">
         <h3>CIFTI (.dtseries.nii)</h3>
+    </div>
+    <div class='content-card'>
         <ul>
             <li class="file-item">
             <span class="file-badge required-badge">Required</span>
@@ -99,12 +107,11 @@ title: File Upload - FINDVIZ
         <div class="alert alert-info">
             <h4>Important Notes</h4>
             <ul>
-            <li>The dense time series file is always required.</li>
             <li><span class="conditional-indicator">*</span>You need at least one hemisphere geometry file (either left or right). You can upload both for complete visualization.</li>
-            <li>CIFTI files combine both surface and volume data into a single file.</li>
+            <li>CIFTI files combine both surface and volume data into a single file. However, FINDVIZ currently only supports visualization of the surface data.</li>
             </ul>
         </div>
-        <img src='https://raw.githubusercontent.com/tsb46/fmri-findviz-misc/main/pics/upload_modal_cifti.png' alt="CIFTI upload modal">
+        <img src='https://raw.githubusercontent.com/tsb46/fmri-findviz-misc/main/pics/upload_modal_cifti.png' alt="CIFTI upload modal" style="border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
     </div>
 </div>
 
@@ -132,15 +139,32 @@ title: File Upload - FINDVIZ
   </div>
   <div class="card-content">
     <div class="steps-container">
-      <div class="step">Click the <strong>Add Another File</strong> button in the Time Course Files section.</div>
-      <div class="step">Upload .csv or .txt files containing time course data.</div>
+      <div class="step">
+        Upload .csv or .txt files containing time course data.
+        <img src='https://raw.githubusercontent.com/tsb46/fmri-findviz-misc/main/pics/upload_modal_ts.png' alt="Timecourse upload modal" style="border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+      </div>
       <div class="step">
         These files should:
         <ul>
-          <li>Have the same number of time points as your fMRI data</li>
+          <li>Have the same number of time points as your fMRI data. For concurrently recorded physiological signals, this typically means resampling/aligning your signals to the fMRI sampling times. Several open-source solutions in the Python ecosystem offer this functionality, e.g. <a href="https://neuropsychology.github.io/NeuroKit/">NeuroKit2</a>.
+          </li>
           <li>Be arranged in one column</li>
           <li>Be temporally aligned with your fMRI data</li>
         </ul>
+      </div>
+      <div class="step">
+        <span class="file-badge optional-badge">Optional</span>
+        <ul>
+            <li>You can provide a custom label for the time course. If not specified, the display label will be the file name.</li>
+            <li>It's common to have a column label or header at the top of your time course file. If you do, simply click the header switch for FINDVIZ to recognize the custom label in the header. Note, uploading a time course file with a header will raise an error if the header option switch is not clicked on upload.</li>
+            <img src='https://raw.githubusercontent.com/tsb46/fmri-findviz-misc/main/gifs/ts_header.gif' style="border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+        </ul>
+      </div>
+      <div class="step">
+        <ul>
+            <li>If you want to add another time course. Click the <strong>Add Another File</strong> button in the Time Course Files section.
+            <img src='https://raw.githubusercontent.com/tsb46/fmri-findviz-misc/main/gifs/ts_add_file.gif' style="border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+            </li>
       </div>
     </div>
   </div>
