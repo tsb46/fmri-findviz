@@ -235,9 +235,9 @@ title: File Upload - FINDVIZ
                 findviz --cifti-dtseries data.dtseries.nii --cifti-left-mesh left.surf.gii<br>
                 <br>
                 # Add time series data<br>
-                findviz --nifti-func func.nii.gz --timeseries timeseries1.csv timeseries2.csv
-                # Add task-design data
-                findviz --nifti-func func.nii.gz --task-design task.csv --tr 2.0 --slicetime-ref 0.5
+                findviz --nifti-func func.nii.gz --timeseries timeseries1.csv timeseries2.csv<br>
+                # Add task-design data<br>
+                findviz --nifti-func func.nii.gz --task-design task.csv --tr 2.0 <br>--slicetime-ref 0.5
             </code>
         </div>
     </div>
