@@ -184,7 +184,10 @@ title: File Upload - FINDVIZ
   </div>
   <div class="card-content">
     <div class="steps-container">
-      <div class="step">Upload a .csv or .tsv file in the Task Design File section.</div>
+      <div class="step">
+        <span>Upload a .csv or .tsv file in the Task Design File section.</span>
+        <img src='https://raw.githubusercontent.com/tsb46/fmri-findviz-misc/main/pics/upload_modal_task.png' alt="Timecourse upload modal" style="border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); margin-top: 1em;">
+    </div>
       <div class="step">
         The file must contain:
         <ul>
@@ -192,10 +195,11 @@ title: File Upload - FINDVIZ
           <li>A 'duration' column with values in seconds</li>
           <li>Optionally, a 'trial_type' column for multiple event types</li>
         </ul>
-        <img src="https://raw.githubusercontent.com/tsb46/fmri-findviz/main/findviz/static/images/task_design_file.png" width="200" height="200" alt="findviz-logo" style="border-radius: 8px; margin-bottom: 1rem;">
+        <p>Example File:</p>
+        <img src="https://raw.githubusercontent.com/tsb46/fmri-findviz/main/findviz/static/images/task_design_file.png" width="400" height="200" alt="findviz-logo" style="border-radius: 8px; margin-bottom: 1rem;">
       </div>
-      <div class="step">Specify the TR (repetition time) value.</div>
-      <div class="step">Specify the Slicetime Reference value (default is 0.5).</div>
+      <div class="step">Specify the TR (repetition time) of your fMRI data. This is needed for aligning the task events with the fmri data.</div>
+      <div class="step">Specify the slicetime 'reference value' (default is 0.5) - the time of the reference slice used in the fmri slice timing correction algorithm. It is expressed as a percentage of the TR (repetition time): 0 - 1. For example, if slicetiming was referenced to the slice at the middle of the fmri acquisition, it would be 0.5. Default is 0.5, which is commonly used in fmri slice-timing algorithms.</div>
     </div>
   </div>
 </div>
@@ -203,37 +207,40 @@ title: File Upload - FINDVIZ
 ## Command Line Upload (Alternative)
 
 <div class="card">
-  <div class="card-header">
-    <h3>Command Line Options</h3>
-  </div>
-  <div class="card-content">
-    <p>You can also upload files directly from the command line:</p>
-
-    <div class="code-block">
-      <code>
-# Launch with NIFTI files<br>
-findviz --nifti-func func.nii.gz --nifti-anat anat.nii.gz<br>
-<br>
-# Launch with GIFTI files (all four files)<br>
-findviz --gifti-left-func left.func.gii --gifti-right-func right.func.gii --gifti-left-mesh left.surf.gii --gifti-right-mesh right.surf.gii<br>
-<br>
-# Launch with GIFTI files (left hemisphere only)<br>
-findviz --gifti-left-func left.func.gii --gifti-left-mesh left.surf.gii<br>
-<br>
-# Launch with GIFTI files (right hemisphere only)<br>
-findviz --gifti-right-func right.func.gii --gifti-right-mesh right.surf.gii<br>
-<br>
-# Launch with CIFTI files (both hemispheres)<br>
-findviz --cifti-dtseries data.dtseries.nii --cifti-left-mesh left.surf.gii --cifti-right-mesh right.surf.gii<br>
-<br>
-# Launch with CIFTI files (left hemisphere only)<br>
-findviz --cifti-dtseries data.dtseries.nii --cifti-left-mesh left.surf.gii<br>
-<br>
-# Add time series data<br>
-findviz --nifti-func func.nii.gz --timeseries timeseries1.csv timeseries2.csv
-      </code>
+    <div class="card-header">
+        <h3>Command Line Options</h3>
     </div>
-  </div>
+    <div class="card-content">
+        <p>You can also upload files directly from the command line:</p>
+
+        <div class="code-block">
+            <code>
+                <br>
+                # Launch with NIFTI files<br>
+                findviz --nifti-func func.nii.gz --nifti-anat anat.nii.gz<br>
+                <br>
+                # Launch with GIFTI files (all four files)<br>
+                findviz --gifti-left-func left.func.gii --gifti-right-func right.func.gii --gifti-left-mesh left.surf.gii --gifti-right-mesh right.surf.gii<br>
+                <br>
+                # Launch with GIFTI files (left hemisphere only)<br>
+                findviz --gifti-left-func left.func.gii --gifti-left-mesh left.surf.gii<br>
+                <br>
+                # Launch with GIFTI files (right hemisphere only)<br>
+                findviz --gifti-right-func right.func.gii --gifti-right-mesh right.surf.gii<br>
+                <br>
+                # Launch with CIFTI files (both hemispheres)<br>
+                findviz --cifti-dtseries data.dtseries.nii --cifti-left-mesh left.surf.gii --cifti-right-mesh right.surf.gii<br>
+                <br>
+                # Launch with CIFTI files (left hemisphere only)<br>
+                findviz --cifti-dtseries data.dtseries.nii --cifti-left-mesh left.surf.gii<br>
+                <br>
+                # Add time series data<br>
+                findviz --nifti-func func.nii.gz --timeseries timeseries1.csv timeseries2.csv
+                # Add task-design data
+                findviz --nifti-func func.nii.gz --task-design task.csv --tr 2.0 --slicetime-ref 0.5
+            </code>
+        </div>
+    </div>
 </div>
 
 <div class="card">
