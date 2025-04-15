@@ -236,6 +236,7 @@ title: File Upload - FINDVIZ
                 <br>
                 # Add time series data<br>
                 findviz --nifti-func func.nii.gz --timeseries timeseries1.csv timeseries2.csv<br>
+                <br>
                 # Add task-design data<br>
                 findviz --nifti-func func.nii.gz --task-design task.csv --tr 2.0 <br>--slicetime-ref 0.5
             </code>
