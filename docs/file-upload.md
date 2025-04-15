@@ -21,7 +21,7 @@ title: File Upload - FINDVIZ
     <div class="card-header">
         <h3>NIFTI (.nii, .nii.gz)</h3>
     </div>
-    <div class='content-card'>
+    <div class='card-content'>
         <ul>
             <li class="file-item">
                 <span class="file-badge required-badge">Required</span>
@@ -54,7 +54,7 @@ title: File Upload - FINDVIZ
     <div class="card-header">
         <h3>GIFTI (.gii)</h3>
     </div>
-    <div class='content-card'>
+    <div class='card-content'>
         <ul>
             <li class="file-item">
                 <span class="file-badge required-badge">Required<span class="conditional-indicator">*</span></span>
@@ -91,7 +91,7 @@ title: File Upload - FINDVIZ
     <div class="card-header">
         <h3>CIFTI (.dtseries.nii)</h3>
     </div>
-    <div class='content-card'>
+    <div class='card-content'>
         <ul>
             <li class="file-item">
                 <span class="file-badge required-badge">Required</span>

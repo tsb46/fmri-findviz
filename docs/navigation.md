@@ -28,18 +28,18 @@ title: Navigation - FINDVIZ
     <div class='card-header'>
         <h3>Toolbox</h3>
     </div>
-    <div class="content-card">
+    <div class="card-content">
         <img src='https://raw.githubusercontent.com/tsb46/fmri-findviz-misc/main/pics/toolbox.png' style="border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
         <p>The toolbox component provides analysis functions to facilitate visualization and discovery of patterns in your fMRI data. Available functions:</p>
         <ul>
             <li>
                 <span class="coming-soon-badge">Coming Soon</span>
-                Transform Data: this feature provides common dimension-reduction analyses (PCA, ICA) to be performed on your data
+                <span>Transform Data: this feature provides common dimension-reduction analyses (PCA, ICA) to be performed on your data</span>
             </li>
             <li> Time Point Distance: compute the whole-brain distance between the selected time point and all other time points.</li>
             <li>
                 <span class="coming-soon-badge">Coming Soon</span>
-                Comparison: this feature provides a means to upload fMRI maps (in the same space and voxel dimensions as your fMRI data) and quantitatively compare the similarity to time points in your fMRI data.
+                <span>Comparison: this feature provides a means to upload fMRI maps (in the same space and voxel dimensions as your fMRI data) and quantitatively compare the similarity to time points in your fMRI data.</span>
             </li>
         </ul>
         <span>More details on available analysis functions are provided at:</span>

@@ -219,6 +219,13 @@
   border: 1px solid #d1d5da;
   position: relative;
   overflow: hidden;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+
+/* Make sure the badge is visible in lists */
+li .coming-soon-badge {
+  display: inline-block;
+  margin-bottom: 4px;
 }
 
 .coming-soon-badge:after {
