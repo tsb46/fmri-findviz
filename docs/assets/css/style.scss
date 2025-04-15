@@ -208,6 +208,12 @@
 }
 
 .coming-soon-badge {
+  display: inline-block;
+  padding: 3px 8px;
+  margin-right: 8px;
+  border-radius: 4px;
+  font-size: 0.8rem;
+  font-weight: 600;
   background-color: #f6f8fa;
   color: #6f42c1;
   border: 1px solid #d1d5da;

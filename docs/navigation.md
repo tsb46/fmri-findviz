@@ -33,12 +33,12 @@ title: Navigation - FINDVIZ
         <p>The toolbox component provides analysis functions to facilitate visualization and discovery of patterns in your fMRI data. Available functions:</p>
         <ul>
             <li>
-            <span class="coming-soon-badge">Coming Soon</span>
+                <span class="coming-soon-badge">Coming Soon</span>
                 Transform Data: this feature provides common dimension-reduction analyses (PCA, ICA) to be performed on your data
             </li>
             <li> Time Point Distance: compute the whole-brain distance between the selected time point and all other time points.</li>
             <li>
-            <span class="coming-soon-badge">Coming Soon</span>
+                <span class="coming-soon-badge">Coming Soon</span>
                 Comparison: this feature provides a means to upload fMRI maps (in the same space and voxel dimensions as your fMRI data) and quantitatively compare the similarity to time points in your fMRI data.
             </li>
         </ul>
