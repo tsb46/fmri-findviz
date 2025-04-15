@@ -162,7 +162,7 @@ title: File Upload - FINDVIZ
                     <li>You can provide a custom label for the time course. If not specified, the display label will be the file name.</li>
                     <li>
                         <span>It's common to have a column label or header at the top of your time course file. If you do, simply click the header switch for FINDVIZ to recognize the custom label in the header. Note, uploading a time course file with a header will raise an error if the header option switch is not clicked on upload.</span>
-                        <img src='https://raw.githubusercontent.com/tsb46/fmri-findviz-misc/main/gifs/ts_header.gif' style="border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); margin-top: 1em;">
+                        <img src='https://raw.githubusercontent.com/tsb46/fmri-findviz-misc/main/gifs/ts_header.gif' alt= "header switch" style="border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); margin-top: 1em;">
                     </li>
                 </ul>
             </div>
@@ -196,7 +196,7 @@ title: File Upload - FINDVIZ
           <li>Optionally, a 'trial_type' column for multiple event types</li>
         </ul>
         <p>Example File:</p>
-        <img src="https://raw.githubusercontent.com/tsb46/fmri-findviz/main/findviz/static/images/task_design_file.png" width="400" height="200" alt="findviz-logo" style="border-radius: 8px; margin-bottom: 1rem;">
+        <img src="https://raw.githubusercontent.com/tsb46/fmri-findviz/main/findviz/static/images/task_design_file.png" width="400" height="200" alt="findviz-task-design" style="border-radius: 8px; margin-bottom: 1rem;">
       </div>
       <div class="step">Specify the TR (repetition time) of your fMRI data. This is needed for aligning the task events with the fmri data.</div>
       <div class="step">Specify the slicetime 'reference value' (default is 0.5) - the time of the reference slice used in the fmri slice timing correction algorithm. It is expressed as a percentage of the TR (repetition time): 0 - 1. For example, if slicetiming was referenced to the slice at the middle of the fmri acquisition, it would be 0.5. Default is 0.5, which is commonly used in fmri slice-timing algorithms.</div>
@@ -249,6 +249,6 @@ title: File Upload - FINDVIZ
     <h3>Developer Notes</h3>
   </div>
   <div class="card-content">
-    <p>FINDVIZ uses the Python neuroimaging library <a href="https://nipy.org/nibabel/">nibabel</a> to read and write neuroimaging files. This allows FINDVIZ to support a variety of file formats commonly used in neuroimaging research.</p>
+    <p>FINDVIZ uses the Python neuroimaging library <a href="https://nipy.org/nibabel/">nibabel</a> to read and write neuroimaging files.</p>
   </div>
 </div>

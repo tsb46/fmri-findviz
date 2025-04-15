@@ -271,8 +271,93 @@ li .coming-soon-badge {
   display: flex;
   align-items: center;
   margin-bottom: 10px;
+  padding: 0.7rem;
+  background-color: #f6f8fa;
+  border-radius: 6px;
+  border: 1px solid #e1e4e8;
+  transition: background-color 0.2s ease;
+}
+
+.file-item:hover {
+  background-color: #f0f4f8;
 }
 
 .file-item-content {
   flex: 1;
-} 
+}
+
+/* List styling */
+ul, ol {
+  padding-left: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+ul li, ol li {
+  margin-bottom: 0.5rem;
+  line-height: 1.6;
+  position: relative;
+}
+
+ul {
+  list-style: none;
+}
+
+ul li:before {
+  content: "";
+  position: absolute;
+  left: -1.2rem;
+  top: 0.7rem;
+  height: 6px;
+  width: 6px;
+  border-radius: 50%;
+  background-color: #159957;
+}
+
+ol {
+  counter-reset: item;
+  list-style: none;
+}
+
+ol li {
+  counter-increment: item;
+}
+
+ol li:before {
+  content: counter(item) ".";
+  position: absolute;
+  left: -1.5rem;
+  color: #159957;
+  font-weight: 600;
+}
+
+/* Nested lists */
+ul ul, ol ol, ul ol, ol ul {
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+/* List with cards or special items */
+ul.feature-list {
+  padding-left: 0;
+}
+
+ul.feature-list li {
+  background-color: #f8f9fa;
+  border-left: 3px solid #159957;
+  border-radius: 0 4px 4px 0;
+  padding: 0.8rem 1rem 0.8rem 1.5rem;
+  margin-bottom: 1rem;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+ul.feature-list li:before {
+  display: none;
+}
+
+ul.feature-list li:hover {
+  transform: translateX(3px);
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+}
+
+/* Enhanced styling for .file-item which is used in lists */
+/* This section is now consolidated with the original file-item definition above */ 
