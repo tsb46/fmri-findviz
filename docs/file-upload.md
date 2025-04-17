@@ -15,11 +15,25 @@ title: File Upload - FINDVIZ
     </div>
 </div>
 
+## Table of Contents
+{:.no-bullets}
+
+- [FMRI File Formats](#fmri-file-formats)
+  - [NIFTI (.nii, .nii.gz)](#nifti)
+  - [GIFTI (.gii)](#gifti)
+  - [CIFTI (.dtseries.nii)](#cifti)
+- [Time Course Files](#time-course-files)
+  - [Time Course Files Format](#time-course-files-format)
+  - [Task Design Files](#task-design-files)
+- [Command Line Upload](#command-line-upload-alternative)
+  - [Command Line Options](#command-line-options)
+  - [Developer Notes](#developer-notes)
+
 ## FMRI File Formats
 
 <div class="card">
     <div class="card-header">
-        <h3>NIFTI (.nii, .nii.gz)</h3>
+        <h3 id="nifti">NIFTI (.nii, .nii.gz)</h3>
     </div>
     <div class='card-content'>
         <ul>
@@ -52,7 +66,7 @@ title: File Upload - FINDVIZ
 
 <div class="card">
     <div class="card-header">
-        <h3>GIFTI (.gii)</h3>
+        <h3 id="gifti">GIFTI (.gii)</h3>
     </div>
     <div class='card-content'>
         <ul>
@@ -89,7 +103,7 @@ title: File Upload - FINDVIZ
 
 <div class="card">
     <div class="card-header">
-        <h3>CIFTI (.dtseries.nii)</h3>
+        <h3 id="cifti">CIFTI (.dtseries.nii)</h3>
     </div>
     <div class='card-content'>
         <ul>
@@ -138,7 +152,7 @@ title: File Upload - FINDVIZ
 
 <div class="card">
     <div class="card-header">
-        <h3>Time Course Files</h3>
+        <h3 id="time-course-files-format">Time Course Files</h3>
     </div>
     <div class="card-content">
         <div class="steps-container">
@@ -180,7 +194,7 @@ title: File Upload - FINDVIZ
 
 <div class="card">
   <div class="card-header">
-    <h3>Task Design Files</h3>
+    <h3 id="task-design-files">Task Design Files</h3>
   </div>
   <div class="card-content">
     <div class="steps-container">
@@ -208,7 +222,7 @@ title: File Upload - FINDVIZ
 
 <div class="card">
     <div class="card-header">
-        <h3>Command Line Options</h3>
+        <h3 id="command-line-options">Command Line Options</h3>
     </div>
     <div class="card-content">
         <p>You can also upload files directly from the command line:</p>
@@ -246,7 +260,7 @@ title: File Upload - FINDVIZ
 
 <div class="card">
   <div class="card-header">
-    <h3>Developer Notes</h3>
+    <h3 id="developer-notes">Developer Notes</h3>
   </div>
   <div class="card-content">
     <p>FINDVIZ uses the Python neuroimaging library <a href="https://nipy.org/nibabel/">nibabel</a> to read and write neuroimaging files.</p>

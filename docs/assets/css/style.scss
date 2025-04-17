@@ -359,5 +359,42 @@ ul.feature-list li:hover {
   box-shadow: 0 2px 5px rgba(0,0,0,0.1);
 }
 
-/* Enhanced styling for .file-item which is used in lists */
-/* This section is now consolidated with the original file-item definition above */ 
+/* Table of Contents styling */
+.no-bullets {
+  list-style-type: none;
+  padding-left: 0;
+}
+
+.no-bullets li {
+  margin-bottom: 0.4rem;
+}
+
+.no-bullets li:before {
+  display: none;
+}
+
+.no-bullets li a {
+  color: #155799;
+  text-decoration: none;
+  transition: color 0.2s ease-in-out, padding-left 0.2s ease-in-out;
+  font-weight: 500;
+}
+
+.no-bullets li a:hover {
+  color: #159957;
+  padding-left: 3px;
+}
+
+.no-bullets li li {
+  margin-left: 1.5rem;
+  margin-bottom: 0.3rem;
+  font-size: 0.95em;
+}
+
+.no-bullets li li a {
+  color: #606c71;
+}
+
+.no-bullets li li a:hover {
+  color: #159957;
+} 

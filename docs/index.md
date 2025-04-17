@@ -15,7 +15,7 @@ title: FINDVIZ - FMRI Interactive Navigation and Discovery Viewer
 
 ## Features
 
-<div class="format-section">
+<div class="format-section" id='findviz-features'>
   <div class="format-card">
     <h3>Data Support</h3>
     <ul>
@@ -44,7 +44,7 @@ title: FINDVIZ - FMRI Interactive Navigation and Discovery Viewer
 
 ## Getting Started
 
-<div class="card">
+<div class="card" id='getting-started'>
   <div class="card-header">
     <h3>Installation</h3>
   </div>
@@ -67,7 +67,7 @@ title: FINDVIZ - FMRI Interactive Navigation and Discovery Viewer
 
 ## Data Preparation
 
-<div class="card">
+<div class="card" id='data-preparation'>
   <div class="card-content">
     <p>FINDVIZ does not implement end-to-end volume- or surface-based preprocessing pipelines. We recommend that minimal preprocessing be performed on your fMRI data before visualizing with FINDVIZ. This may include motion correction, slice-time-correction, susceptibility distortion correction, and/or normalization to a standard space (e.g. MNI152). For surface visualization, volume-to-surface preprocessing should have been previously performed.</p>
     
@@ -99,7 +99,7 @@ title: FINDVIZ - FMRI Interactive Navigation and Discovery Viewer
 
 ## General Advice
 
-<div class="alert alert-info">
+<div class="alert alert-info" id='best-practices'>
   <h4>Best Practices</h4>
   <ul>
     <li><strong>Browser Compatibility</strong>: FINDVIZ is tested and optimized for Google Chrome (v134 or newer).</li>
