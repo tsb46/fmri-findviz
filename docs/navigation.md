@@ -29,6 +29,7 @@ title: Navigation - FINDVIZ
   - [Timecourse Plot Options](#timecourse-plot-options)
   - [Timecourse Preprocessing](#timecourse-preprocessing)
   - [Timecourse Annotation](#timecourse-annotation)
+- [Save and Load State](#save-scene)
 
 ## FMRI Interface Layout
 
@@ -279,4 +280,37 @@ title: Navigation - FINDVIZ
             <p>FINDVIZ uses the SciPy (v1.13.1) <a href="https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.find_peaks.html">find_peaks</a> algorithm for peak detection. For algorithm details, please refer to the documentation.</p>
         </div>
     </div>
+</div>
+
+## Save and Load State
+<div class="card" id='save-scene'>
+  <div class="card-header">
+    <h3>Save Scene Function</h3>
+  </div>
+  <div class="card-content">
+    <p>The Save Scene function allows you to save your current visualization state, including all applied transformations and analysis results, for later use.</p>
+    <div class="format-section">
+      <div class="format-card">
+        <h3>How to Save a Scene</h3>
+        <div class="steps-container">
+          <div class="step">Click the <strong>Save Scene</strong> button in the Analytics Toolbox.</div>
+          <div class="step">
+            In the Save Scene modal:
+            <ul>
+              <li>Enter a name for the scene (optional)</li>
+              <li>Click <strong>Save</strong> to download the scene file</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      <div class="format-card">
+        <h3>How to Load a Scene</h3>
+        <div class="steps-container">
+          <div class="step">Click the <strong>Upload Scene</strong> button in the file upload modal.</div>
+          <div class="step">Select a previously saved scene file.</div>
+          <div class="step">The scene will be loaded with all its visualization settings.</div>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
