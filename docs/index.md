@@ -13,7 +13,7 @@ title: FINDVIZ - FMRI Interactive Navigation and Discovery Viewer
   </div>
 </div>
 
-## Features
+## Features {#features}
 
 <div class="format-section" id='findviz-features'>
   <div class="format-card">
@@ -42,7 +42,7 @@ title: FINDVIZ - FMRI Interactive Navigation and Discovery Viewer
   </div>
 </div>
 
-## Getting Started
+## Getting Started {#getting-started}
 
 <div class="card" id='getting-started'>
   <div class="card-header">
@@ -57,15 +57,15 @@ title: FINDVIZ - FMRI Interactive Navigation and Discovery Viewer
     <h4>Documentation</h4>
     <p>Follow the links below to learn how to use FINDVIZ:</p>
     <div class="steps-container">
-      <div class="step"><a href="file-upload.html">Upload Files</a> - Learn how to upload and use different file formats</div>
-      <div class="step"><a href="navigation.html">Navigate the Interface</a> - Discover how to navigate and control the FINDVIZ interface</div>
-      <div class="step"><a href="preprocessing.html">Preprocess Data</a> - Learn about preprocessing options to facilitate visualization of fMRI data</div>
-      <div class="step"><a href="analysis.html">Analyze Data</a> - Explore the analysis tools available in FINDVIZ</div>
+      <div class="step"><a href="{{ site.baseurl }}/file-upload.html">Upload Files</a> - Learn how to upload and use different file formats</div>
+      <div class="step"><a href="{{ site.baseurl }}/navigation.html">Navigate the Interface</a> - Discover how to navigate and control the FINDVIZ interface</div>
+      <div class="step"><a href="{{ site.baseurl }}/preprocessing.html">Preprocess Data</a> - Learn about preprocessing options to facilitate visualization of fMRI data</div>
+      <div class="step"><a href="{{ site.baseurl }}/analysis.html">Analyze Data</a> - Explore the analysis tools available in FINDVIZ</div>
     </div>
   </div>
 </div>
 
-## Data Preparation
+## Data Preparation {#data-preparation}
 
 <div class="card" id='data-preparation'>
   <div class="card-content">
@@ -97,7 +97,7 @@ title: FINDVIZ - FMRI Interactive Navigation and Discovery Viewer
   </div>
 </div>
 
-## General Advice
+## General Advice {#general-advice}
 
 <div class="alert alert-info" id='best-practices'>
   <h4>Best Practices</h4>
@@ -108,7 +108,7 @@ title: FINDVIZ - FMRI Interactive Navigation and Discovery Viewer
   </ul>
 </div>
 
-## Limitations
+## Limitations {#limitations}
 
 <div class="alert alert-warning">
   <h4>Important Considerations</h4>

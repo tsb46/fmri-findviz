@@ -17,10 +17,11 @@ title: Analysis - FINDVIZ
 ## Table of Contents
 {:.no-bullets}
 
-- [Analysis Methods](#analysis-methods)
-  - [Time Point Distance](#time-point-distance)
-  - [Time Course Correlation Map](#time-course-correlation-map)
-  - [Windowed Average](#windowed-average)
+- [Analysis Methods]({{ site.baseurl }}{{ page.url }}#analysis-methods)
+  - [Time Point Distance]({{ site.baseurl }}{{ page.url }}#time-point-distance)
+  - [Time Course Correlation Map]({{ site.baseurl }}{{ page.url }}#time-course-correlation-map)
+  - [Windowed Average]({{ site.baseurl }}{{ page.url }}#windowed-average)
+- [Limitations]({{ site.baseurl }}{{ page.url }}#limitations)
 
 ## Analysis Methods
 
@@ -99,7 +100,7 @@ title: Analysis - FINDVIZ
 </div>
 
 
-## Limitations
+## Limitations {#limitations}
 
 <div class="alert alert-info">
   <h4>Key Points to Remember</h4>
