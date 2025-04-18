@@ -153,3 +153,11 @@ logs/
 
 # pytest results directory
 pytest-results/
+
+# Jekyll
+_site/
+.sass-cache/
+.jekyll-cache/
+.jekyll-metadata
+vendor/bundle/
+Gemfile.lock

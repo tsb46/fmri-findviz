@@ -1,0 +1,13 @@
+theme: jekyll-theme-cayman
+title: FINDVIZ Documentation
+description: User documentation for the FMRI Interactive Navigation and Discovery Viewer
+baseurl: /fmri-findviz
+url: ""
+
+# Navigation
+header_pages:
+  - index.md
+  - file-upload.md
+  - navigation.md
+  - preprocessing.md
+  - analysis.md 
