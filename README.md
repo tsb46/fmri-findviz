@@ -18,7 +18,12 @@ FINDVIZ supports volume and surface visualizations:
     <p><strong>Surface Navigation</strong>: Interact with GIFTI and CIFTI data in 3D surface views</p>
     <img src='https://raw.githubusercontent.com/tsb46/fmri-findviz-misc/main/gifs/gifti_navigate.gif' width="100%" alt="GIFTI navigation demo">
   </div>
+  <div style="flex: 1; min-width: 300px;">
+    <p><strong>Time Course Navigation</strong>: Visualize synchronized physiological, experimental design, and other time series data alongside fMRI data.</p>
+    <img src='https://raw.githubusercontent.com/tsb46/fmri-findviz-misc/main/gifs/ts_simultaneous.gif' width="100%" alt="Time course navigation demo">
+  </div>
 </div>
+
 
 
 ## Installation
