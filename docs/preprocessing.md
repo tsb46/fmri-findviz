@@ -14,7 +14,19 @@ title: Preprocessing - FINDVIZ
   </div>
 </div>
 
-## Available Preprocessing Methods
+## Table of Contents
+{:.no-bullets}
+
+- [Available Preprocessing Methods]({{ site.baseurl }}{{ page.url }}#available-preprocessing-methods)
+  - [Linear Detrending]({{ site.baseurl }}{{ page.url }}#linear-detrending)
+  - [Time Series Normalization]({{ site.baseurl }}{{ page.url }}#time-series-normalization)
+  - [Temporal Filtering]({{ site.baseurl }}{{ page.url }}#temporal-filtering)
+  - [Spatial Smoothing]({{ site.baseurl }}{{ page.url }}#spatial-smoothing)
+- [Order of Processing]({{ site.baseurl }}{{ page.url }}#order-of-processing)
+- [Important Considerations]({{ site.baseurl }}{{ page.url }}#important-considerations)
+- [Limitations]({{ site.baseurl }}{{ page.url }}#limitations)
+
+## Available Preprocessing Methods {#available-preprocessing-methods}
 
 <div class="card">
     <div class="card-header">
@@ -33,7 +45,7 @@ title: Preprocessing - FINDVIZ
             </div>
         </div>
         <ul class='feature-list' style='margin-top: 1em;'>
-            <li>
+            <li id="linear-detrending">
                 <h4>Linear Detrending</h4>
                 <ul>
                     <li>Removes linear trends from fMRI or time series data using a linear least-squares fit.</li>
@@ -41,7 +53,7 @@ title: Preprocessing - FINDVIZ
                     <li><strong>Implementation:</strong> linear detrending of time courses is performed using SciPy (v1.13.1) <a href="https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.detrend.html">detrend</a> algorithm</li>
                 </ul>
             </li>
-            <li>
+            <li id="time-series-normalization">
                 <h4>Time Series Normalization</h4>
                 <ul>
                     <li>Mean-center or z-score fMRI or time series data using a linear least-squares fit.</li>
@@ -49,7 +61,7 @@ title: Preprocessing - FINDVIZ
                     <li><strong>Implementation:</strong> mean-centering and z-scoring is perfomed with custom Python algorithms.</li>
                 </ul>
             </li>
-            <li>
+            <li id="temporal-filtering">
                 <h4>Temporal Filtering</h4>
                 <ul>
                     <li>Band-pass, low-pass or high-pass fmri or time series data. </li>
@@ -58,8 +70,8 @@ title: Preprocessing - FINDVIZ
                     <li><strong>Implementation:</strong> Temporal filtering is performed using Nilearn's (v0.10.4) <a href="https://nilearn.github.io/dev/modules/generated/nilearn.signal.butterworth.html">Butterworth</a> filter function (5th order), which applies a zero-phase forward and backward filter to preserve timing relationships in the data</li>
                 </ul>
             </li>
-            <li>
-                Spatial Smoothing
+            <li id="spatial-smoothing">
+                <h4>Spatial Smoothing</h4>
                 <div class='alert alert-warning'>
                     <p>Surface smoothing of CIFTI/GIFTI surface plots are not currently supported.</p>
                 </div>
@@ -75,7 +87,7 @@ title: Preprocessing - FINDVIZ
 </div>
 
 
-### Order of Processing
+### Order of Processing {#order-of-processing}
 
 <div class="card">
   <div class="card-content">
@@ -89,7 +101,7 @@ title: Preprocessing - FINDVIZ
   </div>
 </div>
 
-## Important Considerations
+## Important Considerations {#important-considerations}
 
 <div class="alert alert-warning">
   <h4>Key Points to Remember</h4>
@@ -99,7 +111,7 @@ title: Preprocessing - FINDVIZ
   </ul>
 </div>
 
-## Limitations
+## Limitations {#limitations}
 
 <div class="card">
   <div class="card-content">

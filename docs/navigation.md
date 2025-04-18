@@ -17,18 +17,18 @@ title: Navigation - FINDVIZ
 ## Table of Contents
 {:.no-bullets}
 
-- [FMRI Interface Layout](#fmri-interface-layout)
-- [FMRI Interface Components](#fmri-interface-components)
-  - [Toolbox](#toolbox)
-  - [FMRI Color Options](#fmri-color-options)
-  - [FMRI Preprocessing](#fmri-preprocessing)
-  - [FMRI Plot Options](#plot-options-toolbar)
-  - [Plot FMRI Time Courses](#plot-fmri-time-courses)
-- [Timecourse Interface Layout](#timecourse-interface-layout)
-- [Timecourse Interface Components](#timecourse-interface-components)
-  - [Timecourse Plot Options](#timecourse-plot-options)
-  - [Timecourse Preprocessing](#timecourse-preprocessing)
-  - [Timecourse Annotation](#timecourse-annotation)
+- [FMRI Interface Layout]({{ site.baseurl }}{{ page.url }}#fmri-interface-layout)
+- [FMRI Interface Components]({{ site.baseurl }}{{ page.url }}#fmri-interface-components)
+  - [Toolbox]({{ site.baseurl }}{{ page.url }}#toolbox)
+  - [FMRI Color Options]({{ site.baseurl }}{{ page.url }}#fmri-color-options)
+  - [FMRI Preprocessing]({{ site.baseurl }}{{ page.url }}#fmri-preprocessing)
+  - [Plot Options Toolbar]({{ site.baseurl }}{{ page.url }}#plot-options-toolbar)
+  - [Plot FMRI Time Courses]({{ site.baseurl }}{{ page.url }}#plot-fmri-time-courses)
+- [Timecourse Interface Layout]({{ site.baseurl }}{{ page.url }}#timecourse-interface-layout)
+- [Timecourse Interface Components]({{ site.baseurl }}{{ page.url }}#timecourse-interface-components)
+  - [Timecourse Plot Options]({{ site.baseurl }}{{ page.url }}#timecourse-plot-options)
+  - [Timecourse Preprocessing]({{ site.baseurl }}{{ page.url }}#timecourse-preprocessing)
+  - [Timecourse Annotation]({{ site.baseurl }}{{ page.url }}#timecourse-annotation)
 - [Save and Load State](#save-scene)
 
 ## FMRI Interface Layout

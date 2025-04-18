@@ -18,16 +18,16 @@ title: File Upload - FINDVIZ
 ## Table of Contents
 {:.no-bullets}
 
-- [FMRI File Formats](#fmri-file-formats)
-  - [NIFTI (.nii, .nii.gz)](#nifti)
-  - [GIFTI (.gii)](#gifti)
-  - [CIFTI (.dtseries.nii)](#cifti)
-- [Time Course Files](#time-course-files)
-  - [Time Course Files Format](#time-course-files-format)
-  - [Task Design Files](#task-design-files)
-- [Command Line Upload](#command-line-upload-alternative)
-  - [Command Line Options](#command-line-options)
-  - [Developer Notes](#developer-notes)
+- [FMRI File Formats]({{ site.baseurl }}{{ page.url }}#fmri-file-formats)
+  - [NIFTI (.nii, .nii.gz)]({{ site.baseurl }}{{ page.url }}#nifti)
+  - [GIFTI (.gii)]({{ site.baseurl }}{{ page.url }}#gifti)
+  - [CIFTI (.dtseries.nii)]({{ site.baseurl }}{{ page.url }}#cifti)
+- [Time Course Files]({{ site.baseurl }}{{ page.url }}#time-course-files)
+  - [Time Course Files Format]({{ site.baseurl }}{{ page.url }}#time-course-files-format)
+  - [Task Design Files]({{ site.baseurl }}{{ page.url }}#task-design-files)
+- [Command Line Upload]({{ site.baseurl }}{{ page.url }}#command-line-upload-alternative)
+  - [Command Line Options]({{ site.baseurl }}{{ page.url }}#command-line-options)
+  - [Developer Notes]({{ site.baseurl }}{{ page.url }}#developer-notes)
 
 ## FMRI File Formats
 
