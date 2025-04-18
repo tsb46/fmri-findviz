@@ -7,7 +7,10 @@
 
 FINDVIZ is a browser-based visualization tool for visual exploration of fMRI data with a focus on pattern discovery. It supports the visualization of NIFTI, GIFTI, and CIFTI file formats, and time series data. Visualizations are produced using PlotlyJS. 
 
-FINDVIZ supports volume and surface visualizations:
+🔗 Check out the documentation here: https://tsb46.github.io/fmri-findviz/
+
+
+FINDVIZ supports volume and surface visualizations
 
 <div style="display: flex; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
   <div style="flex: 1; min-width: 300px;">
@@ -23,7 +26,6 @@ FINDVIZ supports volume and surface visualizations:
     <img src='https://raw.githubusercontent.com/tsb46/fmri-findviz-misc/main/gifs/ts_simultaneous.gif' width="100%" alt="Time course navigation demo">
   </div>
 </div>
-
 
 
 ## Installation
