@@ -359,6 +359,37 @@ ul.feature-list li:hover {
   box-shadow: 0 2px 5px rgba(0,0,0,0.1);
 }
 
+/* Nested lists within feature-list */
+ul.feature-list li ul,
+ul.feature-list li ol {
+  margin-top: 0.7rem;
+  margin-bottom: 0;
+  padding-left: 1.2rem;
+}
+
+ul.feature-list li ul li,
+ul.feature-list li ol li {
+  background-color: #ffffff;
+  border-left: 2px solid #9eeacb;
+  border-radius: 0 4px 4px 0;
+  padding: 0.5rem 0.8rem;
+  margin-bottom: 0.5rem;
+  margin-left: 0;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+
+ul.feature-list li ul li:hover,
+ul.feature-list li ol li:hover {
+  transform: translateX(2px);
+  background-color: #f8fff9;
+}
+
+/* Fix for nested list before elements */
+ul.feature-list li ul li:before,
+ul.feature-list li ol li:before {
+  display: none;
+}
+
 /* Table of Contents styling */
 .no-bullets {
   list-style-type: none;

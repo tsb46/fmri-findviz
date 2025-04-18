@@ -85,7 +85,7 @@ title: Navigation - FINDVIZ
             <ul class='feature-list'>
                 <li>Linear Detrending</li>
                 <li>Time Course Normalization (applied to each voxel/vertex time course)</li>
-                <li>Temporal Filtering (Band-pass, low-pass, high-pass) specified in Hertz (Hz).</li>
+                <li>Temporal Filtering (Band-pass, low-pass, high-pass) specified in hertz (Hz).</li>
                 <li>
                     Spatial Smoothing for Nifti Files
                     <div class='alert alert-warning' style='margin-top:1em;'>
@@ -276,7 +276,7 @@ title: Navigation - FINDVIZ
         <img src='https://raw.githubusercontent.com/tsb46/fmri-findviz-misc/main/gifs/peak_finding.gif' alt= "find peaks" style="border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); margin-top: 1em;">
         <div class="alert alert-info">
             <h4>Developer Note</h4>
-            <p>FINDVIZ uses the scipy (v1.13.1) <a href="https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.find_peaks.html">find_peaks</a> algorithm for peak detection. For algorithm details, please refer to the documentation.</p>
+            <p>FINDVIZ uses the SciPy (v1.13.1) <a href="https://docs.scipy.org/doc/scipy/reference/generated/scipy.signal.find_peaks.html">find_peaks</a> algorithm for peak detection. For algorithm details, please refer to the documentation.</p>
         </div>
     </div>
 </div>

@@ -11,7 +11,6 @@ title: Analysis - FINDVIZ
   </div>
   <div class="card-content">
     <p>FINDVIZ offers several analysis tools to help you explore patterns in your fMRI data. This guide explains the available analysis methods and how to use them effectively.</p>
-    <img src="https://raw.githubusercontent.com/tsb46/fmri-findviz-misc/main/pics/analytics_toolbox.png" alt="Analytics Toolbox" style="width: 100%; border-radius: 8px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
   </div>
 </div>
 
